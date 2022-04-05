@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block content %}
+<form action="/accounts/login/" method="post">
+    {% csrf_token %}
+    {{ form }}
+    <input type="submit" value="Submit">
+</form>
+Alternatively, <a href="/accounts/register/">register</a> with your JHU email address or <a href="/accounts/password_reset">get your username and reset your password</a>.
+{% endblock %}

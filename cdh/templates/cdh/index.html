@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block topcontent %}
+      <!-- <main class="background-bluejaysblue" id="page" tabindex="0" aria-label="Website Introduction"> -->
+      <!-- 		<div class="intro"> -->
+      <!-- 		  <div class="seo-intro post-2 page type-page status-publish hentry" id="post-2"> -->
+      <!-- 		    <div class="entry-content"> -->
+      <!-- 		      <p>The higher places in the coming years belong to those who succeed in adapting the methods of one science to the investigation of another.</p><br/>CS Peirce, as quoted by Richard Macksey, "The Languages of Criticism and the Sciences of Man" -->
+      <!-- 		    </div> -->
+      <!-- 		  </div> -->
+      <!-- 		</div> -->
+      <!-- 	</main> -->
+
+<div id="slideshow" class="slideshow slideshow-large">
+	<div class="row" aria-live="polite">
+	  <div class="span4">
+	    {% for project in projects %}
+	    <div class="slide-content {% if forloop.first %}active{% endif %}" aria-hidden="true">
+              <h2 class="slide-title">
+		{{project.name}}         </h2>
+              <p class="slide-caption">{{project.description}}</p>
+              <!-- <a title="{{project.name}}" class="slide-link" href=""> -->
+	      <!-- 	Get the Story <i class="icon-chevron-right"></i> -->
+              <!-- </a> -->
+	    </div>
+	    {% endfor %}
+          </div>
+	  <div class="span8">
+	    <div class="slide-images">
+	      {% for project in projects %}
+	      <a class="{% if forloop.first %}active{% endif %}" aria-hidden="{% if forloop.first %}false{% else %}true{% endif %}" title="{{project.name}}" href="">
+		{% if project.image %}		
+		<img
+		  class="{% if forloop.first %}active{% endif %}"
+		  src="/media/{{project.image}}"
+		  alt="{{project.name}}"
+		  height="345"
+		  width="628"
+		  />
+		{% else %}		
+		<img
+		  class="{% if forloop.first %}active{% endif %}"
+		  src="/static/bootstrap/site/content/docs/5.1/examples/features/unsplash-photo-{% cycle '2' '3' %}.jpg""
+		  alt="{{project.name}}"
+		  height="345"
+		  width="628"
+		  />
+		{% endif %}
+	      </a>
+	      {% endfor %}
+            </div>
+	  </div>
+	</div>
+      </div>
+{% endblock %}      

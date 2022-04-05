@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+
+
+<h1 class="page-title">Faculty</h1>
+
+{% if director %}
+  {% for p in director %}
+    {% include "cdh/snippets/person.html" %}
+  {% endfor %}
+{% endif %}
+
+{% for p in faculty %}
+{% include "cdh/snippets/person.html" %}
+{% endfor %}
+
+
+{% if postdocs %}<h1 class="page-title">Post-doctoral researchers and scientists</h1>
+{% for p in postdocs %}
+{% include "cdh/snippets/person.html" %}
+{% endfor %}
+{% endif %}
+
+{% if students %}<h1 class="page-title">Students</h1>
+  {% for p in students %}
+    {% include "cdh/snippets/person.html" %}
+  {% endfor %}
+{% endif %}
+
+{% if affiliates %}<h1 class="page-title">Affiliates</h1>
+  {% for p in affiliates %}
+    {% include "cdh/snippets/person.html" %}
+  {% endfor %}
+{% endif %}
+
+{% endblock %}

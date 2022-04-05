@@ -1,0 +1,25 @@
+{% load static %}
+
+<div class="highlight-box faculty-member-card">
+  <table>
+    <tr>
+      <td>
+	{% if p.photo %}
+	<a href="{{p.homepage}}" class="faculty-image">
+	  <img src="{% get_media_prefix %}{{p.photo}}" alt="Picture of {{p.first_name}} {{p.last_name}}" class="headshot" />
+	</a>
+	{% else %}
+	<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-person-fill" viewBox="0 0 16 16">
+	  <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+	</svg>
+	{% endif %}
+      </td>
+      <td>
+	<h3><a href="{{p.homepage}}" style='color:#5E6F7F;'>{{p.first_name}} {{p.last_name}}</a></h3>
+
+	<h6>{{p.title}}</h6>
+	{{p.description}}
+      </td>
+    </tr>
+  </table>
+</div>

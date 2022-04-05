@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+<table>
+  <tr><th>Topic</th><th>Words</th></tr>
+  {% for num, dist in topics %}
+  <tr>
+    <td>{{num}}</td>
+    {% for tok, prob in dist %}
+    <td>{{tok}}</td>
+    {% endfor %}
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

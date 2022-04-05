@@ -1,0 +1,14 @@
+Django
+django-extensions
+django-scheduler
+django-bower
+django-registration
+django-guardian
+Pillow
+requests
+django-rest-framework
+gensim
+ipython
+wiki
+git+https://github.com/hltcoe/turkle.git@relocated-admin-models
+rdflib

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block content %}
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <table>
+    <tr><td>Name</td><td>State</td><td>Delete</td></tr>
+    {% for c in user_collections %}
+    <tr><td><a href="{% url 'topic_modeling:collection_detail' c.id %}">{{c.name}}</a></td><td>{{c.state}}</td><td><input type="checkbox" id="delete_{{c.id}}" name="delete_{{c.id}}"></td></tr>
+    {% endfor %}
+    {% for c in public_collections %}
+    <tr><td><a href="{% url 'topic_modeling:collection_detail' c.id %}">{{c.name}}</a></td><td>{{c.state}}</td><td/></tr>
+    {% endfor %}
+    <tr><td><input type="text" name="name" id="name"></td><td><input type="file" name="data" id="data"></td><td/></tr>
+  </table>
+  <input type="submit" value="Save">
+</form>
+{% endblock %}

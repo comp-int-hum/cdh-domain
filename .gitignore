@@ -1,0 +1,10 @@
+*~
+*__pycache__*
+local
+db.sqlite3
+*#
+certs
+package*json
+node_modules
+cdh_site_data
+cdh/settings.py

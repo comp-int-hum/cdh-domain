@@ -1,0 +1,25 @@
+server {
+    root /var/www/html;
+    include /etc/nginx/default.d/*.conf;
+    location /static {
+       alias /mnt/static/;
+    }
+    location /media {
+       alias /mnt/media/;
+    }
+    location / {
+       proxy_pass http://unix:/run/gunicorn.sock;
+    }
+    server_name _;
+    listen [::]:443 ssl ipv6only=on;
+    listen 443 ssl;
+    ssl_certificate /mnt/certs/site.pem;
+    ssl_certificate_key /mnt/certs/site.key;
+}
+
+server {
+    return 301 https://$host$request_uri;
+    listen       80 ;
+    listen       [::]:80 ;
+    server_name _;
+}

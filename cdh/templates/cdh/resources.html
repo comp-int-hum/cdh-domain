@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h3>Software</h3>
+<ul>
+  <li><a href="https://github.com/starcoder/starcoder-python">StarCoder</a></li>
+</ul>
+
+<h3>Related centers</h3>
+<ul>
+  {% for o in organizations %}
+  <li><a href="{{o.link}}">{{o.name}}</a></li>
+  {% endfor %}
+</ul>
+
+{% endblock %}
