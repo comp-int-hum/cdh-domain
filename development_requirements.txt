@@ -10,7 +10,7 @@ django-rest-framework
 gensim
 ipython
 wiki
-git+https://github.com/hltcoe/turkle.git@admin_app_configurable
+git+https://github.com/hltcoe/turkle.git
 rdflib
 django-editor-widgets
 graphviz

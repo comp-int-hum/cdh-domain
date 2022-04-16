@@ -20,7 +20,6 @@ PRIVATE_APPS = {
     "image_clustering" : "Vision",
 }
 PUBLIC_APPS = {
-    "matchmaking" : "Opportunities",
     "wiki" : "Wiki",
 }
 
@@ -114,6 +113,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.sites',
+    'django.contrib.flatpages',
     'django_nyt.apps.DjangoNytConfig',
     'mptt',
     'sekizai',
@@ -131,6 +131,8 @@ INSTALLED_APPS = [
     'djangobower',
     'schedule',
     'broker',
+    'turkle',
+    'markdownfield',
 ] + [k for k in PRIVATE_APPS.keys()] + [k for k in PUBLIC_APPS.keys() if k not in ["wiki"]]
 
 SITE_ID = 1
@@ -207,7 +209,7 @@ AUTHENTICATION_BACKENDS = (
     ["django_auth_ldap.backend.LDAPBackend"] if USE_LDAP else []
 ) + [
     'django.contrib.auth.backends.ModelBackend',
-#    'guardian.backends.ObjectPermissionBackend'
+    'guardian.backends.ObjectPermissionBackend',
 ]
 
 # CDH NOTE: These groups correspond to those who can use or work with the web

@@ -16,7 +16,7 @@ ipython
 gunicorn
 django-auth-ldap
 psycopg2
-git+https://github.com/hltcoe/turkle.git@relocated-admin-models
+git+https://github.com/hltcoe/turkle.git
 rdflib
 graphviz
 django-editor-widgets
