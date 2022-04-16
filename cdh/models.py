@@ -2,9 +2,12 @@ from . import settings
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.base_user import BaseUserManager
+from markdownfield.models import MarkdownField, RenderedMarkdownField
+from markdownfield.validators import VALIDATOR_STANDARD
 if settings.USE_LDAP:
     import ldap
     from ldap import modlist
+
 
 class AsyncMixin(models.Model):
     PROCESSING = "PR"
@@ -24,7 +27,8 @@ class AsyncMixin(models.Model):
     task_id = models.CharField(max_length=200, null=True)
     class Meta:
         abstract = True
-    
+
+
 class User(AbstractUser):
     homepage = models.URLField(blank=True)
     photo = models.ImageField(blank=True, upload_to="user_photos")
@@ -52,13 +56,31 @@ class User(AbstractUser):
     def __str__(self):
         return "{} {}".format(self.first_name, self.last_name)
 
+    
 class Slide(models.Model):
-    name = models.CharField(max_length=200)
-    slug = models.CharField(max_length=2000)
-    description = models.TextField(blank=True)
+    class Meta:
+        verbose_name_plural = "Slides"
+    name = models.CharField(max_length=200, null=True)        
+    slug = models.CharField(max_length=2000, null=True)
+    description = MarkdownField(blank=True, rendered_field="rendered_description", validator=VALIDATOR_STANDARD)
+    rendered_description = RenderedMarkdownField(null=True)
     link = models.URLField(blank=True)
     image = models.ImageField(blank=True)
+    active = models.BooleanField(default=False)
     def __str__(self):
         return self.name
     def get_absolute_url(self):
         return reverse("cdh:slide", args=(self.id,))
+
+
+class SlidePage(models.Model):
+    name = models.CharField(max_length=200, null=True)
+    content = MarkdownField(blank=True, rendered_field="rendered_content", validator=VALIDATOR_STANDARD)
+    rendered_content = RenderedMarkdownField(null=True)
+    additional_link_prompt = models.CharField(max_length=2000, null=True)
+    slides = models.ManyToManyField(Slide)
+    def __str__(self):
+        return self.name
+    def get_absolute_url(self):
+        return reverse("cdh:slide", args=(self.id,))
+    

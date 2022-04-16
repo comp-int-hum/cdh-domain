@@ -18,3 +18,5 @@ django-auth-ldap
 psycopg2
 git+https://github.com/hltcoe/turkle.git@relocated-admin-models
 rdflib
+graphviz
+django-editor-widgets

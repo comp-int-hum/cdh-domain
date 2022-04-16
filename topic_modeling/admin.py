@@ -1,4 +1,4 @@
-from django.contrib import admin
+from cdh import admin
 from .models import model_classes
 
 for x in model_classes:

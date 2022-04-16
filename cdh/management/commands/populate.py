@@ -1,12 +1,11 @@
 from django.core.management.base import BaseCommand, CommandError
-from django.contrib.flatpages.models import FlatPage
 from cdh import settings
-from cdh.models import User, Slide
+from cdh.models import User, Slide, SlidePage
 from django.contrib.sites.models import Site
 from django.contrib.auth.models import Group
 from schedule.models.events import Event, Calendar
 from primary_sources.models import Dataset
-from matchmaking.models import Opportunity, Tag
+#from matchmaking.models import Opportunity, Tag
 import logging
 
 if settings.USE_LDAP:
@@ -68,7 +67,49 @@ users= [
 ]
 
 spec = {
-    Opportunity : [
+    Slide : [
+        {
+            "name" : "First example news item",
+            "slug" : "First example news item description",
+            "description" : "## Something A",
+            "active" : True,
+        },
+        {
+            "name" : "Second example news item",
+            "slug" : "Second example news item description",
+            "description" : "## Something B",
+            "active" : True,                        
+        },
+        {
+            "name" : "Third example news item",
+            "slug" : "Third example news item description",
+            "description" : "## Something C",
+            "active" : True,                        
+        },
+        {
+            "name" : "Fourth example news item",
+            "slug" : "Fourth example news item description",
+            "description" : "## Something D",
+            "active" : True,                        
+        },
+        {
+            "name" : "Fifth example news item",
+            "slug" : "Fifth example news item description",
+            "description" : "## Something E",
+            "active" : True,                        
+        },
+        {
+            "name" : "First research area",
+            "slug" : "First research area description",
+            "description" : "# Test 1",
+            "active" : True,
+        },
+        {
+            "name" : "Second research area",
+            "slug" : "Second research area description",
+            "description" : "# Test 2",
+            "active" : True,                        
+        },
     ],
     Calendar : [
         {
@@ -76,21 +117,29 @@ spec = {
             "slug" : "CDH",
         },
     ],
-    FlatPage : [
+    SlidePage : [
         {
-            "url" : "/about/",
-            "title" : "About",
+            "name" : "index",
+            "additional_link_prompt" : "See more news from the CDH",
+            ("slides", Slide) : [
+                {"name" : "First example news item"},
+                {"name" : "Second example news item"},
+                {"name" : "Third example news item"},
+                {"name" : "Fifth example news item"},
+                
+            ]
+        },
+        {
+            "name" : "research",
             "content" : """
-<p>The Johns Hopkins Center for Digital Humanities (CDH) is an interdisciplinary research center focused on:</p>
-
-<ul>
-  <li>Unsupervised machine learning</li>
-  <li>Knowledge representation and augmentation</li>
-  <li>Interpretable models</li> 
-</ul>
+### Markdown content can go here
 """,
-            ("sites", Site) : [{"id" : 1}],
-        }        
+            ("slides", Slide) : [
+                {"name" : "First research area"},
+                {"name" : "Second research area"}
+            ],
+        },
+
     ],
     # Organization : [
     #     {
@@ -116,16 +165,6 @@ spec = {
     #         "description" : "",
     #     },
     # ],
-    Slide : [
-        {
-            "name" : "First example project",
-            "slug" : "First example project description",
-        },
-        {
-            "name" : "Second example project",
-            "slug" : "Second example project description",
-        },
-    ],
     Event : [
     ],
     # Software : [

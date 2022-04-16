@@ -7,7 +7,7 @@ from django.views.generic.list import ListView
 
 from django_registration.backends.activation.views import RegistrationView
 from . import forms
-from .admin import site
+from .admin import site as admin_site
 
 # from schedule.feeds import CalendarICalendar, UpcomingEventsFeed
 # from schedule.models import Calendar
@@ -36,13 +36,12 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('', views.index, name="index"),
-    #path('about/', views.about, name="about"),
     path('people/', views.people, name="people"),    
-    #path('research/', views.research, name="research"),
-    #path('resources/', views.resources, name="resources"),
-    path('events/', views.events, name="events"),
-    path('admin/', site.urls),
+    path('research/', views.research, name="research"),
+    path('calendar/', views.calendar, name="calendar"),
+    path('admin/', admin_site.urls),
     path('schedule/', include('schedule.urls')),
+    #path('about/', views.about, name="about"),
     #path('accounts/manage/',
     #     views.manage_account,
     #     name='manage_account',

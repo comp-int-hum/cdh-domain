@@ -8,7 +8,7 @@ import requests
 import rdflib
 from rdflib.tools.rdf2dot import rdf2dot
 import io
-import graphviz
+#import graphviz
 
 @login_required(login_url="/accounts/login/")
 def index(request):

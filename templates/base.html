@@ -1,71 +1,62 @@
-{% load static %}
+{% load sekizai_tags static %}
 
 <!doctype html>
 <html lang="en" >
-  <!--<html class="no-js" lang="en-US" >-->
   <head>
+
+    {% addtoblock "css" %}
+    <link rel='stylesheet' id='bootstrap-css'  href="{% static 'bootstrap/dist/css/bootstrap.min.css' %}" type='text/css' />
+    <link rel='stylesheet' id='main-stylesheet-css'  href="{% static 'cdh/css/cdh.css' %}" type='text/css' media='all' />
+    {% endaddtoblock %}
+    
+    {% render_block "css" %}
+    
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="date" content="July 30, 2022" />        
+    
+    <meta name="date" content="April 16, 2022" />        
+
     <link rel="icon" href="{% static 'cdh/img/favicon.png' %}">
-    <link rel='stylesheet' id='wse-frontend-css'  href="{% static 'cdh/css/front-b36d514c00.css' %}" type='text/css' media='all' />
+
+    {% addtoblock "initial_js" %}
     <script type='text/javascript' src="{% static 'modernizr/modernizr.js' %}" id='theme-modernizr-js'></script>
     <script type='text/javascript' src="{% static 'jquery/dist/jquery.min.js' %}" id='jquery-core-js'></script>
     <script type='text/javascript' src="{% static 'jquery.cookie/jquery.cookie.js' %}" id='theme-cookie-js'></script>
-    <script type='text/javascript' src="{% static 'bootstrap/dist/js/bootstrap.min.js' %}" id='theme-bootstrap-js'></script>
-    <script type='text/javascript' src="{% static 'cdh/js/rotator.js' %}" id='theme-rotator-js'></script>
     <script type='text/javascript' src="{% static 'jquery.scrollTo/jquery.scrollTo.js' %}" id='theme-scrollto-js'></script>
-    <script type='text/javascript' src="{% static 'cdh/js/jquery.breakpoints.js' %}" id='theme-breakpoints-js'></script>
-    <script type='text/javascript' id='theme-site-js-extra'></script>
-    <script type='text/javascript' src="{% static 'cdh/js/site.js' %}" id='theme-site-js'></script>
-
+    {% endaddtoblock %}
+    
+    {% render_block "initial_js" %}    
     <title>Center for Digital Humanities | Johns Hopkins University</title>
     <meta name='robots' content='max-image-preview:large' />
     <meta property="og:title" content="Home | CDH"/>
-    <meta property="og:description" content="The Center for Digital Humanities etc."/>
+    <meta property="og:description" content="The Johns Hopkins University Center for Digital Humanities"/>
     <meta property="og:type" content="article"/>
     <meta property="og:url" content="https://cdh.jhu.edu/"/>
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:site" content="@comp_hum" />
     <meta property="og:site_name" content="Center for Digital Humanities"/>
-    <link rel="stylesheet" href="{% static 'cdh/css/style.css' %}" />
-    <link rel='stylesheet' id='main-stylesheet-css'  href="{% static 'cdh/css/app.css' %}" type='text/css' media='all' />
-    <script src="{% static 'cdh/js/scripts.js' %}"></script>
     <meta name="facebook-domain-verification" content="s1lj448peh4wqw24bgcc5f2t6n23tc" />
 
     {% block extra_head %}
     {{ block.super }}
     {% endblock %}
-    
   </head>
 
-
-  
-  <body class="home page-template page-template-page-templates page-template-front-buckets page-template-page-templatesfront-buckets-php page page-id-2 tribe-no-js offcanvas site-64">
-    <!-- <noscript> -->
-      <!--   <iframe src="https://www.googletagmanager.com/ns.html?id=GTM-5VTN64C" height="0" width="0" style="display:none;visibility:hidden"></iframe> -->
-      <!-- </noscript> -->
-    <!-- <div role="navigation" aria-label="Skip to main content"> -->
-      <!--   <a class="skip-main show-on-focus" href="#page" >Skip to main content</a> -->
-      <!-- </div> -->
-    <!-- <nav class="mobile-off-canvas-menu off-canvas position-left" id="off-canvas-menu" data-off-canvas data-auto-focus="false" aria-label="Mobile Menu"> -->
-      <!-- </nav> -->
-
-
+  <body>
     
-    <div class="off-canvas-content" data-off-canvas-content>
-      
       <header class="site-header" role="banner" aria-labelledby="dept-info">
-	<div class="site-title-bar title-bar" >
-	  <div class="title-bar-left">
-	    <button aria-label="Main Menu" class="menu-icon" type="button" data-toggle="off-canvas-menu"></button>
-	    <span class="site-mobile-title title-bar-title">
-	      Main Menu
-	    </span>
-	  </div>
-	</div>
-	<div class="roof-header-top show-for-large hide-for-print">
+
+	<!-- <div class="site-title-bar title-bar" > -->
+	<!--   <div class="title-bar-left"> -->
+	<!--     <button aria-label="Main Menu" class="menu-icon" type="button" data-toggle="off-canvas-menu"></button> -->
+	<!--     <span class="site-mobile-title title-bar-title"> -->
+	<!--       Main Menu -->
+	<!--     </span> -->
+	<!--   </div> -->
+	<!-- </div> -->
+	
+	<div class="roof-header-top hide-for-print">
 	  <div class="row align-justify">
 	    <div class="roof-header-top-links">
 	      <ul class="menu simple roof-menu align-right">
@@ -76,9 +67,6 @@
 		</li>
 		{% endif %}
 		<li>
-		  <a href="/accounts/manage">Account</a>
-		</li>
-		<li>
 		  <a href="/accounts/logout">Log out</a>
 		</li>
 		{% else %}
@@ -86,42 +74,11 @@
 		  <a href="/accounts/login">Log in</a>
 		</li>
 		{% endif %}		
-		<li>
-		  <a class="button" href="#" aria-label="Explore JHU" data-toggle="offCanvasTop1">
-		    Explore JHU <span class="fas fa-bars" aria-hidden="true"></span>
-		  </a>
-		</li>
 	      </ul>
-	      
-	      <div class="off-canvas position-top" id="offCanvasTop1" data-off-canvas>
-		<div id="global-links" class="grid-x grid-padding-x small-up-2 medium-up-3 large-up-3">
-		  <h1 class="show-for-sr">Explore JHU</h1>
-		  <div class="cell">
-		    <h2>Student & Faculty Resources</h2>
-		    <ul class="vertical menu" role="menu">
-		      <li role="menuitem"><a href="https://e-catalogue.jhu.edu/" onclick="ga('send', 'event', 'Offcanvas', 'Resources', 'Academic Catalog')">Academic Catalog</a></li>
-		      <li role="menuitem"><a href="https://livejohnshopkins.sharepoint.com/sites/KSASFacultyHandbook" onclick="ga('send', 'event', 'Offcanvas', 'Resources', 'Faculty Handbook')">Faculty Handbook <span class="fas fa-sign-in-alt"></span></a></li>
-		      <li role="menuitem"><a href="https://studentaffairs.jhu.edu/registrar/" onclick="ga('send', 'event', 'Offcanvas', 'Resources', 'Registrars')">Registrar's Office</a></li>
-		      <li role="menuitem"><a href="https://policies.jhu.edu/" onclick="ga('send', 'event', 'Offcanvas', 'Resources', 'Policy Library')">University Policies & Document Library <span class="fas fa-sign-in-alt"></span></a></li>
-		    </ul>
-		  </div>
-		  <div class="cell">
-		    <h2>Across Campus</h2>
-		    <ul class="vertical menu" role="menu">
-		      <li role="menuitem"><a href="https://www.jhu.edu/admissions/" onclick="ga('send', 'event', 'Offcanvas', 'Campus', 'Admissions')">Admissions & Aid</a></li>
-		      <li role="menuitem"><a href="https://www.jhu.edu/" onclick="ga('send', 'event', 'Offcanvas', 'Campus', 'JHU Home')">Johns Hopkins University Website</a></li>
-		      <li role="menuitem"><a href="https://www.jhu.edu/maps-directions/" onclick="ga('send', 'event', 'Offcanvas', 'Campus', 'Maps/Directions')">Maps & Directions</a></li>
-		      <li role="menuitem"><a href="https://my.jh.edu/myJH/" onclick="ga('send', 'event', 'Offcanvas', 'Campus', 'myJHU')">myJHU</a></li>
-		    </ul>
-		  </div>
-		  <button class="close-button" aria-label="Close menu" type="button" data-close>
-		    <span aria-hidden="true">&times;</span>
-		  </button>
-		</div>
-	      </div>
 	    </div>
 	  </div>
 	</div>
+
 	<div class="small-site-holder">
 	  <div class="site-information hide-for-print">
 	    <div class="nav-shield">
@@ -134,7 +91,7 @@
 	    <div class="site-desktop-title">
 	      <div class="top-bar-title">
 		<h1>
-		  <a id="dept-info" href="/">
+		  <a id="index-link" href="/">
 		    Center for Digital Humanities
 		  </a>
 		</h1>
@@ -143,23 +100,23 @@
 	  </div>
 	</div>
 
-	<!-- Main navigation bar -->
-	<nav class="top-bar main-navigation hide-for-print" aria-label="Main Menu" style="z-index:10">
+
+	<nav class="top-bar main-navigation navbar-toggler" aria-label="Main Menu" style="z-index:10">
 	  <div class="top-bar-left" style="z-index:10">
-	    <ul id="menu-main-menu-1" class="dropdown menu desktop-menu" data-dropdown-menu aria-label="Primary Navigation">
-	      <li class="menu-item">
-		<a href="/about">
-		  About
-		</a>
-	      </li>
+	    <ul id="menu-main-menu-1" class="dropdown menu" data-dropdown-menu aria-label="Primary Navigation">
 	      <li class="menu-item">
 		<a href="/people">
-		  People {{ jj }}
+		  People
 		</a>
 	      </li>
 	      <li class="menu-item">
-		<a href="/events">
-		  Events
+		<a href="/research">
+		  Research
+		</a>
+	      </li>
+	      <li class="menu-item">
+		<a href="/calendar">
+		  Calendar
 		</a>
 	      </li>
 	      {% for k, v in public_apps.items %}
@@ -173,80 +130,68 @@
 	    </ul>
 	  </div>
 	</nav>
+	
       </header>
 
-      <nav class="mobile-off-canvas-menu off-canvas position-left" id="off-canvas-menu" data-off-canvas data-auto-focus="false" aria-label="Mobile Menu">
+      <!-- <nav class="mobile-off-canvas-menu off-canvas position-left" id="off-canvas-menu" data-off-canvas data-auto-focus="false" aria-label="Mobile Menu"> -->
 
-	<ul class="vertical nested menu">
-	  <div class="top-bar-left" style="z-index:10">
-	    <ul id="menu-main-menu" class="vertical menu" data-accordion-menu data-submenu-toggle="true" aria-label="Mobile Navigation">
-	      <li class="menu-item">
-		<a href="/about">
-		  About
-		</a>
-	      </li>
-	      <li class="menu-item">
-		<a href="/people">
-		  People {{ jj }}
-		</a>
-	      </li>
-	      <li class="menu-item">
-		<a href="/resources">
-		  Resources
-		</a>
-	      </li>
-	      <li class="menu-item">
-		<a href="/events">
-		  Events
-		</a>
-	      </li>
-	      {% for k, v in public_apps.items %}
-	      <li><a href="/{{k}}/">{{v}}</a></li>
-	      {% endfor %}	      
-	      {% if request.user.is_authenticated %}
-	      {% for k, v in private_apps.items %}
-	      <li><a href="/{{k}}/">{{v}}</a></li>
-	      {% endfor %}
-	      {% endif %}
-	    </ul>
-	  </div>
+      <!-- 	<ul class="vertical nested menu"> -->
+      <!-- 	  <div class="top-bar-left" style="z-index:10"> -->
+      <!-- 	    <ul id="menu-main-menu" class="vertical menu" data-accordion-menu data-submenu-toggle="true" aria-label="Mobile Navigation"> -->
+      <!-- 	      <\!--<li class="menu-item"> -->
+      <!-- 		  <a href="/about"> -->
+      <!-- 		    About -->
+      <!-- 		  </a> -->
+      <!-- 	      </li>-\-> -->
+      <!-- 	      <li class="menu-item"> -->
+      <!-- 		<a href="/people"> -->
+      <!-- 		  People -->
+      <!-- 		</a> -->
+      <!-- 	      </li> -->
+      <!-- 	      <li class="menu-item"> -->
+      <!-- 		<a href="/research"> -->
+      <!-- 		  Research -->
+      <!-- 		</a> -->
+      <!-- 	      </li> -->
+      <!-- 	      <li class="menu-item"> -->
+      <!-- 		<a href="/events"> -->
+      <!-- 		  Events -->
+      <!-- 		</a> -->
+      <!-- 	      </li> -->
+      <!-- 	      {% for k, v in public_apps.items %} -->
+      <!-- 	      <li><a href="/{{k}}/">{{v}}</a></li> -->
+      <!-- 	      {% endfor %}	       -->
+      <!-- 	      {% if request.user.is_authenticated %} -->
+      <!-- 	      {% for k, v in private_apps.items %} -->
+      <!-- 	      <li><a href="/{{k}}/">{{v}}</a></li> -->
+      <!-- 	      {% endfor %} -->
+      <!-- 	      {% endif %} -->
+      <!-- 	    </ul> -->
+      <!-- 	  </div> -->
 	  
-      </nav>
-      
-      {% block topcontent %}
-      <div class="bd">
-	<div class="container">
-	</div>
+      <!-- </nav> -->
+
+
+      <div class="container">
 	<div class="grid-with-gutters">
 	  <div class="row">
 	    <div class="span1"></div>
 	    <div class="span8">
 	      <div class="breadcrumbs">{% block breadcrumbs %}{% endblock %}</div>
 	      {% block content %}{% endblock %}
+	      {% block body %}{% endblock %}	  
 	    </div>
 	  </div>
 	</div>
       </div>
-      {% endblock %}
 
 
-
-
-
+      {% addtoblock "js" %}
+      <script type='text/javascript' src="{% static 'cdh/js/jquery.breakpoints.js' %}" id='theme-breakpoints-js'></script>
+      <script type='text/javascript' src="{% static 'bootstrap/dist/js/bootstrap.bundle.min.js' %}" id='theme-bootstrap-js'></script>
+      {% endaddtoblock %}
       
-      <div class="main-container">
-	<div class="main-grid homepage">
-	  <div class="main-content homepage-news">
-	    <p>&copy; 2022 Johns Hopkins University,<br />
-	      Center for Digital Humanities, 195 Gilman Hall<br />3400 N. Charles Street, Baltimore, MD 21218<br /></p>
-	  </div>
-	</div>
-      </div>
-
-    </div>
-
-
-    <script type='text/javascript' defer src="{% static 'cdh/js/app.js' %}?ver=4.2.0" id='foundation-js'></script>
-
+      {% render_block "js" %}
+    
   </body>
 </html>

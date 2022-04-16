@@ -12,86 +12,86 @@
       <span class="navbar-toggler-icon"></span>
     </button>
 
-    <div class="collapse navbar-collapse" id="navbarColor02">
-      {% block wiki_header_navlinks %}
-      <ul class="navbar-nav mr-auto">
-        <li class="nav-item">
-          <a class="nav-link" href="/">{% trans "Home" %}</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="https://github.com/django-wiki/django-wiki" target="_blank">{% trans "About" %}</a>
-        </li>
-      </ul>
-      {% endblock %}
+    <!-- <div class="collapse navbar-collapse" id="navbarColor02"> -->
+    <!--   {% block wiki_header_navlinks %} -->
+    <!--   <ul class="navbar-nav mr-auto"> -->
+    <!--     <li class="nav-item"> -->
+    <!--       <a class="nav-link" href="/">{% trans "Home" %}</a> -->
+    <!--     </li> -->
+    <!--     <li class="nav-item"> -->
+    <!--       <a class="nav-link" href="https://github.com/django-wiki/django-wiki" target="_blank">{% trans "About" %}</a> -->
+    <!--     </li> -->
+    <!--   </ul> -->
+    <!--   {% endblock %} -->
       
-      {% if user.is_authenticated %}
-      <ul class="navbar-nav">
-        <li class="nav-item dropdown">
-          <a href="#" data-toggle="dropdown" class="nav-link dropdown-toggle">
-            <span class="badge badge-light notification-cnt">0</span>
-            {{ user }}
-            <b class="caret"></b>
-          </a>
-          <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-            {% if "ACCOUNT_HANDLING"|wiki_settings %}
-            <a href="{% url 'wiki:profile_update' %}" class="dropdown-item">
-              <i class="fa fa-cog"></i>
-              {% trans "Account Settings" %}
-            </a>
-            {% endif %}
-            <a href="{{ "LOGOUT_URL"|wiki_settings }}" class="dropdown-item">
-              <i class="fa fa-power-off"></i>
-              {% trans "Log out" %}
-            </a>
-            {% if user.is_superuser %}
-            <a href="{% url 'wiki:deleted_list' %}" class="dropdown-item">
-              <i class="fa fa-trash"></i>
-              {% trans "Deleted articles" %}
-            </a>
-            {% endif %}
-            {% if "wiki.plugins.notifications"|plugin_enabled %}
-            {% include "wiki/plugins/notifications/menubaritem.html" %}
-            {% endif %}
-            {% if "wiki.plugins.globalhistory"|plugin_enabled %}
-            {% include "wiki/plugins/globalhistory/menubaritem.html" %}
-            {% endif %}
-          </div>
-        </li>
-      </ul>
-      {% else %}
-      <ul class="navbar-nav">
-        <li class="nav-item">
-          <a class="nav-link" href="{% login_url as wiki_login_url %}{{ wiki_login_url }}">{% trans "Log in" %}</a>
-        </li>
-        {% if "ACCOUNT_HANDLING"|wiki_settings and "ACCOUNT_SIGNUP_ALLOWED"|wiki_settings %}
-        <li class="nav-item">
-          <a class="nav-link" href="{% url 'wiki:signup' %}">{% trans "Sign up" %}</a>
-        </li>
-        {% endif %}
-      </ul>
-      {% endif %}
+    <!--   {% if user.is_authenticated %} -->
+    <!--   <ul class="navbar-nav"> -->
+    <!--     <li class="nav-item dropdown"> -->
+    <!--       <a href="#" data-toggle="dropdown" class="nav-link dropdown-toggle"> -->
+    <!--         <span class="badge badge-light notification-cnt">0</span> -->
+    <!--         {{ user }} -->
+    <!--         <b class="caret"></b> -->
+    <!--       </a> -->
+    <!--       <div class="dropdown-menu" aria-labelledby="navbarDropdown"> -->
+    <!--         {% if "ACCOUNT_HANDLING"|wiki_settings %} -->
+    <!--         <a href="{% url 'wiki:profile_update' %}" class="dropdown-item"> -->
+    <!--           <i class="fa fa-cog"></i> -->
+    <!--           {% trans "Account Settings" %} -->
+    <!--         </a> -->
+    <!--         {% endif %} -->
+    <!--         <a href="{{ "LOGOUT_URL"|wiki_settings }}" class="dropdown-item"> -->
+    <!--           <i class="fa fa-power-off"></i> -->
+    <!--           {% trans "Log out" %} -->
+    <!--         </a> -->
+    <!--         {% if user.is_superuser %} -->
+    <!--         <a href="{% url 'wiki:deleted_list' %}" class="dropdown-item"> -->
+    <!--           <i class="fa fa-trash"></i> -->
+    <!--           {% trans "Deleted articles" %} -->
+    <!--         </a> -->
+    <!--         {% endif %} -->
+    <!--         {% if "wiki.plugins.notifications"|plugin_enabled %} -->
+    <!--         {% include "wiki/plugins/notifications/menubaritem.html" %} -->
+    <!--         {% endif %} -->
+    <!--         {% if "wiki.plugins.globalhistory"|plugin_enabled %} -->
+    <!--         {% include "wiki/plugins/globalhistory/menubaritem.html" %} -->
+    <!--         {% endif %} -->
+    <!--       </div> -->
+    <!--     </li> -->
+    <!--   </ul> -->
+    <!--   {% else %} -->
+    <!--   <ul class="navbar-nav"> -->
+    <!--     <li class="nav-item"> -->
+    <!--       <a class="nav-link" href="{% login_url as wiki_login_url %}{{ wiki_login_url }}">{% trans "Log in" %}</a> -->
+    <!--     </li> -->
+    <!--     {% if "ACCOUNT_HANDLING"|wiki_settings and "ACCOUNT_SIGNUP_ALLOWED"|wiki_settings %} -->
+    <!--     <li class="nav-item"> -->
+    <!--       <a class="nav-link" href="{% url 'wiki:signup' %}">{% trans "Sign up" %}</a> -->
+    <!--     </li> -->
+    <!--     {% endif %} -->
+    <!--   </ul> -->
+    <!--   {% endif %} -->
       
-      <form class="form-inline" method="GET" action="{% spaceless %}
-            {% if article or urlpath %}
-                {% url 'wiki:search' article_id=article.id path=urlpath.path %}
-              {% else %}
-                {% url 'wiki:search' %}
-              {% endif %}
-            {% endspaceless %}"
-      >
-	<div class="input-group">
-          <input type="search" class="form-control" aria-label="Search" name="q" placeholder="{% spaceless %}
-                {% if article or urlpath %}
-                   {% trans "Search from current article..." %}
-                {% else %}
-                  {% trans "Search whole wiki..." %}
-                {% endif %}
-              {% endspaceless %}" />
-          <div class="input-group-append">
-            <button class="btn btn-outline-light my-sm-0" type="submit"><span class="fa fa-search"></span></button>
-          </div>
-        </div>
-      </form>
+      <!-- <form class="form-inline" method="GET" action="{% spaceless %} -->
+      <!--       {% if article or urlpath %} -->
+      <!--           {% url 'wiki:search' article_id=article.id path=urlpath.path %} -->
+      <!--         {% else %} -->
+      <!--           {% url 'wiki:search' %} -->
+      <!--         {% endif %} -->
+      <!--       {% endspaceless %}" -->
+      <!-- > -->
+      <!-- 	<div class="input-group"> -->
+      <!--     <input type="search" class="form-control" aria-label="Search" name="q" placeholder="{% spaceless %} -->
+      <!--           {% if article or urlpath %} -->
+      <!--              {% trans "Search from current article..." %} -->
+      <!--           {% else %} -->
+      <!--             {% trans "Search whole wiki..." %} -->
+      <!--           {% endif %} -->
+      <!--         {% endspaceless %}" /> -->
+      <!--     <div class="input-group-append"> -->
+      <!--       <button class="btn btn-outline-light my-sm-0" type="submit"><span class="fa fa-search"></span></button> -->
+      <!--     </div> -->
+      <!--   </div> -->
+      <!-- </form> -->
     </div>
 
   </div>
@@ -111,10 +111,71 @@
 
 {% endblock %}
 
+
+{% endblock %}
+
+{% addtoblock "js" %}
 <script src="{% static "wiki/js/jquery-3.6.0.min.js" %}"></script>
 <script src="{% static "wiki/js/core.js" %}"></script>
 <script src="{% static "wiki/js/popper.js" %}"></script>
 <script src="{% static "wiki/bootstrap/js/bootstrap.bundle.min.js" %}"></script>
 <script src="{% static "wiki/js/respond.min.js" %}"></script>
+{% endaddtoblock %}
 
-{% endblock %}
+
+{% addtoblock "css" %}
+<link href="{% static "wiki/bootstrap/css/wiki-bootstrap.min.css" %}" rel="stylesheet">
+{% endaddtoblock %}
+
+
+{% addtoblock "js" %}
+<script language="javascript">
+  $(document).ready(function() {
+    $("#article_edit_form :input").change(function() {
+       $("#article_edit_form").data("changed",true);
+    });
+    if ($("#article_edit_form").find(".alert-danger").length > 0 || $("#article_edit_form").find(".has-error").length > 0 ) {
+      // Set the forms status as "changed" if there was a submission error
+      $("#article_edit_form").data("changed",true);
+    }
+    window.onbeforeunload = confirmOnPageExit;
+    var click_time = 0;
+    $("#article_edit_form").on("submit", function (ev) {
+        now = Date.now();
+        elapsed = now-click_time;
+        click_time = now;
+        if (elapsed < 3000)
+            ev.preventDefault();
+        window.onbeforeunload = null;
+        return true;
+    });
+    $("#id_preview").on("click", function () {
+        $("#previewModal").modal("show");
+        return true;
+    });
+    $("#id_preview_save_changes").on("click", function (ev) {
+        ev.preventDefault();
+        $("#id_save").trigger("click");
+    });
+  });
+
+var confirmOnPageExit = function (e) {
+  if ($("#article_edit_form").data("changed")) {
+    e = e || window.event;
+    var message = "You have unsaved changes!";
+    // For IE6-8 and Firefox prior to version 4
+    if (e) {
+        e.returnValue = message;
+    }
+    // For Chrome, Safari, IE8+ and Opera 12+
+    return message;
+  } else {
+    // If the form hasn't been changed, don't display the pop-up
+    return;
+  }
+};
+</script>
+{% endaddtoblock %}
+
+{% render_block "css" %}
+{% render_block "js" %}

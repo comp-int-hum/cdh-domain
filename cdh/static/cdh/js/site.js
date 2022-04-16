@@ -314,32 +314,32 @@ jQuery(function($){
     
   })();
   
-  /**
-   * Twitter feed
-   */
-  (function twitter_feed(){
-    var $el = $('.twitter-feed')
-      , $nav = $el.find('.twitter-nav')
-      , $tweets = $el.find('ul.tweets li.tweet')
-      , rotator = window.twitter_rotator = new Fabrizio_Rotator( $tweets )
-      , activeAnimation = false
+  // /**
+  //  * Twitter feed
+  //  */
+  // (function twitter_feed(){
+  //   var $el = $('.twitter-feed')
+  //     , $nav = $el.find('.twitter-nav')
+  //     , $tweets = $el.find('ul.tweets li.tweet')
+  //     , rotator = window.twitter_rotator = new Fabrizio_Rotator( $tweets )
+  //     , activeAnimation = false
     
-    rotator.on('change', function(cur, last){
-      if ( activeAnimation ) {
-        last = activeAnimation;
-      }
-      activeAnimation = $(last).stop().animate({opacity:0}, 'fast', function(){
-        $(last).css({display:'none'});
-        activeAnimation = $(cur).css({opacity:0, display:'inline-block'}).animate({opacity:1}, 'fast', function(){
-          activeAnimation = false;
-        });
-      });
-    });
+  //   rotator.on('change', function(cur, last){
+  //     if ( activeAnimation ) {
+  //       last = activeAnimation;
+  //     }
+  //     activeAnimation = $(last).stop().animate({opacity:0}, 'fast', function(){
+  //       $(last).css({display:'none'});
+  //       activeAnimation = $(cur).css({opacity:0, display:'inline-block'}).animate({opacity:1}, 'fast', function(){
+  //         activeAnimation = false;
+  //       });
+  //     });
+  //   });
     
-    $nav.find('.next').on('click', function(e){ e.preventDefault(); rotator.next(); });
-    $nav.find('.prev').on('click', function(e){ e.preventDefault(); rotator.prev(); });
+  //   $nav.find('.next').on('click', function(e){ e.preventDefault(); rotator.next(); });
+  //   $nav.find('.prev').on('click', function(e){ e.preventDefault(); rotator.prev(); });
     
-  })();
+  // })();
   
   /**
    * Smooth Scrolls on the site

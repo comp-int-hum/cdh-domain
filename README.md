@@ -49,7 +49,7 @@ $ cp cdh/settings.py.example cdh/settings.py
 At this point, you can start using the standard Django management script.  First, initialize the database with the commands:
 
 ```
-$ python manage.py makemigrations cdh matchmaking primary_sources
+$ python manage.py makemigrations cdh primary_sources turkle_wrapper topic_modeling image_clustering
 $ python manage.py migrate
 ```
 

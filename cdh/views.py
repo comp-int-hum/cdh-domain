@@ -32,9 +32,11 @@ from . import models, forms
 if settings.USE_LDAP:
     from django_auth_ldap.backend import LDAPBackend
 
-def index(request):
+
+def slide_page(request, page):
     context = {
-        "slides" : models.Slide.objects.all(),
+        "page" : page,
+        "slides" : page.slides.filter(active=True),
         "public" : [
             ("about", "About"),
             ("people", "People"),
@@ -45,18 +47,14 @@ def index(request):
         "private" : [
             ("primary_sources", "Primary sources"),
             ("topic_modeling", "Topic modeling"),
-            #("primary_sources", "Primary sources"),
-            #("primary_sources", "Primary sources"),
-            #("primary_sources", "Primary sources"),
-            #("primary_sources", "Primary sources"),
         ],
     }
-    return render(request, 'cdh/index.html', context)
+    return render(request, 'cdh/slide_page.html', context)
 
-#def about(request):
-#    context = {
-#    }
-#    return render(request, 'cdh/about.html', context)
+
+def index(request):
+    return slide_page(request, models.SlidePage.objects.get(name="index"))
+
 
 def people(request):
     if settings.USE_LDAP:
@@ -73,30 +71,24 @@ def people(request):
         students = User.objects.filter(groups__name="student")
         affiliates = User.objects.filter(groups__name="affiliate")
     context = {
-        "faculty" : sorted(faculty, key=lambda x : x.last_name),
-        "postdocs" : sorted(postdocs, key=lambda x : x.last_name),
-        "students" : sorted(students, key=lambda x : x.last_name),
-        "affiliates" : affiliates,
+        "categories" : {
+            "Faculty" : sorted(faculty, key=lambda x : x.last_name),
+            "Post-doctoral fellows" : sorted(postdocs, key=lambda x : x.last_name),
+            "Students" : sorted(students, key=lambda x : x.last_name),
+        }
     }
     return render(request, 'cdh/people.html', context)
 
-# def research(request):
-#     context = {
-#         "research" : models.Research.objects.all(),
-#     }
-#     return render(request, 'cdh/research.html', context)
 
-# def resources(request):
-#     context = {
-#         "resources" : models.Resource.objects.all(),
-#         "organizations" : models.Organization.objects.all(),
-#     }
-#     return render(request, 'cdh/resources.html', context)
+def research(request):
+    return slide_page(request, models.SlidePage.objects.get(name="research"))
 
-def events(request):
+
+def calendar(request):
    context = {
    }
-   return render(request, 'cdh/events.html', context)
+   return render(request, 'cdh/calendar.html', context)
+
 
 # @login_required
 # def manage_account(request):

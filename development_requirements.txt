@@ -10,5 +10,7 @@ django-rest-framework
 gensim
 ipython
 wiki
-git+https://github.com/hltcoe/turkle.git@relocated-admin-models
+git+https://github.com/hltcoe/turkle.git@admin_app_configurable
 rdflib
+django-editor-widgets
+graphviz

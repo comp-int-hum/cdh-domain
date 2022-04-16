@@ -1,20 +1,25 @@
-from django.contrib import admin
-from turkle.models import Batch, Project
-from turkle.admin import BatchAdmin, ProjectAdmin, CustomUserAdmin
+#from django.contrib import admin
+from turkle.models import Batch, Project, ActiveUser, ActiveProject, TaskAssignment
+from turkle.admin import BatchAdmin, ProjectAdmin, CustomUserAdmin, ActiveProjectAdmin, CustomGroupAdmin, ActiveUserAdmin, TaskAssignmentAdmin
 from django.contrib.auth.admin import GroupAdmin, UserAdmin
+from django.contrib.auth.models import Group
 from django.contrib.auth import get_user_model
 from cdh import admin
 
 User = get_user_model()
-        
+
+
 model_classes = [
     (Batch, BatchAdmin),
     (Project, ProjectAdmin),
     (User, CustomUserAdmin),
+    (Group, CustomGroupAdmin),
+    (ActiveUser, ActiveUserAdmin),
+    (ActiveProject, ActiveProjectAdmin),
+    (TaskAssignment, TaskAssignmentAdmin),
 ]
 
 for m, ma in model_classes:
-    #    print(dir(ma), ma)
     admin.site.register(m, ma)
 
 # from bisect import bisect_left
