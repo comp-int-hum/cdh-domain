@@ -18,16 +18,16 @@ logging.basicConfig(level=logging.INFO)
 
 groups = [
     {
-        "gid" : settings.CDH_WORKSTATION_GROUP,
+        "gid" : settings.CDH_LDAP_WORKSTATION_GROUP,
     },
     {
-        "gid" : settings.CDH_WORKSTATION_ADMIN_GROUP,
+        "gid" : settings.CDH_LDAP_WORKSTATION_ADMIN_GROUP,
     },    
     {
-        "gid" : settings.CDH_WEB_GROUP,
+        "gid" : settings.CDH_LDAP_WEB_GROUP,
     },
     {
-        "gid" : settings.CDH_WEB_ADMIN_GROUP,
+        "gid" : settings.CDH_LDAP_WEB_ADMIN_GROUP,
     },
     {"gid" : "faculty"},
     {"gid" : "postdoc"},
@@ -44,7 +44,7 @@ users= [
         "password" : "user",
         "superuser" : True,
         "description" : "An example user in the faculty group",
-        "groups" : [settings.CDH_WEB_GROUP, settings.CDH_WEB_ADMIN_GROUP, "faculty"],
+        "groups" : [settings.CDH_LDAP_WEB_GROUP, settings.CDH_LDAP_WEB_ADMIN_GROUP, "faculty"],
     },
     {
         "first_name" : "Second",
@@ -53,7 +53,7 @@ users= [
         "username" : "user2",            
         "password" : "user",
         "description" : "An example user in the post-doctoral group",
-        "groups" : [settings.CDH_WEB_GROUP, "postdoc"],
+        "groups" : [settings.CDH_LDAP_WEB_GROUP, "postdoc"],
     },
     {
         "first_name" : "Third",
@@ -62,7 +62,7 @@ users= [
         "username" : "user3",            
         "password" : "user",
         "description" : "An example user in the student group",
-        "groups" : [settings.CDH_WEB_GROUP, "student"],
+        "groups" : [settings.CDH_LDAP_WEB_GROUP, "student"],
     },
 ]
 
@@ -188,23 +188,25 @@ class Command(BaseCommand):
         if settings.USE_LDAP:
             ld = ldap.initialize(settings.AUTH_LDAP_SERVER_URI)
             if ldap.get_option(ldap.OPT_X_TLS_REQUIRE_CERT) == ldap.OPT_X_TLS_DEMAND:
-                ld.start_tls_s()
-                ld.simple_bind_s("cn={},{}".format(settings.AUTH_LDAP_ADMIN_CN, settings.CDH_LDAP_BASE), settings.AUTH_LDAP_ADMIN_PASSWORD)
+                if settings.AUTH_LDAP_START_TLS:
+                    ld.start_tls_s()
+                ld.simple_bind_s(settings.AUTH_LDAP_BIND_DN, settings.AUTH_LDAP_BIND_PASSWORD)
             else:
-                ld.bind_s("cn={},{}".format(settings.AUTH_LDAP_ADMIN_CN, settings.CDH_LDAP_BASE), settings.AUTH_LDAP_ADMIN_PASSWORD)            
+                ld.bind_s(settings.AUTH_LDAP_BIND_DN, settings.AUTH_LDAP_BIND_PASSWORD)            
 
 
             current_users = {}
-            for dn, attrs in ld.search_st("ou={},{}".format(settings.CDH_USER_OU, settings.CDH_LDAP_BASE), ldap.SCOPE_SUBTREE, filterstr="(!(objectClass=organizationalUnit))"):
-                if options["wipe"]:
-                    ld.delete_s(dn)
-                    logging.info("deleted %s", dn)
-                else:
-                    current_users[attrs["uid"][0]] = (dn, attrs)
+            for dn, attrs in ld.search_st(settings.CDH_LDAP_GROUP_BASE, ldap.SCOPE_SUBTREE, filterstr="(&(!(objectClass=organizationalUnit))(!(objectClass=posixGroup)))"):
+                if dn != settings.CDH_LDAP_ROOT_BASE:
+                    if options["wipe"]:
+                        ld.delete_s(dn)
+                        logging.info("deleted %s", dn)
+                    else:
+                        current_users[attrs["uid"][0]] = (dn, attrs)
             logging.info("Current users: %s", current_users)
 
             current_groups = {}
-            for dn, attrs in ld.search_st("ou={},{}".format(settings.CDH_GROUP_OU, settings.CDH_LDAP_BASE), ldap.SCOPE_SUBTREE, filterstr="(!(objectClass=organizationalUnit))"):        
+            for dn, attrs in ld.search_st(settings.CDH_LDAP_GROUP_BASE, ldap.SCOPE_SUBTREE, filterstr="(objectClass=posixGroup)"):        
                 if options["wipe"]:
                     ld.delete_s(dn)
                     logging.info("deleted %s", dn)
@@ -213,7 +215,7 @@ class Command(BaseCommand):
             logging.info("Current groups: %s", current_groups)
 
             current_ous = {}
-            for dn, attrs in ld.search_st(settings.CDH_LDAP_BASE, ldap.SCOPE_SUBTREE, filterstr="(objectClass=organizationalUnit)"):
+            for dn, attrs in ld.search_st(settings.CDH_LDAP_ROOT_BASE, ldap.SCOPE_SUBTREE, filterstr="(objectClass=organizationalUnit)"):
                 if options["wipe"]:
                     ld.delete_s(dn)
                     logging.info("deleted %s", dn)
@@ -222,22 +224,21 @@ class Command(BaseCommand):
             logging.info("Current ous: %s", current_ous)
 
 
-            for ou in [settings.CDH_USER_OU, settings.CDH_GROUP_OU]:
-                if bytes(ou, "utf-8") not in current_ous:
+            for ou in [settings.CDH_LDAP_USER_BASE, settings.CDH_LDAP_GROUP_BASE]:
+                if bytes(ou, "utf-8") not in current_ous and ou.startswith("ou="):
                     item = {
                         "objectClass" : [b"organizationalUnit"],
                         "ou" : [bytes(ou, "utf-8")]
                     }
-                    dn = "ou={},{}".format(ou, settings.CDH_LDAP_BASE)
-                    ld.add_s(dn, modlist.addModlist(item))
-                    logging.info("added %s", dn)
+                    ld.add_s(ou, modlist.addModlist(item))
+                    logging.info("added %s", ou)
 
             next_gid_number = max([2000] + [int(x[1]["gidNumber"][0]) for x in current_groups.values()]) + 1
-            user_gid_number = current_groups.get(bytes(settings.CDH_WEB_GROUP, "utf-8"), (None, {}))[1].get("gidNumber", [None])[0]
+            user_gid_number = current_groups.get(bytes(settings.CDH_LDAP_WEB_GROUP, "utf-8"), (None, {}))[1].get("gidNumber", [None])[0]
             for group in groups:
                 if bytes(group["gid"], "utf-8") not in current_groups:
-                    dn = "cn={},ou={},{}".format(group["gid"], settings.CDH_GROUP_OU, settings.CDH_LDAP_BASE)
-                    if group["gid"] == settings.CDH_WEB_GROUP:
+                    dn = "cn={},{}".format(group["gid"], settings.CDH_LDAP_GROUP_BASE)
+                    if group["gid"] == settings.CDH_LDAP_WEB_GROUP:
                         user_gid_number = bytes(str(next_gid_number), "utf-8")
                     group = {k : bytes(v, "utf-8") if isinstance(v, str) else v for k, v in group.items()}
                     item = {
@@ -251,7 +252,7 @@ class Command(BaseCommand):
             next_uid_number = max([2000] + [int(x[1]["uidNumber"][0]) for x in current_users.values()]) + 1
             for user in users:
                 if bytes(user["username"], "utf-8") not in current_users:
-                    dn = "uid={},ou=users,dc=cdh,dc=jhu,dc=edu".format(user["username"])
+                    dn = "uid={},{}".format(user["username"], settings.CDH_LDAP_USER_BASE)
                     home = bytes("/home/{}".format(user["username"]), "utf-8")
                     user = {k : bytes(v, "utf-8") if isinstance(v, str) else v for k, v in user.items()}
                     uid_number = bytes(str(next_uid_number), "utf-8")
@@ -268,13 +269,19 @@ class Command(BaseCommand):
                         "loginShell" : [b"/bin/bash"],
                         "homeDirectory" : [home],
                         "gecos" : [user["username"]],
-                        #"title" : [],
-                        #"description" : [],
-                        #"labeledURI" :
                     }
                     ld.add_s(dn, modlist.addModlist(item))
                     logging.info("added %s", dn)
-                    ld.passwd_s(dn, None, "test")
+                    ld.passwd_s(dn, None, user["password"])
+                    for gname in user["groups"]:
+                        dn = "cn={},{}".format(gname, settings.CDH_LDAP_GROUP_BASE)
+                        old = ld.search_st(dn, ldap.SCOPE_SUBTREE, filterstr="(objectClass=posixGroup)")[0][1]
+                        new = {k : v for k, v in old.items()}
+                        new["memberuid"] = new.get("memberuid", []) + [user["username"]]
+                        mod = ldap.modlist.modifyModlist(old, new)
+                        print(mod)
+                        print(old, new)
+                        ld.modify_s(dn, mod)
         else:
             if options["wipe"]:
                 logging.info("Removing existing users and groups")                

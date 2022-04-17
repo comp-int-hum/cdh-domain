@@ -1,6 +1,6 @@
 import os
 
-from celery import Celery
+from celery import Celery, shared_task
 
 # Set the default Django settings module for the 'celery' program.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'cdh.settings')
@@ -19,4 +19,4 @@ app.autodiscover_tasks()
 
 @app.task(bind=True)
 def debug_task(self):
-    print(f'Request: {self.request!r}')
+    print(f'Request: {self.request!r}')    
