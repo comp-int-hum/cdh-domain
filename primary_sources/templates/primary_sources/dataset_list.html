@@ -1,17 +1,10 @@
 {% extends "base.html" %}
 
 {% block content %}
+<h4>Datasets</h4>
 {% for dataset in datasets %}
 <table>
   <tr><td><a href="{% url 'primary_sources:dataset_detail' dataset.id %}">{{dataset.name}}</a></td><td/></tr>
 </table>
 {% endfor %}
-<form method="post" enctype="multipart/form-data">
-  {% csrf_token %}
-  <table>
-    {{form.as_table}}
-    <tr><td><input type="file" name="data_file" accept="*/*" id="id_data_file"></td><td><input type="submit" value="Add dataset"></td></tr>
-  </table>
-
-</form>
 {% endblock %}

@@ -279,8 +279,6 @@ class Command(BaseCommand):
                         new = {k : v for k, v in old.items()}
                         new["memberuid"] = new.get("memberuid", []) + [user["username"]]
                         mod = ldap.modlist.modifyModlist(old, new)
-                        print(mod)
-                        print(old, new)
                         ld.modify_s(dn, mod)
         else:
             if options["wipe"]:
@@ -290,15 +288,17 @@ class Command(BaseCommand):
             for group in groups:
                 g = Group.objects.create(name=group["gid"])
                 g.save()
-            for user in users:
-                u = User.objects.create(**{k : v for k, v in user.items() if k not in ["groups", "password", "superuser"]})
+        for user in users:
+            us = User.objects.filter(username=user["username"])            
+            u = us[0] if len(us) == 1 else User.objects.create(**{k : v for k, v in user.items() if k not in ["groups", "password", "superuser"]})
+            if not settings.USE_LDAP:
                 u.set_password(user["password"])
-                u.is_superuser = user.get("superuser", False)
-                u.is_staff = user.get("superuser", False)
                 for gname in user["groups"]:
                     g = Group.objects.get(name=gname)
                     u.groups.add(g)
-                u.save()
+            u.is_superuser = user.get("superuser", False)
+            u.is_staff = user.get("superuser", False)
+            u.save()
 
         for et, es in spec.items():
             logging.info("Adding objects of type '%s'", et)

@@ -1,5 +1,45 @@
 {% extends "base.html" %}
 
 {% block content %}
-{{dataset.name}}
+<script src="https://vega.github.io/vega/vega.min.js"></script>
+
+<h4>Dataset: {{dataset.name}}</h4>
+
+<div id="schema_view"></div>
+<div id="ontology_view"></div>
+
+<script type="text/javascript">
+  //   var schemaView;
+
+  // fetch('{% url 'vega:dataset_schema_graph' dataset.id %}')
+  //     .then(res => res.json())
+  //     .then(spec => render(spec))
+  //     .catch(err => console.error(err));
+
+  //   function render(spec) {
+  //     schemaView = new vega.View(vega.parse(spec), {
+  //       renderer:  'canvas',  // renderer (canvas or svg)
+  //       container: '#schema_view',   // parent DOM container
+  //       hover:     true       // enable hover processing
+  //     });
+  //     return schemaView.runAsync();
+  //   }
+
+  var ontologyView;
+
+  fetch('{% url 'vega:dataset_ontology_tree' dataset.id %}')
+      .then(res => res.json())
+      .then(spec => render(spec))
+      .catch(err => console.error(err));
+
+    function render(spec) {
+      ontologyView = new vega.View(vega.parse(spec), {
+        renderer:  'canvas',  // renderer (canvas or svg)
+        container: '#ontology_view',   // parent DOM container
+        hover:     true       // enable hover processing
+      });
+      return ontologyView.runAsync();
+    }
+</script>
+
 {% endblock %}

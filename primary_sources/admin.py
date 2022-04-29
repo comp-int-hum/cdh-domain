@@ -28,20 +28,23 @@ class DatasetAdmin(GuardedModelAdmin):
         return obj == None or (request.user.is_authenticated and (request.user.has_perm("delete_dataset", obj)))
     
     def save_model(self, request, obj, form, change):
-        graphs = {}
+        super().save_model(request, obj, form, change)
         for graph_name in ["schema", "annotation", "data"]:
             fid = request.FILES.get("{}_file".format(graph_name), None)
-            graphs[graph_name] = rdflib.Graph()
-            if fid:
-                graphs[graph_name].parse(data=fid.read(), format=fid.content_type)
-        if settings.USE_JENA:
-            super().save_model(request, obj, form, change)
-            for graph_name, graph in graphs.items():
+            if settings.USE_JENA:
+                dbName = "{}_{}".format(obj.id, graph_name)
                 requests.post(
                     "http://{}:{}/$/datasets".format(settings.JENA_HOST, settings.JENA_PORT),
-                    params={"dbName" : "{}_{}".format(obj.id, graph_name), "dbType" : "tdb"},
+                    params={"dbName" : dbName, "dbType" : "tdb"},
                     auth=requests.auth.HTTPBasicAuth(settings.JENA_USER, settings.JENA_PASSWORD)
                 )
+                if fid:
+                    requests.put(
+                        "http://{}:{}/{}/data".format(settings.JENA_HOST, settings.JENA_PORT, dbName),
+                        headers={"default" : "", "Content-Type" : fid.content_type},
+                        data=fid,
+                        auth=requests.auth.HTTPBasicAuth(settings.JENA_USER, settings.JENA_PASSWORD)                    
+                    )
         if request.user.is_authenticated:
             assign_perm("view_dataset", request.user, obj)
             assign_perm("change_dataset", request.user, obj)
