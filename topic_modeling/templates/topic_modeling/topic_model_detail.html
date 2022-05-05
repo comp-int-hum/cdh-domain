@@ -5,7 +5,7 @@
   <tr><th>Topic</th><th>Words</th></tr>
   {% for num, dist in topics %}
   <tr>
-    <td>{{num}}</td>
+    <td><a href="{% url 'topic_modeling:topic_model_wordcloud' num %}">{{num}}</a></td>
     {% for tok, prob in dist %}
     <td>{{tok}}</td>
     {% endfor %}

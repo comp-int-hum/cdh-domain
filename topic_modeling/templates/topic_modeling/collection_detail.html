@@ -1,4 +1,4 @@
-{% extends "cdh/base.html" %}
+{% extends "base.html" %}
 
 {% block content %}
 <h2>Collection: {{collection.name}}</h2>
@@ -38,7 +38,7 @@
       <table>
 	<tr><th>Name</th><th>Topic count</th><th>Delete</th></tr>
 	{% for model in topic_models %}
-	<tr><td>{{model.name}}</td><td>{{model.topic_count}}</td><td><input type="checkbox" name="delete_{{model.id}}"></td></tr>
+	<tr><td><a href="{% url 'topic_modeling:topic_model_detail' model.id %}">{{model.name}}</a></td><td>{{model.topic_count}}</td><td><input type="checkbox" name="delete_{{model.id}}"></td></tr>
 	{% endfor %}
 	<tr><td><input type="submit" value="Update"></td></tr>
       </table>

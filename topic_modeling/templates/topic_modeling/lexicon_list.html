@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <table>
+    <tr><td>Name</td><td>Delete</td></tr>
+    {% for l in lexicons %}
+    <tr><td><a href="{% url 'topic_modeling:lexicon_detail' l.id %}">{{l.name}}</a></td><td><input type="checkbox" id="delete_{{l.id}}" name="delete_{{l.id}}"></td></tr>
+    {% endfor %}
+    <tr><td><input type="text" name="name" id="name"></td><td><input type="text" name="lexicon" id="data"></td><td/></tr>
+  </table>
+  <input type="submit" value="Save">
+</form>
+{% endblock %}

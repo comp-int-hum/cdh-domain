@@ -1,23 +1,29 @@
 from django.db import models
 from django.urls import reverse
 import os.path
-from cdh.models import User, AsyncMixin
+from cdh.models import AsyncMixin, OwnedMixin, MetadataMixin
 
 
-class Lexicon(models.Model):
+class Lexicon(MetadataMixin, OwnedMixin, models.Model):
     name = models.CharField(max_length=200)
+    lexicon = models.JSONField(null=True)
+
+    def __str__(self):
+        return self.name
+
     def get_absolute_url(self):
         return reverse("topic_modeling:lexicon_detail", args=(self.id,))
 
 
-class Collection(AsyncMixin, models.Model):
+class Collection(MetadataMixin, OwnedMixin, AsyncMixin, models.Model):
     name = models.CharField(max_length=200)
     data = models.FileField(null=True, upload_to="collections")
-    def get_absolute_url(self):
-        return reverse("topic_modeling:collection_detail", args=(self.id,))
 
-    
-class Document(models.Model):
+    def __str__(self):
+        return self.name
+
+
+class Document(MetadataMixin, OwnedMixin, models.Model):
     title = models.TextField(null=True)
     author = models.TextField(null=True)
     text = models.TextField(null=True)
@@ -25,11 +31,15 @@ class Document(models.Model):
     latitude = models.FloatField(null=True)
     longitude = models.FloatField(null=True)
     collection = models.ForeignKey(Collection, on_delete=models.CASCADE, null=True)
+
+    def __str__(self):
+        return self.title
+
     def get_absolute_url(self):
         return reverse("topic_modeling:document", args=(self.id,))
 
 
-class TopicModel(AsyncMixin, models.Model):
+class TopicModel(MetadataMixin, OwnedMixin, AsyncMixin, models.Model):
     name = models.CharField(max_length=200)
     topic_count = models.IntegerField(default=50)
     max_context_size = models.IntegerField(default=3000)
@@ -38,7 +48,8 @@ class TopicModel(AsyncMixin, models.Model):
     token_pattern_in = models.CharField(max_length=200, default=r"(\S+)")
     token_pattern_out = models.CharField(max_length=200, default=r"\1")
     collection = models.ForeignKey(Collection, on_delete=models.CASCADE, null=True)
-    data = models.FileField(null=True, upload_to="models")    
+    data = models.FileField(null=True, upload_to="models")
+
     def get_absolute_url(self):
         return reverse("topic_modeling:topic_model_detail", args=(self.id,))
 
@@ -48,7 +59,13 @@ class Output(AsyncMixin, models.Model):
     collection = models.ForeignKey(Collection, on_delete=models.SET_NULL, null=True)
     model = models.ForeignKey(TopicModel, on_delete=models.SET_NULL, null=True)
     lexicon = models.ForeignKey(Lexicon, on_delete=models.SET_NULL, null=True)
+    data = models.FileField(null=True, upload_to="outputs")
+
+    def __str__(self):
+        return self.name
+
     def get_absolute_url(self):
         return reverse("topic_modeling:output_detail", args=(self.id,))    
+
 
 model_classes = [Lexicon, Collection, Document, TopicModel, Output]

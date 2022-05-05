@@ -1,8 +1,9 @@
-{% extends "cdh/base.html" %}
+{% extends "base.html" %}
 
 {% block content %}
   <h2>{{document.title}}</h2>
+  <h3>{{document.author}}</h3>
   <pre>
-    {{document.content}}
+    {{document.text}}
   </pre>
 {% endblock %}

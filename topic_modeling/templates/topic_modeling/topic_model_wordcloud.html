@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<script type="text/javascript">
+  var view;
+  var wheel = document.getElementById("wheel");
+  wheel.classList.remove("hidden");
+  fetch('/topic_model/1')
+    .then(res => res.json())
+    .then(spec => render(spec))
+    .catch(err => console.error(err));
+
+  function render(spec) {
+    view = new vega.View(vega.parse(spec), {
+      renderer:  'canvas',  // renderer (canvas or svg)
+      container: '#view',   // parent DOM container
+      hover:     true       // enable hover processing
+    });
+    wheel.classList.add("hidden");
+      return view.runAsync();
+  }
+</script>
+{% endblock %}

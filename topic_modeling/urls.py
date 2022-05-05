@@ -7,7 +7,7 @@ from . import models
 
 app_name = "topic_modeling"
 urlpatterns = [
-    path('', views.index, name="index"),
+    path('', views.collection_list, name="index"),
     path('collection/', views.collection_list, name="collection_list"),
     path('collection/<int:cid>/', views.collection_detail, name="collection_detail"),
     path('document/<int:did>/', views.document_detail, name="document_detail"),
@@ -17,4 +17,6 @@ urlpatterns = [
     path('lexicon/<int:lid>/', views.lexicon_detail, name="lexicon_detail"),
     path('output/', views.output_list, name="output_list"),
     path('output/<int:oid>/', views.output_detail, name="output_detail"),
+    #path('wordcloud/<int:mid>', views.wordclou)
 ]
+

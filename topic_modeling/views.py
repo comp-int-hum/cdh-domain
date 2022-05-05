@@ -13,39 +13,63 @@ from . import tasks
 from gensim.models import LdaModel
 from gensim.corpora import Dictionary
 
+
 @login_required(login_url="/accounts/login/")
 def index(request):
     context = {
-        "collections" : get_objects_for_user(request.user, "topic_modeling.view_collection"),
-        "collection_form" : forms.CollectionForm(),
-        "models" : get_objects_for_user(request.user, "topic_modeling.view_topicmodel"),
-        "model_form" : forms.TopicModelForm(),
-        "lexicons" : get_objects_for_user(request.user, "topic_modeling.view_lexicon"),
-        "lexicon_form" : forms.LexiconForm(),
-        "outputs" : get_objects_for_user(request.user, "topic_modeling.view_output"),
-        "output_form" : forms.OutputForm(),
+        "collections": get_objects_for_user(request.user, "topic_modeling.view_collection"),
+        "collection_form": forms.CollectionForm(),
+        "models": get_objects_for_user(request.user, "topic_modeling.view_topicmodel"),
+        "model_form": forms.TopicModelForm(),
+        "lexicons": get_objects_for_user(request.user, "topic_modeling.view_lexicon"),
+        "lexicon_form": forms.LexiconForm(),
+        "outputs": get_objects_for_user(request.user, "topic_modeling.view_output"),
+        "output_form": forms.OutputForm(),
     }
     return render(request, "topic_modeling/collection_list.html", context)
 
+
 @login_required(login_url="/accounts/login/")
 def topic_model_list(request):
-    pass
+    context = {
+        "models": models.TopicModel.objects.all()
+    }
+    return render(request, 'topic_modeling/topic_model_list.html', context)
+
 
 @login_required(login_url="/accounts/login/")
 def lexicon_list(request):
-    pass
+    if request.method == "POST":
+        data = request.FILES.get("data")
+        name = request.POST.get("name")
+        if name and data:
+            lexicon = models.Lexicon(name=name, created_by=request.user, lexicon=data)
+            lexicon.save()
+        return HttpResponseRedirect(reverse("topic_modeling:lexicon_list"))
+    else:
+        context = {
+            "lexicons": models.Lexicon.objects.all()
+        }
+        return render(request, 'topic_modeling/lexicon_list.html', context)
+
 
 @login_required(login_url="/accounts/login/")
 def lexicon_detail(request, lid):
-    pass
+    context = {
+        "lexicon": models.Lexicon.objects.get(id=lid)
+    }
+    return render(request, 'topic_modeling/lexicon_detail.html', context)
+
 
 @login_required(login_url="/accounts/login/")
 def output_list(request):
     pass
 
+
 @login_required(login_url="/accounts/login/")
 def output_detail(request, oid):
     pass
+
 
 @login_required(login_url="/accounts/login/")
 def collection_list(request):
@@ -65,18 +89,19 @@ def collection_list(request):
         return HttpResponseRedirect(reverse("topic_modeling:collection_list"))
     else:
         context = {
-            "user_collections" : models.Collection.objects.filter(created_by=request.user),
-            "public_collections" : models.Collection.objects.filter(public=True)
+            "collections": models.Collection.objects.all()
         }
         return render(request, 'topic_modeling/collection_list.html', context)
+
 
 @login_required(login_url="/accounts/login/")
 def document_detail(request, did):
     context = {
-        "document" : models.Document.objects.get(id=did)
+        "document": models.Document.objects.get(id=did)
     }
-    return render(request, 'topic_modeling/document_detail.html', context)    
-    
+    return render(request, 'topic_modeling/document_detail.html', context)
+
+
 @login_required(login_url="/accounts/login/")
 def collection_detail(request, cid):
     collection = models.Collection.objects.get(id=cid)
@@ -104,20 +129,21 @@ def collection_detail(request, cid):
         return HttpResponseRedirect(collection.get_absolute_url())
     else:
         context = {
-            "form" : forms.TopicModelForm,
-            "collection" : collection,
-            "documents" : models.Document.objects.filter(collection=collection),
-            "topic_models" : models.TopicModel.objects.filter(collection=collection),
+            "form": forms.TopicModelForm,
+            "collection": collection,
+            "documents": models.Document.objects.filter(collection=collection),
+            "topic_models": models.TopicModel.objects.filter(collection=collection),
         }
         return render(request, 'topic_modeling/collection_detail.html', context)
+
 
 @login_required(login_url="/accounts/login/")
 def topic_model_detail(request, mid):
     topic_model = models.TopicModel.objects.get(id=mid)
-    model = LdaModel.load(topic_model.data.path)
+    #model = LdaModel.load(topic_model.data.path)
+    model = LdaModel.load('/home/sren16/Desktop/covid_model')
     topics = model.show_topics(num_topics=model.num_topics, formatted=False)
-    context = {"topic_model" : topic_model,
-               "topics" : topics
+    context = {"topic_model": topic_model,
+               "topics": topics
                }
     return render(request, "topic_modeling/topic_model_detail.html", context)
-

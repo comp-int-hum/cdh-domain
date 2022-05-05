@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block content %}
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <table>
+    <tr><td>Name</td><td>Delete</td></tr>
+    {% for m in models %}
+    <tr><td><a href="{% url 'topic_modeling:topic_model_detail' m.id %}">{{m.name}}</a></td><td><input type="checkbox" id="delete_{{c.id}}" name="delete_{{c.id}}"></td></tr>
+    {% endfor %}
+  </table>
+  <input type="submit" value="Submit">
+</form>
+{% endblock %}
