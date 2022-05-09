@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+  
+  <img class="img-fluid"
+       src="{{slide.image.url}}"
+       alt="{{slide.name}}"
+       />
+	  <div class="col-8">
+	    <div class="card-block px-2">
+	      <p class="card-text">{{slide.description}}</p>
+	    </div>
+	  </div>
+
+</div>
+{% endblock %}

@@ -32,21 +32,15 @@ from .admin import site as admin_site
 from . import views
 from django.conf.urls.static import static
 
-#admin.autodiscover()
-
 urlpatterns = [
+    path("{}/".format(k), getattr(views, k)) for k, v in settings.BUILTIN_PAGES.items()
+] + [
     path('', views.index, name="index"),
-    path('people/', views.people, name="people"),    
-    path('research/', views.research, name="research"),
-    path('calendar/', views.calendar, name="calendar"),
-    path('admin/', admin_site.urls),
+    path('slides/<int:sid>/', views.slide_detail, name="slide"),
+    path('manage/', admin_site.urls, name="manage"),
     path('schedule/', include('schedule.urls')),
     path('vega/', include('vega.urls'), name="vega"),
-    #path('about/', views.about, name="about"),
-    #path('accounts/manage/',
-    #     views.manage_account,
-    #     name='manage_account',
-    #),
+    path('about/', views.about, name="about"),
     path('accounts/register/',
         RegistrationView.as_view(
             form_class=forms.UserForm,

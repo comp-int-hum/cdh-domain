@@ -33,7 +33,7 @@ if settings.USE_LDAP:
     from django_auth_ldap.backend import LDAPBackend
 
 
-def slide_page(request, page):
+def slide_page(request, page):    
     context = {
         "page" : page,
         "slides" : page.slides.filter(active=True),
@@ -53,8 +53,19 @@ def slide_page(request, page):
 
 
 def index(request):
-    return slide_page(request, models.SlidePage.objects.get(name="index"))
+    slidepages = models.SlidePage.objects.filter(name="news")
+    if len(slidepages) == 0:
+        slidepage = models.SlidePage(name="news")
+        slidepage.save()
+    else:
+        slidepage = slidepages[0]
+    return slide_page(request, slidepage)
 
+def slide_detail(request, sid):
+    context = {
+        "slide" : models.Slide.objects.get(id=sid)
+    }
+    return render(request, 'cdh/slide_detail.html', context)
 
 def people(request):
     if settings.USE_LDAP:
@@ -81,7 +92,13 @@ def people(request):
 
 
 def research(request):
-    return slide_page(request, models.SlidePage.objects.get(name="research"))
+    slidepages = models.SlidePage.objects.filter(name="research")
+    if len(slidepages) == 0:
+        slidepage = models.SlidePage(name="research")
+        slidepage.save()
+    else:
+        slidepage = slidepages[0]
+    return slide_page(request, slidepage)
 
 
 def calendar(request):
@@ -89,6 +106,11 @@ def calendar(request):
    }
    return render(request, 'cdh/calendar.html', context)
 
+
+def about(request):
+    context = {
+    }
+    return render(request, 'cdh/about.html', context)
 
 # @login_required
 # def manage_account(request):

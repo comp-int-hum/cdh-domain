@@ -37,35 +37,22 @@
     <meta name="twitter:site" content="@comp_hum" />
     <meta property="og:site_name" content="Center for Digital Humanities"/>
     <meta name="facebook-domain-verification" content="s1lj448peh4wqw24bgcc5f2t6n23tc" />
-
-    {% block extra_head %}
+    
+    {% block extrahead %}
     {{ block.super }}
     {% endblock %}
+    {% block extrastyle %}{% endblock %}
   </head>
 
   <body>
     
       <header class="site-header" role="banner" aria-labelledby="dept-info">
-
-	<!-- <div class="site-title-bar title-bar" > -->
-	<!--   <div class="title-bar-left"> -->
-	<!--     <button aria-label="Main Menu" class="menu-icon" type="button" data-toggle="off-canvas-menu"></button> -->
-	<!--     <span class="site-mobile-title title-bar-title"> -->
-	<!--       Main Menu -->
-	<!--     </span> -->
-	<!--   </div> -->
-	<!-- </div> -->
 	
 	<div class="roof-header-top hide-for-print">
 	  <div class="row align-justify">
 	    <div class="roof-header-top-links">
 	      <ul class="menu simple roof-menu align-right">
 		{% if request.user.is_authenticated %}
-		{% if is_admin %}
-		<li>
-		  <a href="/admin">Admin</a>
-		</li>
-		{% endif %}
 		<li>
 		  <a href="/accounts/logout">Log out</a>
 		</li>
@@ -84,7 +71,7 @@
 	    <div class="nav-shield">
 	      <a href="https://jhu.edu/" rel="home">
 		<div class="white">
-		  <img width="300" height="87" src="{% static 'cdh/img/jhu-logo.svg' %}" alt="JHU Shield">-
+		  <img width="200" height="56" src="{% static 'cdh/img/jhu-logo.svg' %}" alt="JHU Shield">-
 		</div>
 	      </a>
 	    </div>
@@ -92,7 +79,7 @@
 	      <div class="top-bar-title">
 		<h1>
 		  <a id="index-link" href="/">
-		    Center for Digital Humanities
+		    <small>Center for</small> Digital Humanities
 		  </a>
 		</h1>
 	      </div>
@@ -100,87 +87,71 @@
 	  </div>
 	</div>
 
-
 	<nav class="top-bar main-navigation navbar-toggler" aria-label="Main Menu" style="z-index:10">
-	  <div class="top-bar-left" style="z-index:10">
-	    <ul id="menu-main-menu-1" class="dropdown menu" data-dropdown-menu aria-label="Primary Navigation">
-	      <li class="menu-item">
-		<a href="/people">
-		  People
-		</a>
-	      </li>
-	      <li class="menu-item">
-		<a href="/research">
-		  Research
-		</a>
-	      </li>
-	      <li class="menu-item">
-		<a href="/calendar">
-		  Calendar
-		</a>
-	      </li>
-	      {% for k, v in public_apps.items %}
-	      <li><a href="/{{k}}/">{{v}}</a></li>
-	      {% endfor %}	      
-	      {% if request.user.is_authenticated %}
+	<ul class="nav nav-tabs menu">
+	  {% for k, v in builtin_pages.items %}
+	  <li class="nav-item">
+	    <a class="nav-link {% if top_level == k %}active{% endif %}" href="/{{k}}/">
+	      {{v}}
+	    </a>
+	  </li>
+	  {% endfor %}
+	  
+	  {% for k, v in public_apps.items %}
+	  <li class="nav-item">
+	    <a class="nav-link {% if top_level == k %}active{% endif %}" href="/{{k}}/">
+	      {{v}}
+	    </a>
+	  </li>
+	  {% endfor %}
+	  {% if request.user.is_authenticated %}
+	  <li class="nav-item dropdown">
+	    <a class="nav-link dropdown-toggle {% if top_level in private_apps or top_level == 'manage' %}active{% endif %}" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+	      Interaction{% if top_level in private_apps or top_level == 'manage' %}[{{ private_name }}]{% endif %}
+	    </a>
+	    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
 	      {% for k, v in private_apps.items %}
-	      <li><a href="/{{k}}/">{{v}}</a></li>
+	      <li>
+		<a class="dropdown-item {% if top_level == k %}active{% endif %}" href="/{{k}}/">
+		  {{v}}
+		</a>
+	      </li>
 	      {% endfor %}
+	      {% if is_admin %}
+	      <li>
+		<hr class="dropdown-divider">
+	      <li>
+	      <li>
+		<a class="dropdown-item {% if top_level == 'manage' %}active{% endif %}" href="/manage">
+		  Manage
+		</a>
+	      </li>
 	      {% endif %}
 	    </ul>
-	  </div>
+	  </li>
+	  {% endif %}
+	</ul>
 	</nav>
-	
       </header>
 
-      <!-- <nav class="mobile-off-canvas-menu off-canvas position-left" id="off-canvas-menu" data-off-canvas data-auto-focus="false" aria-label="Mobile Menu"> -->
 
-      <!-- 	<ul class="vertical nested menu"> -->
-      <!-- 	  <div class="top-bar-left" style="z-index:10"> -->
-      <!-- 	    <ul id="menu-main-menu" class="vertical menu" data-accordion-menu data-submenu-toggle="true" aria-label="Mobile Navigation"> -->
-      <!-- 	      <\!--<li class="menu-item"> -->
-      <!-- 		  <a href="/about"> -->
-      <!-- 		    About -->
-      <!-- 		  </a> -->
-      <!-- 	      </li>-\-> -->
-      <!-- 	      <li class="menu-item"> -->
-      <!-- 		<a href="/people"> -->
-      <!-- 		  People -->
-      <!-- 		</a> -->
-      <!-- 	      </li> -->
-      <!-- 	      <li class="menu-item"> -->
-      <!-- 		<a href="/research"> -->
-      <!-- 		  Research -->
-      <!-- 		</a> -->
-      <!-- 	      </li> -->
-      <!-- 	      <li class="menu-item"> -->
-      <!-- 		<a href="/events"> -->
-      <!-- 		  Events -->
-      <!-- 		</a> -->
-      <!-- 	      </li> -->
-      <!-- 	      {% for k, v in public_apps.items %} -->
-      <!-- 	      <li><a href="/{{k}}/">{{v}}</a></li> -->
-      <!-- 	      {% endfor %}	       -->
-      <!-- 	      {% if request.user.is_authenticated %} -->
-      <!-- 	      {% for k, v in private_apps.items %} -->
-      <!-- 	      <li><a href="/{{k}}/">{{v}}</a></li> -->
-      <!-- 	      {% endfor %} -->
-      <!-- 	      {% endif %} -->
-      <!-- 	    </ul> -->
-      <!-- 	  </div> -->
-	  
-      <!-- </nav> -->
-
-
-      <div class="container">
+      <div class="container mt-4">
 	<div class="grid-with-gutters">
 	  <div class="row">
-	    <div class="span1"></div>
-	    <div class="span8">
-	      <div class="breadcrumbs">{% block breadcrumbs %}{% endblock %}</div>
+	    <!--<div class="span1"></div>-->
+	    <!--<div class="col-6">-->
+	      {% block breadcrumbs %}{% endblock %}
+	      {% if messages %}
+	      <ul class="messages">
+		{% for message in messages %}
+		<li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+		{% endfor %}
+	      </ul>
+	      {% endif %}
 	      {% block content %}{% endblock %}
 	      {% block body %}{% endblock %}	  
-	    </div>
+	    <!--</div>-->
+	    <!--<div class="span1"></div>-->
 	  </div>
 	</div>
       </div>

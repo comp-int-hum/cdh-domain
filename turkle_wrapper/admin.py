@@ -12,8 +12,8 @@ User = get_user_model()
 model_classes = [
     (Batch, BatchAdmin),
     (Project, ProjectAdmin),
-    (User, CustomUserAdmin),
-    (Group, CustomGroupAdmin),
+    #(User, CustomUserAdmin),
+    #(Group, CustomGroupAdmin),
     (ActiveUser, ActiveUserAdmin),
     (ActiveProject, ActiveProjectAdmin),
     (TaskAssignment, TaskAssignmentAdmin),

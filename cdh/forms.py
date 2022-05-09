@@ -44,7 +44,7 @@ class UserForm(RegistrationFormUniqueEmail):
         if settings.USE_LDAP:
             ld = ldap.initialize(settings.AUTH_LDAP_SERVER_URI)
             if settings.AUTH_LDAP_START_TLS == True:
-                ld.set_option(ldap.OPT_X_TLS_CACERTFILE, str(settings.DATA_DIR / "certs" / "ldap.pem"))
+                ld.set_option(ldap.OPT_X_TLS_CACERTFILE, settings.CDH_LDAP_CERTFILE)
                 ld.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_DEMAND)
                 ld.set_option(ldap.OPT_X_TLS_NEWCTX, 0)
                 ld.start_tls_s()
@@ -53,7 +53,7 @@ class UserForm(RegistrationFormUniqueEmail):
                 ld.bind_s(settings.AUTH_LDAP_BIND_DN, settings.AUTH_LDAP_BIND_PASSWORD)
             current_users = {}
             for dn, attrs in ld.search_st(
-                    "ou={},{}".format(settings.CDH_USER_OU, settings.CDH_LDAP_BASE),
+                    settings.CDH_LDAP_USER_BASE,
                     ldap.SCOPE_SUBTREE,
                     filterstr="(!(objectClass=organizationalUnit))"
             ):
@@ -61,7 +61,7 @@ class UserForm(RegistrationFormUniqueEmail):
 
             bf = {s : bytes(self.cleaned_data[s], "utf-8") for s in ["email", "username", "first_name", "last_name"]}
             home = bytes("/home/{}".format(self.cleaned_data["username"]), "utf-8")
-            dn = "uid={},ou=users,dc=cdh,dc=jhu,dc=edu".format(self.cleaned_data["username"])
+            dn = "uid={},{}".format(self.cleaned_data["username"], settings.CDH_LDAP_USER_BASE)
             next_uid_number = max([2000] + [int(x[1]["uidNumber"][0]) for x in current_users.values()]) + 1
             item = {
                 "objectClass" : [b"inetOrgPerson", b"posixAccount", b"shadowAccount"],
@@ -78,7 +78,7 @@ class UserForm(RegistrationFormUniqueEmail):
             }
             ld.add_s(dn, modlist.addModlist(item))
             ld.passwd_s(dn, None, self.data["password1"])
-            for gdn in [settings.CDH_WEB_GROUP_DN, settings.CDH_WORKSTATION_GROUP_DN]:
+            for gdn in [settings.CDH_LDAP_WEB_GROUP_DN, settings.CDH_LDAP_WORKSTATION_GROUP_DN]:
                 ld.modify_s(
                     gdn,
                     [

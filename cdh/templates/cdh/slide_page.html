@@ -3,7 +3,7 @@
 
 {% block content %}
 
-<div class="container">
+<div class="container-fluid">
   <div id="slides" class="carousel" data-bs-ride="carousel">
     <div class="carousel-indicators">
       {% for slide in slides %}
@@ -11,24 +11,23 @@
       {% endfor %}
     </div>  
     <div class="carousel-inner slide">
-      {% for slide in slides %}
+      {% for slide in slides %}     
       <div class="carousel-item{% if forloop.counter == 1 %} active{% endif %}">
-	{% if slide.image %}
-	<img
-	  class="d-block w-100 img-fluid"
-	  src="/media/{{slide.image}}"
-	  alt="{{slide.name}}"
-	  />
-	{% else %}
-	<img
-	  class="d-block w-100 img-fluid"
-	  src="/static/bootstrap/site/content/docs/5.1/examples/features/unsplash-photo-{% cycle '2' '3' %}.jpg"
-	  alt="{{slide.name}}"
-	  />
-	{% endif %}
+	<div class="container">
+	  <div class="row justify-content-md-center">
+	    <div class="col">test</div>
+	    <img
+	      class="img-fluid"
+	      src="{% if slide.image %}{{slide.image.url}}{% else %}/static/bootstrap/site/content/docs/5.1/examples/features/unsplash-photo-3.jpg{% endif %}"
+	      alt="{{slide.name}}"
+	      ddstyle="max-height:100%"
+	      />
+	  </div>
+	  <div class="col">test</div>
+	</div>
 	<div class="carousel-caption d-none d-md-block">
-          <h5>{{slide.name}}</h5>
-          <p>{{slide.slug}}</p>
+          <h5>{{slide.title}}</h5>
+          <p>{{slide.description}}</p>
 	</div>
       </div>
       {% endfor %}

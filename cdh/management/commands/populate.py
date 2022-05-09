@@ -183,9 +183,11 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--wipe", action="store_true", default=False)
+        parser.add_argument("--prod", action="store_true", default=False)
     
     def handle(*args, **options):
-        if settings.USE_LDAP:
+        
+        if settings.USE_LDAP and not args.prod:
             ld = ldap.initialize(settings.AUTH_LDAP_SERVER_URI)
             if ldap.get_option(ldap.OPT_X_TLS_REQUIRE_CERT) == ldap.OPT_X_TLS_DEMAND:
                 if settings.AUTH_LDAP_START_TLS:

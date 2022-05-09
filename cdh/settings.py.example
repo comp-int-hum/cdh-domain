@@ -88,7 +88,7 @@ LOGGING = {
     },
     'root': {
         'handlers': ['console'],
-        'level': 'DEBUG',
+        'level': 'ERROR',
     },
 }
 
@@ -116,6 +116,8 @@ INSTALLED_APPS = [
     'django.contrib.flatpages',
     'django_nyt.apps.DjangoNytConfig',
     'admin_auto_filters',
+    'easy_thumbnails',
+    'filer',
     'mptt',
     'sekizai',
     'sorl.thumbnail',
@@ -179,6 +181,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+X_FRAME_OPTIONS = "SAMEORIGIN"
 
 ROOT_URLCONF = 'cdh.urls'
 

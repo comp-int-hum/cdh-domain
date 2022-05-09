@@ -6,26 +6,68 @@ from guardian.admin import GuardedModelAdmin
 from guardian.shortcuts import assign_perm
 from django.contrib.flatpages.admin import FlatPageAdmin
 from django.contrib.flatpages.models import FlatPage
+from django.contrib.sites.models import Site
 from django.utils.translation import gettext_lazy as _
+from turkle.admin import CustomUserAdmin as TurkleUserAdmin
+from turkle.admin import CustomGroupAdmin as TurkleGroupAdmin
+from wiki.models import Article
+from markdownfield.models import MarkdownField, RenderedMarkdownField
+from markdownfield.widgets import MDEWidget, MDEAdminWidget
+#from wiki.plugins.attachments.models import Attachment
 
 class CDHAdminSite(admin.AdminSite):
     def has_permission(self, request):
         return request.user.is_authenticated
-        
+    
 site = CDHAdminSite()
+
 
 ## For now, let Turkle set this up
 #
-# class UserAdmin(admin.ModelAdmin):
-#     form = AdminUserForm
-#     def has_module_permission(self, request):
-#         return request.user.is_authenticated
-#     def has_change_permission(self, request, obj=None):
-#         return obj == None or (obj == request.user and request.user.is_authenticated)
-#     def has_view_permission(self, request, obj=None):
-#         return obj == None or (obj == request.user and request.user.is_authenticated)
+class UserAdmin(admin.ModelAdmin):
+    form = AdminUserForm
+    def has_module_permission(self, request):
+        return request.user.is_authenticated
+    def has_change_permission(self, request, obj=None):
+        return obj == None or (obj == request.user and request.user.is_authenticated)
+    def has_view_permission(self, request, obj=None):
+        return obj == None or (obj == request.user and request.user.is_authenticated)
 
+
+class CustomGroupAdmin(TurkleGroupAdmin):
+    pass
+
+
+class CustomUserAdmin(TurkleUserAdmin):
+    def get_fieldsets(self, request, obj=None):
+        if request.user.is_superuser:
+            permission_fields = (
+                'is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions', 'photo')
+        else:
+            permission_fields = (
+                'is_active', 'is_staff', 'groups', 'photo')
+
+        #if not obj:
+            # Adding
+            #return (
+                #(None, {'fields': ('username',)}),
+                #('Personal info', {'fields': ('first_name', 'last_name', 'email')}),
+                #('Permissions', {'fields': permission_fields}))
+        #else:
+            # Changing
+        return (
+                #(None, {'fields': ('username', 'password')}),
+                (None, {'fields': ('first_name', 'last_name', 'email', 'homepage', 'title', 'description')}),
+                )
+                #('Permissions', {'fields': permission_fields}),
+                #('Important dates', {'fields': ('last_login', 'date_joined')}))
+    pass
+    
+    
 class SlideAdmin(GuardedModelAdmin):
+    formfield_overrides = {
+        MarkdownField : {"widget" : MDEWidget},
+    }
     def has_module_permission(self, request):
         return request.user.is_authenticated    
 
@@ -86,6 +128,19 @@ class SlidePageAdmin(GuardedModelAdmin):
 
 site.register(Slide, SlideAdmin)
 site.register(SlidePage, SlidePageAdmin)
-admin.site.register(User)
-#site.register(FlatPage, FlatPageAdmin)
+site.register(User, CustomUserAdmin)
+site.register(Group, CustomGroupAdmin)
+#site.register(Site)
+#site.register(Article)
+#site.register(FlatPage)
+#site.register(Attachment)
 
+#from filer.models import Image, File, Folder, Clipboard, FolderPermission, ThumbnailOption
+#from filer.admin import FileAdmin, ImageAdmin, FolderAdmin, ClipboardAdmin, PermissionAdmin, ThumbnailOptionAdmin
+
+#site.register(Folder, FolderAdmin)
+#site.register(File, FileAdmin)
+#site.register(Clipboard, ClipboardAdmin)
+#site.register(Image, ImageAdmin)
+#site.register(FolderPermission, PermissionAdmin)
+#site.register(ThumbnailOption, ThumbnailOptionAdmin)
