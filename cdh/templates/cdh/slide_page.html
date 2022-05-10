@@ -13,8 +13,8 @@
     <div class="carousel-inner slide">
       {% for slide in slides %}
 
-      <div class="carousel-item{% if forloop.counter == 1 %} active{% endif %}">
-
+      <div class="carousel-item{% if forloop.counter == 1 %} active{% endif %} mt-0 mb-0">
+	<div class="carousel-caption d-none d-md-block top-0 mt-0 mb-0 g-0"><h6 class="mt-0 mb-0 g-0">{{slide.title}}</h5></div>
 	<div class="container">
 	  <div class="row justify-content-md-center min-vh-100">
 	    <!--<div class="col"></div>-->
