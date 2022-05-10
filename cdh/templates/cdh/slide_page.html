@@ -4,31 +4,33 @@
 {% block content %}
 
 <div class="container-fluid">
-  <div id="slides" class="carousel" data-bs-ride="carousel">
+  <div id="slides" class="carousel carousel-dark slide" data-bs-ride="carousel">
     <div class="carousel-indicators">
       {% for slide in slides %}
       <button type="button" data-bs-target="#slides" data-bs-slide-to="{{forloop.counter0}}" {% if forloop.counter == 1 %}class="active" aria-current="true"{% endif %} aria-label="Slide {{forloop.counter}}"></button>
       {% endfor %}
     </div>  
     <div class="carousel-inner slide">
-      {% for slide in slides %}     
+      {% for slide in slides %}
+
       <div class="carousel-item{% if forloop.counter == 1 %} active{% endif %}">
+
 	<div class="container">
-	  <div class="row justify-content-md-center">
-	    <div class="col">test</div>
+	  <div class="row justify-content-md-center min-vh-100">
+	    <!--<div class="col"></div>-->
+	    <div class="col w-100">
+	      <a href="{% url 'slide' slide.id %}">
 	    <img
-	      class="img-fluid"
+	      class="position-relative top-0 start-50 translate-middle-x h-50"
 	      src="{% if slide.image %}{{slide.image.url}}{% else %}/static/bootstrap/site/content/docs/5.1/examples/features/unsplash-photo-3.jpg{% endif %}"
-	      alt="{{slide.name}}"
-	      ddstyle="max-height:100%"
+	      alt="{{slide.title}}"
 	      />
+	    </a>
 	  </div>
-	  <div class="col">test</div>
+	    <!--<div class="col"></div>-->
+	  </div>
 	</div>
-	<div class="carousel-caption d-none d-md-block">
-          <h5>{{slide.title}}</h5>
-          <p>{{slide.description}}</p>
-	</div>
+
       </div>
       {% endfor %}
     </div>
@@ -42,15 +44,18 @@
     </button>
   </div>
 </div>
-
+{% comment %}
 {% if page.content %}
 <div id="description">
   {{ page.rendered_content | safe }}
 </div>
 {% endif %}
+{% endcomment %}
 
+{% comment %}
 {% if page.additional_link_prompt %}
 <a href="/">{{ page.additional_link_prompt }}</a>
 {% endif %}
+{% endcomment %}
 
 {% endblock %}      

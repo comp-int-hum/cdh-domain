@@ -2,16 +2,20 @@
 
 {% block content %}
 <div class="card">
-  
-  <img class="img-fluid"
-       src="{{slide.image.url}}"
-       alt="{{slide.name}}"
-       />
-	  <div class="col-8">
-	    <div class="card-block px-2">
-	      <p class="card-text">{{slide.description}}</p>
-	    </div>
-	  </div>
-
+  <h5 class="card-title">{{slide.title}}</h5>
+  <div class="row no-gutters">
+	  
+    <div class="col">  
+      <img class="img-fluid h-100"
+	   src="{{slide.image.url}}"
+       alt="{{slide.name}}"       
+	   />
+    </div>
+    <div class="col">
+      <div class="card-block px-2">
+	<p class="card-text">{{slide.rendered_article|safe}}</p>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}

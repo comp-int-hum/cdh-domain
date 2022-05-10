@@ -61,8 +61,7 @@ class Slide(models.Model):
     class Meta:
         verbose_name_plural = "Slides"
     title = models.CharField(max_length=200, null=True)        
-    description = models.CharField(max_length=2000, null=True)
-    article = MarkdownField(blank=True, rendered_field="rendered_description", validator=VALIDATOR_STANDARD)
+    article = MarkdownField(blank=True, rendered_field="rendered_article", validator=VALIDATOR_STANDARD)
     rendered_article = RenderedMarkdownField(null=True)
     image = models.ImageField(blank=True)
     active = models.BooleanField(default=False)

@@ -11,6 +11,13 @@ import os
 #           module name (usually, just the subdirectory within this cdh-domain repository),
 #           and the value is its "human-friendly" title.  Private apps only show up for users
 #           who are logged in.
+BUILTIN_PAGES = {
+    "about" : "About",
+    "people" : "People",
+    "research" : "Research",
+    "calendar" : "Calendar",
+
+}
 PRIVATE_APPS = {
     "primary_sources" : "Primary sources",
     "topic_modeling" : "Topic modeling",
