@@ -2,14 +2,16 @@ from .base_visualization import BaseVisualization
 
 
 class WordCloud(BaseVisualization):
-    def __init__(self, spec):
-        self.values = []  # spec
-        uvals = {v: i for i, v in enumerate(set([x["topic"] for x in spec]))}
-        self.num_topics = len(uvals)
-        for v in spec:
-            v["topic"] = uvals[v["topic"]]
-            self.values.append(v)
-        super(WordCloud, self).__init__(spec)
+    def __init__(self, topic):
+        self.values = []  # spec was word/prob pairs
+        for index, probword in enumerate(topic):
+            self.values.append(probword[1])
+        #uvals = {v: i for i, v in enumerate(set([x["topic"] for x in spec]))}
+        self.num_topics = 1
+        #for index, prob in topic:
+            #v["topic"] = uvals[v["topic"]]
+            #self.values.append(v)
+        super(WordCloud, self).__init__(topic)
 
     @property
     def background(self):

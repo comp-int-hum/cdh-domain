@@ -11,7 +11,11 @@ from . import models
 from . import forms
 from . import tasks
 from gensim.models import LdaModel
+from .wordcloud import WordCloud
 from gensim.corpora import Dictionary
+
+from .models import TopicModel
+from django.http import JsonResponse
 
 
 @login_required(login_url="/accounts/login/")
@@ -143,7 +147,29 @@ def topic_model_detail(request, mid):
     #model = LdaModel.load(topic_model.data.path)
     model = LdaModel.load('/home/sren16/Desktop/covid_model')
     topics = model.show_topics(num_topics=model.num_topics, formatted=False)
-    context = {"topic_model": topic_model,
-               "topics": topics
+    context = {
+               "topic_model": topic_model,
+               "topics": topics,
                }
     return render(request, "topic_modeling/topic_model_detail.html", context)
+
+
+def wordcloud(request, mid, tid):
+    return render(
+        request,
+        "topic_modeling/topic_model_wordcloud.html",
+        {
+            "mid": mid,
+            "tid": tid
+        }
+    )
+
+
+def vega_topics(request, mid, tid):
+    #tm = models.TopicModel.objects.get(id=mid)
+    tm = LdaModel.load('/home/sren16/Desktop/covid_model')
+    words = tm.show_topic(tid, 30)  # a list of (str, float) that are word/prob mixes
+    retval = WordCloud(words)
+    retval = retval.json
+    print(retval)
+    return JsonResponse(retval)

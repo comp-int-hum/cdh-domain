@@ -1,10 +1,13 @@
 from django.db import models
 from django.urls import reverse
 import os.path
-from cdh.models import AsyncMixin, OwnedMixin, MetadataMixin
+from cdh.models import AsyncMixin
+    #OwnedMixin, MetadataMixin
 
 
-class Lexicon(MetadataMixin, OwnedMixin, models.Model):
+# used to have Owned and Metadata
+# A given dictionary of topics and words associated
+class Lexicon(models.Model):
     name = models.CharField(max_length=200)
     lexicon = models.JSONField(null=True)
 
@@ -15,7 +18,9 @@ class Lexicon(MetadataMixin, OwnedMixin, models.Model):
         return reverse("topic_modeling:lexicon_detail", args=(self.id,))
 
 
-class Collection(MetadataMixin, OwnedMixin, AsyncMixin, models.Model):
+# used to have Owned and Metadata
+# A collection of documents
+class Collection(AsyncMixin, models.Model):
     name = models.CharField(max_length=200)
     data = models.FileField(null=True, upload_to="collections")
 
@@ -23,7 +28,9 @@ class Collection(MetadataMixin, OwnedMixin, AsyncMixin, models.Model):
         return self.name
 
 
-class Document(MetadataMixin, OwnedMixin, models.Model):
+# used to have Owned and Metadata
+# One discrete document in a collection
+class Document(models.Model):
     title = models.TextField(null=True)
     author = models.TextField(null=True)
     text = models.TextField(null=True)
@@ -39,7 +46,8 @@ class Document(MetadataMixin, OwnedMixin, models.Model):
         return reverse("topic_modeling:document", args=(self.id,))
 
 
-class TopicModel(MetadataMixin, OwnedMixin, AsyncMixin, models.Model):
+# A topic model generated using python's gensim library
+class TopicModel(AsyncMixin, models.Model):
     name = models.CharField(max_length=200)
     topic_count = models.IntegerField(default=50)
     max_context_size = models.IntegerField(default=3000)
@@ -54,6 +62,7 @@ class TopicModel(MetadataMixin, OwnedMixin, AsyncMixin, models.Model):
         return reverse("topic_modeling:topic_model_detail", args=(self.id,))
 
 
+# A total output from each run
 class Output(AsyncMixin, models.Model):
     name = models.CharField(max_length=200)    
     collection = models.ForeignKey(Collection, on_delete=models.SET_NULL, null=True)

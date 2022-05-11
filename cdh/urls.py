@@ -41,7 +41,7 @@ urlpatterns = [
     path('calendar/', views.calendar, name="calendar"),
     path('admin/', admin_site.urls),
     path('schedule/', include('schedule.urls')),
-    path('vega/', include('vega.urls'), name="vega"),
+    #path('vega/', include('vega.urls'), name="vega"),
     #path('about/', views.about, name="about"),
     #path('accounts/manage/',
     #     views.manage_account,

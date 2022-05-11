@@ -2,17 +2,7 @@ from django.forms import ModelForm, inlineformset_factory, Textarea, modelform_f
 from . import models
 from cdh.models import User
 
-<<<<<<< HEAD
-CollectionFormSet = inlineformset_factory(
-    User,
-    models.Collection,
-    fields=("name", "data"),
-    extra=1,
-    widgets={
-        "name" : Textarea(attrs={"cols" : 30, "rows" : 1}),
-    },
-)
-=======
+
 # CollectionFormSet = inlineformset_factory(
 #     User,
 #     models.Collection,
@@ -22,7 +12,6 @@ CollectionFormSet = inlineformset_factory(
 #         "name" : Textarea(attrs={"cols" : 30, "rows" : 1}),
 #     },
 # )
->>>>>>> 9860eea65bafae1b21f79ee93dd20ba79a84c5a9
 
 TopicModelForm = modelform_factory(
     models.TopicModel,

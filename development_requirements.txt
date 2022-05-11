@@ -59,7 +59,7 @@ soupsieve==2.3.2.post1
 sqlparse==0.4.2
 stack-data==0.2.0
 traitlets==5.1.1
-git+https://github.com/hltcoe/turkle.git@64a2f44eb0aa710afa305880ee1984267340bd77
+git+https://github.com/hltcoe/turkle.git
 urllib3==1.26.9
 watchdog==2.1.7
 wcwidth==0.2.5

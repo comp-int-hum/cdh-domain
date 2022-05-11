@@ -1,22 +1,35 @@
 {% extends "base.html" %}
-{% block content %}
-<script type="text/javascript">
-  var view;
-  var wheel = document.getElementById("wheel");
-  wheel.classList.remove("hidden");
-  fetch('/topic_model/1')
-    .then(res => res.json())
-    .then(spec => render(spec))
-    .catch(err => console.error(err));
 
-  function render(spec) {
-    view = new vega.View(vega.parse(spec), {
-      renderer:  'canvas',  // renderer (canvas or svg)
-      container: '#view',   // parent DOM container
-      hover:     true       // enable hover processing
-    });
-    wheel.classList.add("hidden");
-      return view.runAsync();
-  }
+{% block extrahead %}
+<script src="https://vega.github.io/vega/vega.min.js"></script>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"> </script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"> </script>
+{% endblock %}
+
+{% block pretitle %}
+These word clouds derive from a topic model trained on the dataset, with each entity treated as a "document", and each discrete observation either a word from a text field or value from a categorical label.  They are colored according to the field (this may take several seconds to load).
+{% endblock %}
+
+
+
+{% block content %}
+HI
+<div id="view"></div>
+
+<script type="text/javascript">
+    var view;
+    fetch('{% url 'topic_modeling:vega_topics' mid tid %}')
+      .then(res => res.json())
+      .then(spec => render(spec))
+      .catch(err => console.error(err));
+
+    function render(spec) {
+      view = new vega.View(vega.parse(spec), {
+        renderer:  'canvas',  // renderer (canvas or svg)
+        container: '#view',   // parent DOM containerS
+        hover:     true       // enable hover processing
+      });
+    }
 </script>
 {% endblock %}

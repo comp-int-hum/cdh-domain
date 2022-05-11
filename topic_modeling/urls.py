@@ -17,6 +17,7 @@ urlpatterns = [
     path('lexicon/<int:lid>/', views.lexicon_detail, name="lexicon_detail"),
     path('output/', views.output_list, name="output_list"),
     path('output/<int:oid>/', views.output_detail, name="output_detail"),
-    #path('wordcloud/<int:mid>', views.wordclou)
+    path('wordcloud/<int:mid>/<int:tid>/', views.wordcloud),
+    path('vega_topics/<int:mid>/<int:tid>/', views.vega_topics, name="vega_topics"),
 ]
 
