@@ -2,8 +2,6 @@
   begin DJANGO Admin styles (edited)
 */
 
-@import url(fonts.css);
-
 html, body {
     height: 100%;
 }
