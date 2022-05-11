@@ -5,11 +5,13 @@
   <h5 class="card-title">{{slide.title}}</h5>
   <div class="row no-gutters">
 	  
-    <div class="col">  
+    <div class="col">
+      {% if slide.image %}
       <img class="img-fluid h-100"
 	   src="{{slide.image.url}}"
        alt="{{slide.name}}"       
 	   />
+      {% endif %}
     </div>
     <div class="col">
       <div class="card-block px-2">
