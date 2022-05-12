@@ -106,7 +106,7 @@ class WordCloud(BaseVisualization):
                         ],
                         "encoding": [
                             {
-                              "href": {"field": "'http://localhost:8080/topic_modeling/word/'", "type": "nominal"}
+                              "href": {"field": "'http://localhost:8080/topic_modeling/word_filler/'", "type": "nominal"}
                             }
                         ]
                     }

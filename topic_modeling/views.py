@@ -174,4 +174,4 @@ def vega_topics(request, mid, tid):
 
 
 def word(request):
-    return render("topic_modeling/word_filler.html")
+    return render(request, "topic_modeling/word_filler.html")
