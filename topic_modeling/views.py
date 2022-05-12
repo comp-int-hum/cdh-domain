@@ -110,7 +110,6 @@ def document_detail(request, did):
 def collection_detail(request, cid):
     collection = models.Collection.objects.get(id=cid)
     if request.method == "POST":
-        print(request.POST)
         name = request.POST.get("name")
         topic_count = request.POST.get("topic_count")
         if name and topic_count:
