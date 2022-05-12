@@ -157,7 +157,7 @@ def topic_model_detail(request, mid):
 def wordcloud(request, mid, tid):
     return render(
         request,
-        "topic_modeling/topic_model_wordcloud.html",
+        "topic_modeling/topic_wordcloud.html",
         {
             "mid": mid,
             "tid": tid
@@ -168,8 +168,7 @@ def wordcloud(request, mid, tid):
 def vega_topics(request, mid, tid):
     #tm = models.TopicModel.objects.get(id=mid)
     tm = LdaModel.load('/home/sren16/Desktop/covid_model')
-    words = tm.show_topic(tid, 30)  # a list of (str, float) that are word/prob mixes
+    words = tm.show_topic(tid, 70)  # a list of (str, float) that are word/prob mixes
     retval = WordCloud(words)
     retval = retval.json
-    print(retval)
     return JsonResponse(retval)
