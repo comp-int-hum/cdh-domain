@@ -68,24 +68,24 @@ def slide_detail(request, sid):
     return render(request, 'cdh/slide_detail.html', context)
 
 def people(request):
-    if settings.USE_LDAP:
-        ld = LDAPBackend()
-        users = [ld.populate_user(u.username) for u in models.User.objects.all()] #Group.objects.get(name="Affiliates")
-        users = [u for u in users if u != None]
-        faculty = [u for u in users if "faculty" in u.ldap_user.group_names]
-        postdocs = [u for u in users if "postdoc" in u.ldap_user.group_names]
-        students = [u for u in users if "student" in u.ldap_user.group_names]
-        affiliates = [u for u in users if "affiliate" in u.ldap_user.group_names]
-    else:
-        faculty = User.objects.filter(groups__name="faculty")
-        postdocs = User.objects.filter(groups__name="postdoc")
-        students = User.objects.filter(groups__name="student")
-        affiliates = User.objects.filter(groups__name="affiliate")
+    # if settings.USE_LDAP:
+    #     ld = LDAPBackend()
+    #     users = [ld.populate_user(u.username) for u in models.User.objects.all()] #Group.objects.get(name="Affiliates")
+    #     users = [u for u in users if u != None]
+    #     faculty = [u for u in users if "faculty" in u.ldap_user.group_names]
+    #     postdocs = [u for u in users if "postdoc" in u.ldap_user.group_names]
+    #     students = [u for u in users if "student" in u.ldap_user.group_names]
+    #     affiliates = [u for u in users if "affiliate" in u.ldap_user.group_names]
+    # else:
+    faculty = User.objects.filter(groups__name="faculty")
+    postdocs = User.objects.filter(groups__name="postdoc")
+    students = User.objects.filter(groups__name="student")
+    affiliates = User.objects.filter(groups__name="affiliate")
     context = {
         "categories" : {
             "Faculty" : sorted(faculty, key=lambda x : x.last_name),
             "Post-doctoral fellows" : sorted(postdocs, key=lambda x : x.last_name),
-            "Students" : sorted(students, key=lambda x : x.last_name),
+            "Current and Past Students" : sorted(students, key=lambda x : x.last_name),
         }
     }
     return render(request, 'cdh/people.html', context)
