@@ -16,12 +16,12 @@
       <div class="carousel-item{% if forloop.counter == 1 %} active{% endif %} mt-0 mb-0">
 	<div class="carousel-caption d-none d-md-block top-0 mt-0 mb-0 g-0"><h6 class="mt-0 mb-0 g-0">{{slide.title}}</h6></div>
 	<div class="container">
-	  <div class="row justify-content-md-center min-vh-100">
+	  <div class="row justify-content-md-center">
 	    <!--<div class="col"></div>-->
-	    <div class="col w-100">
+	    <div class="col">
 	      <a href="{% url 'slide' slide.id %}">
 	    <img
-	      class="position-relative top-0 start-50 translate-middle-x h-50"
+	      class="position-relative top-0 start-50 translate-middle-x slide-img"
 	      src="{% if slide.image %}{{slide.image.url}}{% else %}/static/bootstrap/site/content/docs/5.1/examples/features/unsplash-photo-3.jpg{% endif %}"
 	      alt="{{slide.title}}"
 	      />
