@@ -103,6 +103,11 @@ class WordCloud(BaseVisualization):
                                 "fontSizeRange": [12, 56],
                                 "padding": 2
                             }
+                        ],
+                        "encoding": [
+                            {
+                              "href": {"field": "'http://localhost:8080/topic_modeling/word/'", "type": "nominal"}
+                            }
                         ]
                     }
                 ]
