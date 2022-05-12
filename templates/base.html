@@ -38,10 +38,18 @@
     <meta property="og:site_name" content="Center for Digital Humanities"/>
     <meta name="facebook-domain-verification" content="s1lj448peh4wqw24bgcc5f2t6n23tc" />
     
-    {% block extrahead %}
+    {% block extra_head %}
     {{ block.super }}
     {% endblock %}
-    {% block extrastyle %}{% endblock %}
+    {% block extrahead %}
+    {{ block.super }}
+    {% endblock %}    
+    {% block extrastyle %}
+    {{ block.super }}
+    {% endblock %}
+    {% block extra_style %}
+    {{ block.super }}
+    {% endblock %}
   </head>
 
   <body>
