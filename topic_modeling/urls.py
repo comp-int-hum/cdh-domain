@@ -19,5 +19,6 @@ urlpatterns = [
     path('output/<int:oid>/', views.output_detail, name="output_detail"),
     path('wordcloud/<int:mid>/<int:tid>/', views.wordcloud, name="topic_model_wordcloud"),
     path('vega_topics/<int:mid>/<int:tid>/', views.vega_topics, name="vega_topics"),
+    path('word_filler/', view.word, name="word"),
 ]
 

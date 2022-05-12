@@ -172,3 +172,7 @@ def vega_topics(request, mid, tid):
     retval = WordCloud(words)
     retval = retval.json
     return JsonResponse(retval)
+
+
+def word(request):
+    return render("topic_modeling/word_filler.html")
