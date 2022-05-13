@@ -79,7 +79,6 @@ class WordCloud(BaseVisualization):
                         "fill": {"value": "blue"},
                         "stroke": {"value": "blue"},
                     },
-                    "href": {"field": "'http://localhost:8080/topic_modeling/word_filler/'", "type": "nominal"}
                 },
                 "marks": [
                     {
@@ -92,6 +91,7 @@ class WordCloud(BaseVisualization):
                                 "baseline": {"value": "alphabetic"},
                                 "fill": {"scale": "cscale", "field": "type"},
                             },
+                            "href": {"field": "'http://localhost:8080/topic_modeling/word_filler/'", "type": "nominal"}
                         },
                         "transform": [
                             {
