@@ -78,7 +78,8 @@ class WordCloud(BaseVisualization):
                         "y": {"scale": "groupy", "field": "topic"},
                         "fill": {"value": "blue"},
                         "stroke": {"value": "blue"},
-                    }
+                    },
+                    "href": {"field": "'http://localhost:8080/topic_modeling/word_filler/'", "type": "nominal"}
                 },
                 "marks": [
                     {
@@ -104,11 +105,6 @@ class WordCloud(BaseVisualization):
                                 "padding": 2
                             }
                         ],
-                        "encoding": [
-                            {
-                              "href": {"field": "'http://localhost:8080/topic_modeling/word_filler/'", "type": "nominal"}
-                            }
-                        ]
                     }
                 ]
             },
