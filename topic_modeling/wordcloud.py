@@ -7,8 +7,9 @@ class WordCloud(BaseVisualization):
         self.values = [
           {
               "topic": 0, 
-              "word": word, "value": float(prob), 
-              "link": "http://localhost:8080/topic_modeling/word_filler/",
+              "word": word, 
+              "value": float(prob), 
+              "link": "http://localhost:8080/topic_modeling/word_filler/{}".format(word),
           } for word, prob in topic]
         self.num_topics = 1
         super(WordCloud, self).__init__()

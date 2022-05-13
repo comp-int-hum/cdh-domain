@@ -153,6 +153,7 @@ def topic_model_detail(request, mid):
     return render(request, "topic_modeling/topic_model_detail.html", context)
 
 
+@login_required(login_url="/accounts/login/")
 def wordcloud(request, mid, tid):
     return render(
         request,
