@@ -7,7 +7,7 @@
   <tr>
     <td><a href="{% url 'topic_modeling:topic_wordcloud' topic_model.id num %}">{{num}}</a></td>
     {% for tok, prob in dist %}
-    <td>{{tok}}</td>
+    <td><a href="{% url 'topic_modeling:word' tok %}"{{tok}}</td>
     {% endfor %}
   </tr>
   {% endfor %}
