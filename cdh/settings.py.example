@@ -23,8 +23,8 @@ PRIVATE_APPS = {
     "topic_modeling" : "Topic modeling",
     "turkle_wrapper" : "Annotation",
     "starcoder_wrapper" : "Deep learning",
-    "ocr" : "OCR",
-    "image_clustering" : "Vision",
+    #"ocr" : "OCR",
+    "image_clustering" : "Computer Vision",
 }
 PUBLIC_APPS = {
     "wiki" : "Wiki",
