@@ -90,8 +90,10 @@ class WordCloud(BaseVisualization):
                                 "align": {"value": "center"},
                                 "baseline": {"value": "alphabetic"},
                                 "fill": {"scale": "cscale", "field": "type"},
-                                "href": {"field": "http://localhost:8080/topic_modeling/word_filler/", "type": "nominal"}
                             },
+                            "update": {
+                              "href": {"signal": "http://localhost:8080/topic_modeling/word_filler/"}
+                            }
                         },
                         "transform": [
                             {
