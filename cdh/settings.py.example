@@ -146,6 +146,7 @@ INSTALLED_APPS = [
 ] + [k for k in PRIVATE_APPS.keys()] + [k for k in PUBLIC_APPS.keys() if k not in ["wiki"]]
 
 SITE_ID = 1
+X_FRAME_OPTIONS = "sameorigin"
 
 # CDH NOTE: We use a slight customization of the default User model than what Django provides.
 AUTH_USER_MODEL = "cdh.User"
