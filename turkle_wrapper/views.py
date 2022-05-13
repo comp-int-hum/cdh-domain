@@ -6,4 +6,4 @@ from django.contrib.auth.decorators import login_required
 def index(request):
     context = {
     }
-    return render(request, "turkle_wrapper/index.html", context)
+    return render(request, "turkle/index.html", context)

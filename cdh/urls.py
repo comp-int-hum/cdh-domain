@@ -32,8 +32,6 @@ from .admin import site as admin_site
 from . import views
 from django.conf.urls.static import static
 
-print(getattr(views, "about"))
-
 urlpatterns = [
     path("{}/".format(k), getattr(views, k) if hasattr(views, k) else include("{}.urls".format(k)), name=k) for k, v in settings.BUILTIN_PAGES.items()
 ] + [
@@ -42,7 +40,6 @@ urlpatterns = [
     path('manage/', admin_site.urls, name="manage"),
     path('schedule/', include('schedule.urls')),
     path('vega/', include('vega.urls'), name="vega"),
-    #path('about/', views.about, name="about"),
     path('accounts/register/',
         RegistrationView.as_view(
             form_class=forms.UserForm,
