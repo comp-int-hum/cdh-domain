@@ -174,5 +174,8 @@ def vega_topics(request, mid, tid):
     return JsonResponse(retval)
 
 
-def word(request):
-    return render(request, "topic_modeling/word_filler.html")
+def word(request, word):
+    context = {
+        "word": word
+    }
+    return render(request, "topic_modeling/word_filler.html", context)
