@@ -4,7 +4,12 @@ from .base_visualization import BaseVisualization
 class WordCloud(BaseVisualization):
     def __init__(self, topic):
         self.values = []  # spec was word/prob pairs
-        self.values = [{"topic": 0, "word": word, "value": float(prob)} for word, prob in topic]
+        self.values = [
+          {
+              "topic": 0, 
+              "word": word, "value": float(prob), 
+              "link": "http://localhost:8080/topic_modeling/word_filler/",
+          } for word, prob in topic]
         self.num_topics = 1
         super(WordCloud, self).__init__()
 
@@ -92,7 +97,7 @@ class WordCloud(BaseVisualization):
                                 "fill": {"scale": "cscale", "field": "type"},
                             },
                             "update": {
-                              "href": {"signal": "http://localhost:8080/topic_modeling/word_filler/"}
+                              "href": {"signal": "datum.link"}
                             }
                         },
                         "transform": [
