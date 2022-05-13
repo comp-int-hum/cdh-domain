@@ -165,6 +165,7 @@ def wordcloud(request, mid, tid):
     )
 
 
+@login_required(login_url="/accounts/login/")
 def vega_topics(request, mid, tid):
     #tm = models.TopicModel.objects.get(id=mid)
     tm = LdaModel.load('/home/sren16/Desktop/covid_model')
@@ -174,6 +175,7 @@ def vega_topics(request, mid, tid):
     return JsonResponse(retval)
 
 
+@login_required(login_url="/accounts/login/")
 def word(request, word):
     context = {
         "word": word
