@@ -365,4 +365,5 @@ BOWER_INSTALLED_APPS = (
     'fullcalendar#3.8.2',
     'jquery.scrollto#1.4.5',
     'modernizr#2.6.2',
+    'vega#5.22.1'
 )

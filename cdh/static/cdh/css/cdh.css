@@ -31,8 +31,6 @@ blockquote p {
     line-height: 1.6;
     color: #000000;
 }
-
-/*@media only screen {*/
 .slide {
     height: 68vh;
     width: 100%;
@@ -42,40 +40,20 @@ blockquote p {
     max-height: 50vh;
     max-width: 70%;
 }
+.slide-detail-img {
+
+    max-width: 100%;    
+}
 .carousel-caption {
     position: relative;
     left: 0;
     top: 0;
 }
-/*}*.
-
-/*@media only screen and (max-width: 576px) {
-.carousel-caption {
-    h5 {
-        font-size: 1rem;
-    }
-}
-}*/
-
-iframe {
-    top: 0;
-    /*bottom: 0;*/
-    left: 0;
-    width: 100%;
-    max-height: 10000px;
-    border: 0;
-    /*box-sizing: inherit;*/
-    /*display: block;*/
-}
-
 
 .headshot {max-height:300px; max-width:200px;}
 .complete {background-color:#00aa00}
 .error {background-color:#ff0000}
 .processing {background-color:#f0e000}
-
-
-
 
 /*
   begin DJANGO Admin styles (edited)
