@@ -1,13 +1,5 @@
 @charset "UTF-8";
 
-blockquote {
-  background: #f9f9f9;
-  border-left: 10px solid #ccc;
-  margin: 1.5em 10px;
-  padding: 0.5em 10px;
-  quotes: "\201C""\201D""\2018""\2019";
-}
-
 blockquote:before {
   color: #ccc;
   content: open-quote;
@@ -27,8 +19,11 @@ blockquote span{
   margin-top:1em;
 }
 blockquote {
+    margin: 1.5em 10px;
+    quotes: "\201C""\201D""\2018""\2019";
+    background: #f9f9f9;
     margin: 0 0 1rem;
-    padding: 0.5625rem 1.25rem 0 1.1875rem;
+    padding: 0.5625rem 1.25rem 0rem 1.1875rem;
     border-left: 1px solid #cacaca;
 }
 blockquote,
@@ -3252,7 +3247,7 @@ textarea {
         height: calc(100vh + 1.875rem);
     }
 }
-blockquote,
+
 dd,
 div,
 dl,
