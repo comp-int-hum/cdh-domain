@@ -76,7 +76,7 @@ soupsieve==2.3.2.post1
 sqlparse==0.4.2
 stack-data==0.2.0
 traitlets==5.1.1
-turkle==2.7.0.dev0
+git+https://github.com/hltcoe/turkle.git@issue_152_postgres_compatibility
 urllib3==1.26.9
 vine==5.0.0
 watchdog==2.1.7

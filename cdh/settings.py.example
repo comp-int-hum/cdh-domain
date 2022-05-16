@@ -3,7 +3,7 @@
 
 Django settings for the cdh-domain project.
 """
-
+import django
 from pathlib import Path
 import os
 
@@ -108,7 +108,7 @@ ALLOWED_HOSTS = [HOSTNAME, IP]
 #           deploy the framework/changing the "HOSTNAME" setting.
 proto = "http" if HOSTNAME == "localhost" else "https"
 PROTO = proto
-CSRF_TRUSTED_ORIGINS = ["{}://{}".format(proto, HOSTNAME)]
+CSRF_TRUSTED_ORIGINS = ["{}://{}".format(proto, HOSTNAME)] if django.VERSION[0] == 4 else ["{}".format(HOSTNAME)]
 USE_X_FORWARDED_HOST = HOSTNAME != "localhost"
 DEBUG = HOSTNAME == "localhost"
 

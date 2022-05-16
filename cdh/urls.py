@@ -39,7 +39,7 @@ urlpatterns = [
     path('slides/<int:sid>/', views.slide_detail, name="slide"),
     path('manage/', admin_site.urls, name="manage"),
     path('schedule/', include('schedule.urls')),
-    path('vega/', include('vega.urls'), name="vega"),
+    #path('vega/', include('vega.urls'), name="vega"),
     path('accounts/register/',
         RegistrationView.as_view(
             form_class=forms.UserForm,
