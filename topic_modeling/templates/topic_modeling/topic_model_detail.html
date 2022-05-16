@@ -1,15 +1,21 @@
 {% extends "base.html" %}
 
 {% block content %}
-<table>
-  <tr><th>Topic</th><th>Words</th></tr>
-  {% for num, dist in topics %}
-  <tr>
-    <td>{{num}}</td>
-    {% for tok, prob in dist %}
-    <td>{{tok}}</td>
-    {% endfor %}
-  </tr>
+<table class="table">
+  <thead>
+    <tr><th scope="col">Topic</th><th scope="col" colspan="10">Prominent words</th></tr>
+  </thead>
+  <tbody>
+    {% for num, dist in topics %}
+    <a href="">
+      <tr>
+	<th scope="row"><a href="{% url 'topic_modeling:wordcloud' topic_model.id num %}">{{num}}</a></th>
+	{% for tok, prob in dist %}
+	<td>{{tok}}</td>
+	{% endfor %}
+      </tr>
+    </a>
   {% endfor %}
+  </tbody>
 </table>
 {% endblock %}

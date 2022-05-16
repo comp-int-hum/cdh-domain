@@ -10,6 +10,8 @@ class Dataset(models.Model):
     name = models.CharField(max_length=1000)
     def __str__(self):
         return self.name
+
+#class Query(models.Model):
     #class Meta:
     #    permissions = (
     #        ("manage_dataset", "Full management of the Dataset"),

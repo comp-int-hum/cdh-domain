@@ -25,6 +25,7 @@ django-editor-widgets==4.0
 django-extensions==3.1.5
 django-guardian==2.4.0
 django-js-asset==2.0.0
+django-json-widget==1.1.1
 django-markdownfield==0.10.0
 django-mptt==0.13.4
 django-nyt==1.2.2

@@ -2,32 +2,22 @@ from django.forms import ModelForm, inlineformset_factory, Textarea, modelform_f
 from . import models
 from cdh.models import User
 
-# CollectionFormSet = inlineformset_factory(
-#     User,
-#     models.Collection,
-#     fields=("name", "data"),
-#     extra=1,
-#     widgets={
-#         "name" : Textarea(attrs={"cols" : 30, "rows" : 1}),
-#     },
-# )
-
-TopicModelForm = modelform_factory(
-    models.TopicModel,
-    fields=("name", "topic_count", "max_context_size", "lowercase", "split_pattern", "token_pattern_in", "token_pattern_out"),
-)
+#TopicModelForm = modelform_factory(
+#    models.TopicModel,
+    #fields=("name", "collection", "topic_count", "max_context_size", "lowercase", "split_pattern", "token_pattern_in", "token_pattern_out"),
+#)
 
 LexiconForm = modelform_factory(
     models.Lexicon,
-    fields=("name",),
+    fields=("name", "lexical_sets"),
 )
 
 CollectionForm = modelform_factory(
     models.Collection,
-    fields=("name", "data"),
+    fields=("name", "disk_serialized", "state"),
 )
 
 OutputForm = modelform_factory(
     models.Output,
-    fields=("name", "collection", "model", "lexicon"),
+    fields=("name", "collection", "model", "lexicon", "state"),
 )

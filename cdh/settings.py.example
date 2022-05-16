@@ -44,6 +44,7 @@ USE_JENA = False
 #           the server the framework runs on.
 HOSTNAME = "localhost"
 IP = "127.0.0.1"
+PORT = 8080
 
 # CDH NOTE: To perform two-stage account creation the framework needs the ability to send emails.  The
 #           development default is to not send emails, just write them to the console, which allows you
@@ -95,7 +96,7 @@ LOGGING = {
     },
     'root': {
         'handlers': ['console'],
-        'level': 'ERROR',
+        'level': 'INFO',
     },
 }
 
@@ -106,6 +107,7 @@ ALLOWED_HOSTS = [HOSTNAME, IP]
 #           information).  In other words, don't worry about this unless you're trying to
 #           deploy the framework/changing the "HOSTNAME" setting.
 proto = "http" if HOSTNAME == "localhost" else "https"
+PROTO = proto
 CSRF_TRUSTED_ORIGINS = ["{}://{}".format(proto, HOSTNAME)]
 USE_X_FORWARDED_HOST = HOSTNAME != "localhost"
 DEBUG = HOSTNAME == "localhost"
@@ -122,6 +124,7 @@ INSTALLED_APPS = [
     'django.contrib.sites',
     'django.contrib.flatpages',
     'django_nyt.apps.DjangoNytConfig',
+    'django_json_widget',
     'admin_auto_filters',
     'easy_thumbnails',
     'filer',

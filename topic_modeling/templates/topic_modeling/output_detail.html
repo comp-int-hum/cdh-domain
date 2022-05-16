@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+
+{% block content %}
+    {% for document in documents %}
+    <p>{% for topic, text in document %}<span class="{{topic}}">{{text}}</span>{% if not forloop.last %} {% endif %}{% endfor %}</p>
+    {% endfor %}
+{% endblock %}

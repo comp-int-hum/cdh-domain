@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <h5 class="card-title">Models</h5>
+    <!--<p class="card-text">These have been trained on the indicated primary sources.</p>-->
+    <ul class="list-group">
+      {% for topic_model in topic_models %}
+      <a href="{% url 'topic_modeling:topic_model_detail' topic_model.id %}" class="list-group-item list-group-item-action {% if topic_model.state != 'CO' %}disabled{% endif %}">{{topic_model.name}}</a>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <h5 class="card-title">Outputs</h5>
+    <!--<p class="card-text">These have been trained on the indicated primary sources.</p>-->
+    <ul class="list-group">
+      {% for output in outputs %}
+      <a href="{% url 'topic_modeling:output_detail' output.id %}" class="list-group-item list-group-item-action {% if output.state != 'CO' %}disabled{% endif %}">{{output.name}}</a>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+
+{% endblock %}

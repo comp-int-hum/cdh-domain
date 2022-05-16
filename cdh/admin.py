@@ -22,6 +22,23 @@ class CDHAdminSite(admin.AdminSite):
 site = CDHAdminSite()
 
 
+class CDHModelAdmin(GuardedModelAdmin):
+    def has_module_permission(self, request):
+        return request.user.is_authenticated    
+
+    def has_add_permission(self, request):
+        return request.user.is_authenticated
+
+    def has_view_permission(self, request, obj=None):
+        return request.user.is_authenticated and (obj==None or (request.user.has_perm("view_{}".format(obj._meta.model_name), obj)))
+
+    def has_change_permission(self, request, obj=None):
+        return obj == None or (request.user.is_authenticated and (request.user.has_perm("change_{}".format(obj._meta.model_name), obj)))
+
+    def has_delete_permission(self, request, obj=None):
+        return obj == None or (request.user.is_authenticated and (request.user.has_perm("delete_{}".format(obj._meta.model_name), obj)))
+
+
 ## For now, let Turkle set this up
 #
 class UserAdmin(admin.ModelAdmin):

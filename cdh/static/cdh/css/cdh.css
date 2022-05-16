@@ -52,6 +52,19 @@ blockquote p {
     top: 0;
 }
 
+.first {background-color:#00aa00}
+.second {background-color:#00a0aa}
+.third {background-color:#aa0000; color:#ffffff;}
+.fourth {background-color:#a0aa00}
+.fifth {background-color:#a0aaaa}
+.sixth {background-color:#000ab0}
+.seventh {background-color:#e000ee}
+.eighth {background-color:#eeaf00}
+.ninth {background-color:#00ffaf}
+.tenth {background-color:#ff9050}
+
+    
+
 .headshot {max-height:300px; max-width:200px;}
 .complete {background-color:#00aa00}
 .error {background-color:#ff0000}
