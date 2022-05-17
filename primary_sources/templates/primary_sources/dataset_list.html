@@ -3,8 +3,13 @@
 {% block content %}
 <h4>Datasets</h4>
 {% for dataset in datasets %}
-<table>
-  <tr><td><a href="{% url 'primary_sources:dataset_detail' dataset.id %}">{{dataset.name}}</a></td><td/></tr>
+<table class="table">
+  <thead>
+    <tr><th scope="col">Name</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><a href="{% url 'primary_sources:dataset_detail' dataset.id %}">{{dataset.name}}</a></td><td/></tr>
+  </tbody>
 </table>
 {% endfor %}
 {% endblock %}

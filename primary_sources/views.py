@@ -20,13 +20,13 @@ import requests
 from .dataset_ontology_graph import DatasetOntologyGraph
 #import graphviz
 
-@login_required(login_url="/accounts/login/")
+#@login_required(login_url="/accounts/login/")
 def index(request):
     context = {
     }
     return render(request, "primary_sources/index.html", context)
 
-@login_required(login_url="/accounts/login/")
+#@login_required(login_url="/accounts/login/")
 def dataset_list(request):
     if request.method == "POST":
         f = forms.AddDatasetForm(request.POST, request.FILES)
@@ -39,7 +39,7 @@ def dataset_list(request):
     }
     return render(request, "primary_sources/dataset_list.html", context)
 
-@login_required(login_url="/accounts/login/")
+#@login_required(login_url="/accounts/login/")
 def dataset_detail(request, did):
     context = {
         "dataset" : models.Dataset.objects.get(id=did) 

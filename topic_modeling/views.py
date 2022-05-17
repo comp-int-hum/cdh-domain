@@ -16,7 +16,7 @@ from .wordcloud import WordCloud
 from .models import TopicModel, Output, Lexicon, Collection
 from django.http import JsonResponse
 
-@login_required(login_url="/accounts/login/")
+#@login_required(login_url="/accounts/login/")
 def index(request):
     context = {
         "collections" : get_objects_for_user(request.user, "topic_modeling.view_collection"),
@@ -26,7 +26,7 @@ def index(request):
     }
     return render(request, "topic_modeling/index.html", context)
 
-@login_required(login_url="/accounts/login/")
+#@login_required(login_url="/accounts/login/")
 def topic_model_detail(request, mid):
     topic_model = models.TopicModel.objects.get(id=mid)
     model = LdaModel.load(topic_model.disk_serialized.path)
@@ -38,7 +38,7 @@ def topic_model_detail(request, mid):
     }
     return render(request, "topic_modeling/topic_model_detail.html", context)
 
-@login_required(login_url="/accounts/login/")
+#@login_required(login_url="/accounts/login/")
 def output_detail(request, oid):
     #topic_model = models.TopicModel.objects.get(id=mid)
     #model = LdaModel.load(topic_model.disk_serialized.path)
@@ -77,7 +77,7 @@ def output_detail(request, oid):
     }
     return render(request, "topic_modeling/output_detail.html", context)
 
-@login_required(login_url="/accounts/login/")
+#@login_required(login_url="/accounts/login/")
 def wordcloud(request, mid, tid):
     return render(
         request,
@@ -88,7 +88,7 @@ def wordcloud(request, mid, tid):
         }
     )
 
-@login_required(login_url="/accounts/login/")
+#@login_required(login_url="/accounts/login/")
 def vega_topics(request, mid, tid):
     tm = models.TopicModel.objects.get(id=mid)
     tm = LdaModel.load(tm.disk_serialized.path)

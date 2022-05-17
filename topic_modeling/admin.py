@@ -20,8 +20,8 @@ class TopicModelAdmin(CDHModelAdmin):
     )
     readonly_fields = ["state"]
 
-    def has_change_permission(self, request, obj=None):
-        return False
+    #def has_change_permission(self, request, obj=None):
+    #    return False
 
     def save_model(self, request, obj, form, change):
         res = super().save_model(request, obj, form, change)

@@ -68,7 +68,10 @@
 		<li>
 		  <a href="/accounts/login">Log in</a>
 		</li>
-		{% endif %}		
+		{% endif %}
+		<li>
+		  <a href="/wiki/help">Help</a>
+		</li>
 	      </ul>
 	    </div>
 	  </div>
@@ -105,20 +108,13 @@
 	  </li>
 	  {% endfor %}
 	  
-	  {% for k, v in public_apps.items %}
-	  <li class="nav-item">
-	    <a class="nav-link {% if top_level == k %}active{% endif %}" href="/{{k}}/">
-	      {{v}}
-	    </a>
-	  </li>
-	  {% endfor %}
-	  {% if request.user.is_authenticated %}
+
 	  <li class="nav-item dropdown">
-	    <a class="nav-link dropdown-toggle {% if top_level in private_apps or top_level == 'manage' %}active{% endif %}" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-	      Interaction{% if top_level in private_apps or top_level == 'manage' %}[{{ private_name }}]{% endif %}
+	    <a class="nav-link dropdown-toggle {% if top_level in apps or top_level == 'manage' %}active{% endif %}" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+	      Interaction{% if top_level in apps or top_level == 'manage' %}[{{ name }}]{% endif %}
 	    </a>
 	    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-	      {% for k, v in private_apps.items %}
+	      {% for k, v in apps.items %}
 	      <li>
 		<a class="dropdown-item {% if top_level == k %}active{% endif %}" href="/{{k}}/">
 		  {{v}}
@@ -137,7 +133,7 @@
 	      {% endif %}
 	    </ul>
 	  </li>
-	  {% endif %}
+
 	</ul>
 	</nav>
       </header>

@@ -48,7 +48,8 @@ urlpatterns = [
     ),
     path('accounts/', include('django_registration.backends.activation.urls')),
     path('accounts/', include('django.contrib.auth.urls')),
-] + [path("{}/".format(k), include("{}.urls".format(k))) for k, v in settings.PRIVATE_APPS.items()] + [path("{}/".format(k), include("{}.urls".format(k))) for k, v in settings.PUBLIC_APPS.items()]
+] + [path("{}/".format(k), include("{}.urls".format(k))) for k, v in settings.APPS.items()]
+
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
