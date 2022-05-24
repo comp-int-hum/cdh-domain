@@ -1,3 +1,4 @@
+import time
 from cdh import settings
 import zipfile
 import random
@@ -23,6 +24,7 @@ else:
 # This needs to be modular
 @shared_task
 def extract_documents(collection_id, fname):
+    time.sleep(2)
     collection = models.Collection.objects.get(id=collection_id)
     try:
         if fname.endswith("zip"):
@@ -36,7 +38,7 @@ def extract_documents(collection_id, fname):
                     with zfd.open(name) as ifd:
                         text = ifd.read().decode("utf-8")                        
                         if name.endswith("txt"):
-                            year, title = re.match(r"^(?:(\d+)?\_)(.*)\.+txt", name).groups()
+                            year, title = re.match(r"^(?:(\d+)\_)?(.*)\.+txt", name).groups()
                             metadata = {}
                             
                             if year:
@@ -87,6 +89,7 @@ def extract_documents(collection_id, fname):
 
 @shared_task
 def train_model(topic_model_id):
+    time.sleep(2)
     topic_model = models.TopicModel.objects.get(id=topic_model_id)
     collection = topic_model.collection
     random.seed(topic_model.random_seed)
@@ -131,8 +134,7 @@ def train_model(topic_model_id):
 
 @shared_task
 def apply_model(labeled_collection_id):
-    #output = models.Output.objects.get(id=output_id)
-    #output.disk_serialized.save("{}".format(output.id), ContentFile("placeholder"))
+    time.sleep(2)
     labeled_collection = models.LabeledCollection.objects.get(id=labeled_collection_id)
     try:
         if labeled_collection.lexicon:
