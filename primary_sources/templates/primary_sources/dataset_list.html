@@ -2,14 +2,15 @@
 
 {% block content %}
 <h4>Datasets</h4>
-{% for dataset in datasets %}
+
 <table class="table">
   <thead>
     <tr><th scope="col">Name</th></tr>
   </thead>
   <tbody>
+    {% for dataset in datasets %}
     <tr><td><a href="{% url 'primary_sources:dataset_detail' dataset.id %}">{{dataset.name}}</a></td><td/></tr>
+    {% endfor %}
   </tbody>
 </table>
-{% endfor %}
 {% endblock %}

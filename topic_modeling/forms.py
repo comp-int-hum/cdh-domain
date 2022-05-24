@@ -1,4 +1,5 @@
-from django.forms import ModelForm, inlineformset_factory, Textarea, modelform_factory
+from markdownfield.widgets import MDEWidget, MDEAdminWidget
+from django.forms import ModelForm, inlineformset_factory, Textarea, modelform_factory, FileField
 from . import models
 from cdh.models import User
 
@@ -12,12 +13,18 @@ LexiconForm = modelform_factory(
     fields=("name", "lexical_sets"),
 )
 
-CollectionForm = modelform_factory(
-    models.Collection,
-    fields=("name", "disk_serialized", "state"),
-)
 
-OutputForm = modelform_factory(
-    models.Output,
-    fields=("name", "collection", "model", "lexicon", "state"),
+class CollectionForm(ModelForm):
+    upload = FileField(label="File")
+    class Meta:
+        model = models.Collection
+        fields = ("upload", "name", "description")
+        widgets={
+            "description" : MDEWidget,
+        }
+
+
+LabeledCollectionForm = modelform_factory(
+    models.LabeledCollection,
+    fields=("name", "collection", "model", "lexicon"),
 )

@@ -52,6 +52,8 @@ blockquote p {
     top: 0;
 }
 
+.highlighted {background-color:orange}
+
 .first {background-color:#00aa00}
 .second {background-color:#00a0aa}
 .third {background-color:#aa0000; color:#ffffff;}
@@ -66,9 +68,9 @@ blockquote p {
     
 
 .headshot {max-height:300px; max-width:200px;}
-.complete {background-color:#00aa00}
-.error {background-color:#ff0000}
-.processing {background-color:#f0e000}
+.CO {background-color:#00aa00}
+.ER {background-color:#ff0000}
+.PR {background-color:#f0e000}
 
 /*
   begin DJANGO Admin styles (edited)

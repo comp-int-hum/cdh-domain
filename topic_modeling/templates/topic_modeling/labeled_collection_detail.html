@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <h5 class="card-title">{{labeled_collection.name}}</h5>
+
+    <div class="list-group">
+      {% for labeled_document in labeled_documents %}
+      <a class="list-group-item" href="{% url 'topic_modeling:labeled_document_detail' labeled_document.id %}" >{{labeled_document.document.title}}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

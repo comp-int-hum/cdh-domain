@@ -9,7 +9,7 @@
     {% for num, dist in topics %}
     <a href="">
       <tr>
-	<th scope="row"><a href="{% url 'topic_modeling:wordcloud' topic_model.id num %}">{{num}}</a></th>
+	<th scope="row"><a href="{% url 'topic_modeling:topic_model_topic_detail' topic_model.id num %}">{{num}}</a></th>
 	{% for tok, prob in dist %}
 	<td>{{tok}}</td>
 	{% endfor %}

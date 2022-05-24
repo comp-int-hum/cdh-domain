@@ -1,4 +1,7 @@
 from . import settings
+#from cdh.admin import CDHModelAdmin, site
+#from django.contrib import admin
+
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.base_user import BaseUserManager
@@ -27,6 +30,30 @@ class AsyncMixin(models.Model):
     task_id = models.CharField(max_length=200, null=True)
     class Meta:
         abstract = True
+
+
+class MetadataMixin(models.Model):
+    metadata = models.JSONField(
+        default=dict
+    )
+    class Meta:
+        abstract = True
+
+        
+    #def __init__(self, *argv, **argd):
+    #    self.readonly_fields = ["state"]
+    #    self.list_display = ("state")
+    #    super(AsyncMixin, self).__init__(*argv, **argd)
+    
+    #@admin.display(description="Status")
+    #def state_cell(self, model):
+    #    print(dir(model))
+    #    print(dir(model.state))
+    #    return format_html(
+    #        "<span class='{}'>{}</span>",
+    #        model.state,
+    #        model.get_state_display()
+    #    )
 
 
 class User(AbstractUser):

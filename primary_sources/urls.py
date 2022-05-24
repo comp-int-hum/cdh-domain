@@ -23,8 +23,7 @@ from . import views
 
 app_name = "primary_sources"
 urlpatterns = [
-    #path('', views.index, name="index"),
-    path('', views.dataset_list, name="dataset_list"),    
+    path('', views.dataset_list, name="dataset_list"),
     path('dataset/<int:did>/', views.dataset_detail, name="dataset_detail"),
-    path('dataset_ontology_tree/<int:dataset_id>/', views.dataset_ontology_tree, name="dataset_ontology_tree"),
+    path('dataset_ontology_graph/<int:dataset_id>/', views.dataset_ontology_graph, name="dataset_ontology_graph"),
 ]

@@ -2,40 +2,24 @@
 
 {% block content %}
 <div class="accordion" id="collections">
-  {% for collection, labeled_collections, topic_models in collections %}
+  {% for lexicon, labeled_collections in lexicons %}
   <div class="accordion-item">
     <h2 class="accordion-header" id="heading-{{forloop.counter}}">
       <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{forloop.counter}}" aria-expanded="false" aria-controls="collapse-{{forloop.counter}}">
-	{{collection.name}}
+	{{lexicon.name}}
       </button>
     </h2>
     <div id="collapse-{{forloop.counter}}" class="accordion-collapse collapse" aria-labelledby="heading-{{forloop.counter}}">
       <div class="card">
 	<div class="card-body">
 	  {% if labeled_collections|length == 0 %}
-	  <h5 class="card-title">No topic models or lexicons have been applied to this collection.</h5>
+	  <h5 class="card-title">This lexicon has not been applied to any collections.</h5>
 	  {% else %}
-	  <h5 class="card-title">Labelings of this collection</h5>
+	  <h5 class="card-title">Collections labeled by this lexicon</h5>
 	  <div class="list-group">
 	    {% for labeled_collection in labeled_collections %}
 	    <a class="list-group-item list-group-item-action" href="{% url 'topic_modeling:labeled_collection_detail' labeled_collection.id %}" >
 	      {{labeled_collection.name}}
-	    </a>
-	    {% endfor %}
-	  </div>
-	  {% endif %}
-	</div>
-      </div>     
-      <div class="card">
-	<div class="card-body">
-	  {% if labeled_collections|length == 0 %}
-	  <h5 class="card-title">No topic models have been trained on this collection.</h5>
-	  {% else %}
-	  <h5 class="card-title">Topic models trained on this collection</h5>
-	  <div class="list-group">
-	    {% for topic_model in topic_models %}
-	    <a class="list-group-item list-group-item-action" href="{% url 'topic_modeling:topic_model_detail' topic_model.id %}" >
-	      {{topic_model.name}}
 	    </a>
 	    {% endfor %}
 	  </div>

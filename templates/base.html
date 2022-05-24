@@ -142,20 +142,26 @@
       <div class="container mt-4">
 	<div class="grid-with-gutters">
 	  <div class="row">
-	    <!--<div class="span1"></div>-->
-	    <!--<div class="col-6">-->
-	      {% block breadcrumbs %}{% endblock %}
-	      {% if messages %}
-	      <ul class="messages">
-		{% for message in messages %}
-		<li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+	    {% block breadcrumbs %}
+	    {% if breadcrumbs|length > 0 %}	    
+	    <nav aria-label="breadcrumb">
+	      <ol class="breadcrumb">
+		{% for name, object in breadcrumbs %}
+		<li class="breadcrumb-item"><a href="{{object.get_absolute_url}}">{{name}}</a></li>
 		{% endfor %}
-	      </ul>
-	      {% endif %}
-	      {% block content %}{% endblock %}
-	      {% block body %}{% endblock %}	  
-	    <!--</div>-->
-	    <!--<div class="span1"></div>-->
+	      </ol>
+	    </nav>
+	    {% endif %}
+	    {% endblock %}
+	    {% if messages %}
+	    <ul class="messages">
+	      {% for message in messages %}
+	      <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+	      {% endfor %}
+	    </ul>
+	    {% endif %}
+	    {% block content %}{% endblock %}
+	    {% block body %}{% endblock %}	  
 	  </div>
 	</div>
       </div>
@@ -164,6 +170,7 @@
       {% addtoblock "js" %}
       <script type='text/javascript' src="{% static 'cdh/js/jquery.breakpoints.js' %}" id='theme-breakpoints-js'></script>
       <script type='text/javascript' src="{% static 'bootstrap/dist/js/bootstrap.bundle.min.js' %}" id='theme-bootstrap-js'></script>
+      <script type='text/javascript' src="{% static 'cdh/js/cdh.js' %}" id='cdh-js'></script>
       {% endaddtoblock %}
       
       {% render_block "js" %}

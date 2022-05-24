@@ -20,6 +20,11 @@ import requests
 from .dataset_ontology_graph import DatasetOntologyGraph
 #import graphviz
 
+def webvowl(request):
+    context = {
+    }
+    return render(request, "primary_sources/webvowl.html", context)
+
 #@login_required(login_url="/accounts/login/")
 def index(request):
     context = {
@@ -64,9 +69,8 @@ def dataset_detail(request, did):
     PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>    
     SELECT DISTINCT ?parent ?child
     WHERE {
-        ?child rdfs:subClassOf ?parent .
-        ?child rdf:type owl:Class .
-        ?parent rdf:type owl:Class .
+        ?child rdfs:subClassOf+ ?parent .
+        FILTER (!isBlank(?parent))
     }
     """
     # resp = requests.get(
@@ -85,7 +89,9 @@ def dataset_detail(request, did):
        params={"query" : relationship_query},
        auth=requests.auth.HTTPBasicAuth(settings.JENA_USER, settings.JENA_PASSWORD)
     )
+    print(resp.content.decode("utf-8"))
     j = json.loads(resp.content.decode("utf-8"))
+    print(j)
     for row in j["results"]["bindings"]:
         child = row["child"]["value"]
         parent = row["parent"]["value"]
@@ -95,7 +101,7 @@ def dataset_detail(request, did):
     return render(request, "primary_sources/dataset_detail.html", context)
 
 
-def dataset_ontology_tree(request, dataset_id):
+def dataset_ontology_graph(request, dataset_id):
     relationship_query = """
     PREFIX owl: <http://www.w3.org/2002/07/owl#>
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -119,3 +125,5 @@ def dataset_ontology_tree(request, dataset_id):
         hierarchy[child] = hierarchy.get(child, []) + [parent]
     retval = DatasetOntologyGraph(hierarchy).json
     return JsonResponse(retval)
+
+

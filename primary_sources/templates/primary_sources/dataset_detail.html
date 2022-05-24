@@ -13,7 +13,7 @@
 
   var ontologyView;
 
-  fetch('{% url 'primary_sources:dataset_ontology_tree' dataset.id %}')
+  fetch('{% url 'primary_sources:dataset_ontology_graph' dataset.id %}')
       .then(res => res.json())
       .then(spec => render(spec))
       .catch(err => console.error(err));

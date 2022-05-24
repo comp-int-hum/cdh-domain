@@ -1,8 +1,85 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="card">
-  <div class="card-body">
+
+<div class="container">
+  <p>
+  <a href="https://jmlr.csail.mit.edu/papers/volume3/blei03a/blei03a.pdf">Topic modeling</a> is an unsupervised machine learning method that learns coherent patterns of word use from how they co-occur within documents.  This is called <emph>distributional semantics</emph>, the idea that things occurring in similar contexts tend to me similar to one another.
+
+  If you log into the site, and browse to "Interaction > Manage", you can upload documents, train topic models, and apply them to other documents.  Below, you can inspect the results of topic modeling, both from the model and document perspectives.
+  </p>
+  Browse by:
+  <div class="list-group">
+    <a class="list-group-item list-group-item-action" href="{% url 'topic_modeling:collection_list' %}" >
+      Document collection
+    </a>
+    <a class="list-group-item list-group-item-action" href="{% url 'topic_modeling:topic_model_list' %}" >
+      Topic model
+    </a>
+    <a class="list-group-item list-group-item-action" href="{% url 'topic_modeling:lexicon_list' %}" >
+      Lexicon
+    </a>      
+  </div>
+</div>
+
+{% comment %}
+<div class="accordion" id="collections">
+  {% for collection, labeled_collections in collections %}
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="heading-{{forloop.counter}}">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{forloop.counter}}" aria-expanded="false" aria-controls="collapse-{{forloop.counter}}">
+	{{collection.name}}
+      </button>
+    </h2>
+    <div id="collapse-{{forloop.counter}}" class="accordion-collapse collapse" aria-labelledby="heading-{{forloop.counter}}">
+      <div class="card">
+	<div class="card-body">
+	  {% if labeled_collections|length == 0 %}
+	  <h5 class="card-title">No topic models or lexicons have been applied to this collection.</h5>
+	  {% else %}
+	  <div class="list-group">
+	    {% for labeled_collection in labeled_collections %}
+	    <a class="list-group-item list-group-item-action" href="{% url 'topic_modeling:labeled_collection_detail' labeled_collection.id %}" >{{labeled_collection.name}}</a>
+	    {% endfor %}
+	  </div>
+	  {% endif %}
+	</div>
+      </div>     
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="accordion" id="collections">
+  {% for topic_model in topic_models %}
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="heading-{{forloop.counter}}">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{forloop.counter}}" aria-expanded="false" aria-controls="collapse-{{forloop.counter}}">
+	{{topic_model.name}}
+      </button>
+    </h2>
+    <div id="collapse-{{forloop.counter}}" class="accordion-collapse collapse" aria-labelledby="heading-{{forloop.counter}}">
+      <div class="card">
+	<div class="card-body">
+	  {% if labeled_collections|length == 0 %}
+	  <h5 class="card-title">No topic models or lexicons have been applied to this collection.</h5>
+	  {% else %}
+	  <div class="list-group">
+	    {% for labeled_collection in labeled_collections %}
+	    <a class="list-group-item list-group-item-action" href="{% url 'topic_modeling:labeled_collection_detail' labeled_collection.id %}" >{{labeled_collection.name}}</a>
+	    {% endfor %}
+	  </div>
+	  {% endif %}
+	</div>
+      </div>     
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endcomment %}
+
+{% comment %}
+
     <h5 class="card-title">Models</h5>
     <!--<p class="card-text">These have been trained on the indicated primary sources.</p>-->
     <ul class="list-group">
@@ -24,5 +101,5 @@
     </ul>
   </div>
 </div>
-
+{% endcomment %}
 {% endblock %}

@@ -52,6 +52,7 @@ At this point, you can start using the standard Django management script.  First
 $ python manage.py makemigrations cdh primary_sources turkle_wrapper topic_modeling image_clustering
 $ python manage.py makemigrations
 $ python manage.py migrate
+$ python manage.py createcachetable
 ```
 
 Then, create some testing entries in the database with the command:

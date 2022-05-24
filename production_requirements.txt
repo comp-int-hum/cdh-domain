@@ -16,7 +16,7 @@ click-repl==0.2.0
 confusable-homoglyphs==3.2.0
 decorator==5.1.1
 Deprecated==1.2.13
-Django==3.1.14
+Django~=4.0.4
 django-admin-autocomplete-filter==0.7.1
 django-auth-ldap==4.0.0
 django-bower==5.2.0
@@ -30,7 +30,6 @@ django-markdownfield==0.10.0
 django-mptt==0.13.4
 django-nyt==1.2.2
 django-registration==3.2
-django-rest-framework==0.1.0
 django-scheduler==0.9.5
 django-sekizai==3.0.1
 executing==0.8.3
@@ -76,7 +75,7 @@ soupsieve==2.3.2.post1
 sqlparse==0.4.2
 stack-data==0.2.0
 traitlets==5.1.1
-git+https://github.com/hltcoe/turkle.git@issue_152_postgres_compatibility
+git+https://github.com/hltcoe/turkle.git@django_4_compat
 urllib3==1.26.9
 vine==5.0.0
 watchdog==2.1.7
