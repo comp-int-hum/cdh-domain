@@ -36,7 +36,7 @@ def extract_documents(collection_id, fname):
                     with zfd.open(name) as ifd:
                         text = ifd.read().decode("utf-8")                        
                         if name.endswith("txt"):
-                            year, title = re.match(r"^(?:(\d+)\_)(.*)\.+txt", name).groups()
+                            year, title = re.match(r"^(?:(\d+)?\_)(.*)\.+txt", name).groups()
                             metadata = {}
                             
                             if year:
