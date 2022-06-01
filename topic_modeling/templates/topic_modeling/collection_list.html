@@ -18,9 +18,24 @@
 	  <h5 class="card-title">Labelings of this collection</h5>
 	  <div class="list-group">
 	    {% for labeled_collection in labeled_collections %}
-	    <a class="list-group-item list-group-item-action" href="{% url 'topic_modeling:labeled_collection_detail' labeled_collection.id %}" >
-	      {{labeled_collection.name}}
-	    </a>
+	    <div class="list-group-item">
+	      <div class="card">
+		<h6 class="card-title">Labeled by {{labeled_collection.model.name}}</h6>
+		<a class="list-group-item-action" href="{% url 'topic_modeling:labeled_collection_detail' labeled_collection.id %}" >
+		  Documents
+		</a>
+		{% if labeled_collection.collection.has_spatiality %}
+		<a class="list-group-item-action" href="{% url 'topic_modeling:spatial_distribution' labeled_collection.id %}" >
+		  Topics over space
+		</a>
+		{% endif %}
+		{% if labeled_collection.collection.has_temporality %}
+		<a class="list-group-item-action" href="{% url 'topic_modeling:temporal_evolution' labeled_collection.id %}" >
+		  Topics over time
+		</a>
+		{% endif %}
+	      </div>
+	    </div>
 	    {% endfor %}
 	  </div>
 	  {% endif %}

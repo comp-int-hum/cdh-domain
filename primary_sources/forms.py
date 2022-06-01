@@ -14,7 +14,7 @@ class AddDatasetForm(forms.ModelForm):
         fields = ["name"]
 
 class DatasetForm(forms.ModelForm):
-    schema_file = FileField(label='An OWL file describing the domain', required=True)
+    schema_file = FileField(label='An OWL file describing the domain', required=False)
     data_file = FileField(label='An RDF file of primary sources matching the domain', required=False)
     annotation_file = FileField(label='An RDF file of annotations pointing into the primary sources', required=False)
     def __init__(self, *args, **kwargs):

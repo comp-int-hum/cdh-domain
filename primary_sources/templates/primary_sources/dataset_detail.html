@@ -7,13 +7,13 @@
 <h4>Dataset: {{dataset.name}}</h4>
 
 <div id="schema_view"></div>
-<div id="ontology_view"></div>
+<div id="relational_view"></div>
 
 <script type="text/javascript">
 
   var ontologyView;
 
-  fetch('{% url 'primary_sources:dataset_ontology_graph' dataset.id %}')
+  fetch('{% url 'primary_sources:dataset_relational_graph' dataset.id %}')
       .then(res => res.json())
       .then(spec => render(spec))
       .catch(err => console.error(err));
@@ -21,7 +21,7 @@
     function render(spec) {
       ontologyView = new vega.View(vega.parse(spec), {
         renderer:  'canvas',  // renderer (canvas or svg)
-        container: '#ontology_view',   // parent DOM container
+        container: '#relational_view',   // parent DOM container
         hover:     true       // enable hover processing
       });
       return ontologyView.runAsync();

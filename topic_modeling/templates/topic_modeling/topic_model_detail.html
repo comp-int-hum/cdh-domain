@@ -18,4 +18,27 @@
   {% endfor %}
   </tbody>
 </table>
+
+{% if labeled_collections|length > 0 %}
+<h5>Collections annotated by this model:</h5>
+<div class="list-group">
+  {% for labeled_collection in labeled_collections %}
+  <a class="list-group-item list-group-item-action" href="{% url 'topic_modeling:labeled_collection_detail' labeled_collection.id %}" >
+    {{labeled_collection.name}}
+  </a>
+  {% if labeled_collection.collection.has_spatiality %}
+  <a class="list-group-item list-group-item-action" href="{% url 'topic_modeling:spatial_distribution' labeled_collection.id %}" >
+    Topics over space
+  </a>
+  {% endif %}
+  {% if labeled_collection.collection.has_temporality %}
+  <a class="list-group-item list-group-item-action" href="{% url 'topic_modeling:temporal_evolution' labeled_collection.id %}" >
+    Topics over time
+  </a>
+  {% endif %}  
+  {% endfor %}
+</div>
+{% endif %}
+
+
 {% endblock %}

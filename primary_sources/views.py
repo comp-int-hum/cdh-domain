@@ -17,8 +17,9 @@ from primary_sources.models import Dataset
 import requests
 #from .dataset_schema_graph import DatasetSchemaGraph
 #from .dataset_ontology_tree import DatasetOntologyTree
-from .dataset_ontology_graph import DatasetOntologyGraph
+#from .dataset_ontology_graph import DatasetOntologyGraph
 #import graphviz
+from .vega import DatasetRelationalGraph
 
 def webvowl(request):
     context = {
@@ -63,16 +64,18 @@ def dataset_detail(request, did):
     #     ?t rdf:type owl:Class .        
     # }
     # """
-    relationship_query = """
-    PREFIX owl: <http://www.w3.org/2002/07/owl#>
-    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>    
-    SELECT DISTINCT ?parent ?child
-    WHERE {
-        ?child rdfs:subClassOf+ ?parent .
-        FILTER (!isBlank(?parent))
-    }
-    """
+    
+
+    # relationship_query = """
+    # PREFIX owl: <http://www.w3.org/2002/07/owl#>
+    # PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    # PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>    
+    # SELECT DISTINCT ?parent ?child
+    # WHERE {
+    #     ?child rdfs:subClassOf+ ?parent .
+    #     FILTER (!isBlank(?parent))
+    # }
+    # """
     # resp = requests.get(
     #    "http://{}:{}/{}_{}/query".format(settings.JENA_HOST, settings.JENA_PORT, did, "schema"),
     #    #headers={"Accept" : "text/turtle"},
@@ -83,47 +86,85 @@ def dataset_detail(request, did):
     hierarchy = {}
     # for c in out["results"]["bindings"]:
     #     hierarchy[c["t"]["value"]] = set()
-    resp = requests.get(
-       "http://{}:{}/{}_{}/query".format(settings.JENA_HOST, settings.JENA_PORT, did, "schema"),
-       #headers={"Accept" : "text/turtle"},
-       params={"query" : relationship_query},
-       auth=requests.auth.HTTPBasicAuth(settings.JENA_USER, settings.JENA_PASSWORD)
-    )
-    print(resp.content.decode("utf-8"))
-    j = json.loads(resp.content.decode("utf-8"))
-    print(j)
-    for row in j["results"]["bindings"]:
-        child = row["child"]["value"]
-        parent = row["parent"]["value"]
-        hierarchy[child] = hierarchy.get(child, []) + [parent]
-    context["hierarchy"] = {k.split("#")[-1] : [c.split("#")[-1] for c in v] for k, v in hierarchy.items() if "#" in k}
+    #resp = requests.get(
+    #   "http://{}:{}/{}_{}/query".format(settings.JENA_HOST, settings.JENA_PORT, did, "schema"),
+    #   #headers={"Accept" : "text/turtle"},
+    #   params={"query" : relationship_query},
+    #   auth=requests.auth.HTTPBasicAuth(settings.JENA_USER, settings.JENA_PASSWORD)
+    #)
+    #print(resp.content.decode("utf-8"))
+    #j = json.loads(resp.content.decode("utf-8"))
+    #print(j)
+    #for row in j["results"]["bindings"]:
+    #    child = row["child"]["value"]
+    #    parent = row["parent"]["value"]
+    #    hierarchy[child] = hierarchy.get(child, []) + [parent]
+    #context["hierarchy"] = {k.split("#")[-1] : [c.split("#")[-1] for c in v] for k, v in hierarchy.items() if "#" in k}
 
     return render(request, "primary_sources/dataset_detail.html", context)
 
 
-def dataset_ontology_graph(request, dataset_id):
-    relationship_query = """
-    PREFIX owl: <http://www.w3.org/2002/07/owl#>
-    PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>    
-    SELECT DISTINCT ?parent ?child
-    WHERE {
-        ?child rdfs:subClassOf+ ?parent .
-        FILTER (!isBlank(?parent))
-    }
-    """
-    hierarchy = {}
+def dataset_relational_graph(request, dataset_id):
+    query = """
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX schema: <https://schema.org/>
+PREFIX : <http://www.w3.org/TR/2003/PR-owl-guide-20031209/wine#>
+SELECT DISTINCT ?st ?r ?ot datatype(?o)
+WHERE {
+  ?s rdf:type ?st .
+  ?s ?r ?o .
+  OPTIONAL { ?o rdf:type ?ot }
+}
+        """
     resp = requests.get(
-       "http://{}:{}/{}_{}/query".format(settings.JENA_HOST, settings.JENA_PORT, dataset_id, "schema"),
-       params={"query" : relationship_query},
-       auth=requests.auth.HTTPBasicAuth(settings.JENA_USER, settings.JENA_PASSWORD)
+        "http://{}:{}/{}_{}/query".format(settings.JENA_HOST, settings.JENA_PORT, dataset_id, "data"),
+        #headers={"Accept" : "text/turtle"},
+        params={"query" : query},
+        auth=requests.auth.HTTPBasicAuth(settings.JENA_USER, settings.JENA_PASSWORD)
     )
     j = json.loads(resp.content.decode("utf-8"))
+    entities = set()
+    relationships = []
+    properties = []
     for row in j["results"]["bindings"]:
-        child = row["child"]["value"]
-        parent = row["parent"]["value"]
-        hierarchy[child] = hierarchy.get(child, []) + [parent]
-    retval = DatasetOntologyGraph(hierarchy).json
+        st = row["st"]["value"].split("/")[-1]
+        rel = row["r"]["value"].split("#")[-1].split("/")[-1]
+        entities.add(st)
+        if "ot" in row:
+            ot = row["ot"]["value"].split("/")[-1]
+            entities.add(ot)
+            relationships.append({"source" : st, "target" : ot, "label" : rel})
+        else:
+            properties.append({"source" : st, "label" : rel})
+    
+    entities = list(entities)
+    relationships = [{"source" : entities.index(rel["source"]), "target" : entities.index(rel["target"]), "label" : rel["label"]} for rel in relationships]
+
+
+    # relationship_query = """
+    # PREFIX owl: <http://www.w3.org/2002/07/owl#>
+    # PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+    # PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>    
+    # SELECT DISTINCT ?parent ?child
+    # WHERE {
+    #     ?child rdfs:subClassOf+ ?parent .
+    #     FILTER (!isBlank(?parent))
+    # }
+    # """
+    # hierarchy = {}
+    # resp = requests.get(
+    #    "http://{}:{}/{}_{}/query".format(settings.JENA_HOST, settings.JENA_PORT, dataset_id, "schema"),
+    #    params={"query" : relationship_query},
+    #    auth=requests.auth.HTTPBasicAuth(settings.JENA_USER, settings.JENA_PASSWORD)
+    # )
+    # j = json.loads(resp.content.decode("utf-8"))
+    # for row in j["results"]["bindings"]:
+    #     child = row["child"]["value"]
+    #     parent = row["parent"]["value"]
+    #     hierarchy[child] = hierarchy.get(child, []) + [parent]
+    retval = DatasetRelationalGraph(entities, relationships, properties).json
     return JsonResponse(retval)
 
 

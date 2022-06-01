@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extrahead %}
+<script src="{% static 'vega/docs/vega.min.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h5 class="card-title">
+    <input type="text" id="words"></input>
+    <!--Temporal evolution of topics from '{{labeled_collection.model.name}}' projected onto '{{labeled_collection.collection.name}}'</h5>-->
+  </h5>
+  <div id="vegaView"></div>
+</div>
+
+<script type="text/javascript">
+    var view;
+    fetch('{% url 'topic_modeling:vega_temporal' labeled_collection.id %}')
+      .then(res => res.json())
+      .then(spec => render(spec))
+      .catch(err => console.error(err));
+
+    function render(spec) {
+	view = new vega.View(vega.parse(spec), {
+            renderer:  'canvas',  // renderer (canvas or svg)
+            container: '#vegaView',   // parent DOM containerS
+            hover:     true       // enable hover processing
+	});
+	view.runAsync();
+    }
+</script>
+{% endblock %}

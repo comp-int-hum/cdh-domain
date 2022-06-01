@@ -1,5 +1,5 @@
 from django.core.exceptions import ValidationError, NON_FIELD_ERRORS
-from django.db import models
+from django.contrib.gis.db import models
 from django.urls import reverse
 from cdh.models import User, AsyncMixin, MetadataMixin
 from markdownfield.models import MarkdownField, RenderedMarkdownField
@@ -28,6 +28,8 @@ class Collection(AsyncMixin, models.Model):
     name = models.CharField(max_length=200)
     description = MarkdownField(blank=True, rendered_field="rendered_descriptoin", validator=VALIDATOR_STANDARD)
     rendered_description = RenderedMarkdownField(null=True)
+    has_spatiality = models.BooleanField(default=False)
+    has_temporality = models.BooleanField(default=False)
     def get_absolute_url(self):
         return reverse("topic_modeling:collection_detail", args=(self.id,))
     def __str__(self):
@@ -35,9 +37,13 @@ class Collection(AsyncMixin, models.Model):
 
 
 class Document(MetadataMixin, models.Model):
-    title = models.CharField(max_length=1000)
+    title = models.CharField(max_length=10000)
     text = models.TextField()
     collection = models.ForeignKey(Collection, on_delete=models.CASCADE, null=False)
+    year = models.IntegerField(null=True)
+    datetime = models.DateTimeField(null=True)
+    longitude = models.FloatField(null=True)
+    latitude = models.FloatField(null=True)
     def get_absolute_url(self):
         return reverse("topic_modeling:document_detail", args=(self.id,))
     def __str__(self):
@@ -48,11 +54,11 @@ class TopicModel(AsyncMixin, models.Model):
     name = models.CharField(max_length=200)
     description = MarkdownField(blank=True, rendered_field="rendered_descriptoin", validator=VALIDATOR_STANDARD)
     rendered_description = RenderedMarkdownField(null=True)    
-    topic_count = models.IntegerField(default=20)
+    topic_count = models.IntegerField(default=10)
     lowercase = models.BooleanField(default=True)
     max_context_size = models.IntegerField(default=1000, help_text="Over what maximum distance (in words) should two words be considered 'co-occurring'?")
     chunk_size = models.IntegerField(default=2000)
-    maximum_vocabulary = models.IntegerField(default=10000)
+    maximum_vocabulary = models.IntegerField(default=5000)
     minimum_occurrence = models.IntegerField(default=5)
     maximum_proportion = models.FloatField(default=0.5)
     passes = models.IntegerField(default=20)
@@ -66,7 +72,7 @@ class TopicModel(AsyncMixin, models.Model):
     token_pattern_out = models.CharField(max_length=200, default=r"\1")
     collection = models.ForeignKey(Collection, on_delete=models.CASCADE)
     serialized = models.BinaryField(null=True)
-    maximum_documents = models.IntegerField(default=1000)
+    maximum_documents = models.IntegerField(default=500)
     def get_absolute_url(self):
         return reverse("topic_modeling:topic_model_detail", args=(self.id,))
     def __str__(self):
@@ -88,11 +94,37 @@ class LabeledCollection(AsyncMixin, models.Model):
         super(LabeledCollection, self).clean()
 
 
-class LabeledDocument(models.Model):
+class LabeledDocument(MetadataMixin, models.Model):
     labeled_collection = models.ForeignKey(LabeledCollection, on_delete=models.CASCADE, null=True)
     document = models.ForeignKey(Document, on_delete=models.CASCADE, null=True)
-    content = models.BinaryField(null=True)
     def get_absolute_url(self):
         return reverse("topic_modeling:labeled_document_detail", args=(self.id,))
     def __str__(self):
         return self.document.title
+
+
+class LabeledDocumentSection(MetadataMixin, models.Model):
+    labeled_document = models.ForeignKey(LabeledDocument, on_delete=models.CASCADE, null=True)
+    content = models.JSONField(null=dict)
+    def get_absolute_url(self):
+        return reverse("topic_modeling:labeled_document_section_detail", args=(self.id,))
+    def __str__(self):
+        return "{}-{}".format(self.labeled_document.title, self.id)
+    
+
+class TemporalEvolution(models.Model):
+    labeled_collection = models.ForeignKey(LabeledCollection, on_delete=models.CASCADE, null=True)
+    content = models.JSONField(null=dict)
+    def get_absolute_url(self):
+        return reverse("topic_modeling:temporal_evolution", args=(self.id,))
+    def __str__(self):
+        return "{}-{}".format(self.labeled_collection.title)
+
+
+class SpatialEvolution(models.Model):
+    labeled_collection = models.ForeignKey(LabeledCollection, on_delete=models.CASCADE, null=True)
+    content = models.JSONField(null=dict)
+    def get_absolute_url(self):
+        return reverse("topic_modeling:spatial_evolution", args=(self.id,))
+    def __str__(self):
+        return "{}-{}".format(self.labeled_collection.title)

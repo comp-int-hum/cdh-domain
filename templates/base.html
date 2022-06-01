@@ -146,8 +146,16 @@
 	    {% if breadcrumbs|length > 0 %}	    
 	    <nav aria-label="breadcrumb">
 	      <ol class="breadcrumb">
-		{% for name, object in breadcrumbs %}
-		<li class="breadcrumb-item"><a href="{{object.get_absolute_url}}">{{name}}</a></li>
+		{% for name, path, args in breadcrumbs %}
+		{% if forloop.last %}
+		<li class="breadcrumb-item">{{name}}</li>
+		{% else %}
+		{% if args %}
+		<li class="breadcrumb-item"><a href="{% url path args %}">{{name}}</a></li>
+		{% else %}
+		<li class="breadcrumb-item"><a href="{% url path %}">{{name}}</a></li>
+		{% endif %}
+		{% endif %}
 		{% endfor %}
 	      </ol>
 	    </nav>

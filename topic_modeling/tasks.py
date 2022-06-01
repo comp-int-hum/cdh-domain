@@ -26,6 +26,7 @@ else:
 def extract_documents(collection_id, fname):
     time.sleep(2)
     collection = models.Collection.objects.get(id=collection_id)
+    has_temporality = False
     try:
         if fname.endswith("zip"):
             prepended_time = False
@@ -41,14 +42,19 @@ def extract_documents(collection_id, fname):
                             year, title = re.match(r"^(?:(\d+)\_)?(.*)\.+txt", name).groups()
                             metadata = {}
                             
-                            if year:
-                                metadata["year"] = int(year)
+                            #if year:
+                            #    metadata["year"] = int(year)
                             docobj = models.Document(
                                 title=title,                                
                                 text=text,
                                 collection=collection,
                                 metadata=metadata,
-                            )                            
+                            )
+                            if year:
+                                docobj.year = year
+                                has_temporality = True
+                            docobj.longitude = (random.random() * 360.0) - 180.0
+                            docobj.latitude = (random.random() * 180.0) - 90.0
                             docobj.save()
                         elif name.endswith("tei"):
                             pass
@@ -84,6 +90,10 @@ def extract_documents(collection_id, fname):
         raise e
     finally:
         os.remove(fname)
+    collection.has_temporality = has_temporality
+    collection.has_spatiality = True
+    logging.info("Randomly generated geography...")
+
     collection.save()
 
 
@@ -158,32 +168,50 @@ def apply_model(labeled_collection_id):
         elif labeled_collection.model:
             model = pickle.loads(labeled_collection.model.serialized.tobytes()) #LdaModel.load(output.model.disk_serialized.path)
             for j, doc in enumerate(models.Document.objects.filter(collection=labeled_collection.collection)):
+                labeled_doc = models.LabeledDocument(
+                    document=doc,
+                    labeled_collection=labeled_collection,
+                    #content=json.dumps(labeled_toks).encode(),
+                )
+                labeled_doc.save()
                 text = doc.text
                 print(j, doc.title)
                 toks = [re.sub(labeled_collection.model.token_pattern_in, labeled_collection.model.token_pattern_out, t) for t in re.split(labeled_collection.model.split_pattern, text)]
                 num_subdocs = round(0.5 + len(toks) / labeled_collection.model.max_context_size)
                 toks_per = int(len(toks) / num_subdocs)
                 labeled_toks = []
+                topic_counts = {}
                 for i in range(num_subdocs):
                     orig_subdoc_toks = toks[i * toks_per : (i + 1) * toks_per]
                     subdoc_toks = [t.lower() for t in orig_subdoc_toks] if labeled_collection.model.lowercase else orig_subdoc_toks
                     _, text_topics, _ = model.get_document_topics(model.id2word.doc2bow(subdoc_toks), per_word_topics=True)
                     word2topic = {model.id2word[wid] : -1 if len(topics) == 0 else topics[0] for wid, topics in text_topics}
-                    labeled_toks += [(o, word2topic.get(t, -1)) for o, t in zip(orig_subdoc_toks, subdoc_toks)]
+                    #labeled_toks +=
+                    content = [(o, word2topic.get(t, -1)) for o, t in zip(orig_subdoc_toks, subdoc_toks)]
+                    subdoc_topic_counts = {}
+                    for _, t in content:
+                        if t != -1:
+                            topic_counts[t] = topic_counts.get(t, 0) + 1
+                            subdoc_topic_counts[t] = subdoc_topic_counts.get(t, 0) + 1
+                            
+                    subdoc = models.LabeledDocumentSection(
+                        content=content,
+                        labeled_document=labeled_doc,
+                        metadata={"topic_counts" : subdoc_topic_counts},
+                    )
+                    subdoc.save()
+                labeled_doc.metadata = {"topic_counts" : topic_counts}
+                labeled_doc.save()
                 #text = text.lower() if labeled_collection.model.lowercase else text
                 #toks = [re.sub(labeled_collection.model.token_pattern_in, labeled_collection.model.token_pattern_out, t) for t in re.split(labeled_collection.model.split_pattern, text)]
                 
                 #_, text_topics, _ = model.get_document_topics(model.id2word.doc2bow(toks), per_word_topics=True)
                 #word2topic = {model.id2word[wid] : -1 if len(topics) == 0 else topics[0] for wid, topics in text_topics}
                 #labeled_toks = [(otok, word2topic.get(tok, "")) for tok, otok in zip(toks, otoks)]
-                print(len(labeled_toks))
-                labeled_doc = models.LabeledDocument(
-                    document=doc,
-                    labeled_collection=labeled_collection,
-                    content=json.dumps(labeled_toks).encode(),
-                )
-                labeled_doc.save()
+                        #print(len(labeled_toks))
+                        #labeled_doc.save()
         labeled_collection.state = labeled_collection.COMPLETE
+        
     except Exception as e:
         labeled_collection.state = labeled_collection.ERROR
         labeled_collection.message = "{}".format(e)

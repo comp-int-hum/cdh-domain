@@ -25,5 +25,5 @@ app_name = "primary_sources"
 urlpatterns = [
     path('', views.dataset_list, name="dataset_list"),
     path('dataset/<int:did>/', views.dataset_detail, name="dataset_detail"),
-    path('dataset_ontology_graph/<int:dataset_id>/', views.dataset_ontology_graph, name="dataset_ontology_graph"),
+    path('dataset_relational_graph/<int:dataset_id>/', views.dataset_relational_graph, name="dataset_relational_graph"),
 ]

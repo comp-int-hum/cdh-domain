@@ -2,6 +2,7 @@ from django.contrib import admin
 from .models import Dataset
 from .forms import DatasetForm
 import rdflib
+import json
 import logging
 from guardian.admin import GuardedModelAdmin
 from guardian.shortcuts import assign_perm
@@ -11,7 +12,34 @@ import requests
 
 class DatasetAdmin(GuardedModelAdmin):
     form = DatasetForm
+    actions = ["generate_schema"]
 
+    @admin.action(description="Generate schema from data")
+    def generate_schema(self, request, queryset):
+        query = """
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX schema: <https://schema.org/>
+PREFIX : <http://www.w3.org/TR/2003/PR-owl-guide-20031209/wine#>
+SELECT DISTINCT ?st ?r ?ot datatype(?o)
+WHERE {
+  ?s rdf:type ?st .
+  ?s ?r ?o .
+  OPTIONAL { ?o rdf:type ?ot }
+}
+        """
+        for obj in queryset:
+            resp = requests.get(
+                "http://{}:{}/{}_{}/query".format(settings.JENA_HOST, settings.JENA_PORT, obj.id, "data"),
+                #headers={"Accept" : "text/turtle"},
+                params={"query" : query},
+                auth=requests.auth.HTTPBasicAuth(settings.JENA_USER, settings.JENA_PASSWORD)
+            )
+            j = json.loads(resp.content.decode("utf-8"))
+            for row in j["results"]["bindings"]:
+                print(row)
+    
     def has_module_permission(self, request):
         return request.user.is_authenticated    
 
@@ -45,6 +73,7 @@ class DatasetAdmin(GuardedModelAdmin):
                         data=fid,
                         auth=requests.auth.HTTPBasicAuth(settings.JENA_USER, settings.JENA_PASSWORD)                    
                     )
+        
         if request.user.is_authenticated:
             assign_perm("view_dataset", request.user, obj)
             assign_perm("change_dataset", request.user, obj)
