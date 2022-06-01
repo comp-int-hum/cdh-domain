@@ -1,6 +1,7 @@
 import pickle
 import gzip
 import json
+import logging
 from datetime import datetime
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseRedirect
@@ -197,33 +198,37 @@ def vega_wordcloud(request, mid, tid):
 
 def vega_spatial(request, lcid):
     lc = models.LabeledCollection.objects.get(id=lcid)
-    vs = models.TemporalEvolution.objects.filter(labeled_collection=lc)
-    model = pickle.loads(lc.model.serialized.tobytes())    
-    topics = dict([(tid, model.show_topic(tid)) for tid in range(lc.model.topic_count)])
-    coordinates = []
-    for ld in models.LabeledDocument.objects.filter(labeled_collection=lc):
-        counts = {int(k) : v for k, v in ld.metadata["topic_counts"].items()}
-        total = sum(counts.values())
-        for t, v in counts.items():
-            coordinates.append(
-                {
-                    "topic" : t,
-                    "weight" : v / total,
-                    "latitude" : ld.document.latitude,
-                    "longitude" : ld.document.longitude,
-                }
-            )
-    retval = SpatialDistribution(coordinates)
-    retval = retval.json
-    return JsonResponse(retval)
+    vs = models.SpatialDistribution.objects.filter(labeled_collection=lc)
+    if vs.count() == 0:
+        model = pickle.loads(lc.model.serialized.tobytes())    
+        topics = dict([(tid, model.show_topic(tid)) for tid in range(lc.model.topic_count)])
+        coordinates = []
+        for ld in models.LabeledDocument.objects.filter(labeled_collection=lc):
+            counts = {int(k) : v for k, v in ld.metadata["topic_counts"].items()}
+            total = sum(counts.values())
+            for t, v in counts.items():
+                coordinates.append(
+                    {
+                        "topic" : t,
+                        "weight" : v / total,
+                        "latitude" : ld.document.latitude,
+                        "longitude" : ld.document.longitude,
+                    }
+                )
+        vis = models.SpatialDistribution(
+            labeled_collection=lc,
+            content=SpatialDistribution(coordinates).json
+        )
+        vis.save()
+    return JsonResponse(models.SpatialDistribution.objects.get(labeled_collection=lc).content)
 
 
 def vega_temporal(request, lcid):
     lc = models.LabeledCollection.objects.get(id=lcid)
     vs = models.TemporalEvolution.objects.filter(labeled_collection=lc)
-    model = pickle.loads(lc.model.serialized.tobytes())    
-    topics = dict([(tid, model.show_topic(tid)) for tid in range(lc.model.topic_count)])
     if vs.count() == 0:
+        model = pickle.loads(lc.model.serialized.tobytes())
+        topics = dict([(tid, model.show_topic(tid)) for tid in range(lc.model.topic_count)])
         min_time, max_time = None, None        
         vals = []
         for ld in models.LabeledDocument.objects.filter(labeled_collection=lc):
@@ -233,42 +238,45 @@ def vega_temporal(request, lcid):
             vals.append((time, {int(k) : v for k, v in ld.metadata["topic_counts"].items()}))
         duration = 10
         minimum = 1550
-    else:
-        pass
-    all_years = set()
-    all_labels = set()
-    buckets = {}
-    years = {}
-    year_totals = {}
-    for year, counts in vals:
-        year = year - (year % duration)
-        if year < 1550:
-            continue
-        all_years.add(year)
-        buckets[year] = buckets.get(year, 0) + 1
-        for k, v in counts.items():
-            label = ", ".join([w for w, _ in topics[k][0:10]])
-            all_labels.add(label)
-            years[year] = years.get(year, {})
-            years[year][label] = years[year].get(label, 0.0) + v
-            year_totals[year] = year_totals.get(year, 0.0) + v
 
-    for label in all_labels:
-        for year in all_years:
-            if label not in years[year]:
-                print(year, label)
-            years[year][label] = years[year].get(label, 0.0)
+        all_years = set()
+        all_labels = set()
+        buckets = {}
+        years = {}
+        year_totals = {}
+        for year, counts in vals:
+            year = year - (year % duration)
+            if year < 1550:
+                continue
+            all_years.add(year)
+            buckets[year] = buckets.get(year, 0) + 1
+            for k, v in counts.items():
+                label = ", ".join([w for w, _ in topics[k][0:10]])
+                all_labels.add(label)
+                years[year] = years.get(year, {})
+                years[year][label] = years[year].get(label, 0.0) + v
+                year_totals[year] = year_totals.get(year, 0.0) + v
 
-    data = sum(
-        [
+        for label in all_labels:
+            for year in all_years:
+                if label not in years[year]:
+                    print(year, label)
+                years[year][label] = years[year].get(label, 0.0)
+
+        data = sum(
             [
-                {
-                    "label" : label,
-                    "value" : value / year_totals[year],
-                    "year" : year
-                } for label, value in labels.items()] for year, labels in years.items()
-        ],
-        []
-    )
-    retval = TemporalEvolution(data)
-    return JsonResponse(retval.json)
+                [
+                    {
+                        "label" : label,
+                        "value" : value / year_totals[year],
+                        "year" : year
+                    } for label, value in labels.items()] for year, labels in years.items()
+            ],
+            []
+        )
+        vis = models.TemporalEvolution(
+            labeled_collection=lc,
+            content=TemporalEvolution(data).json
+        )
+        vis.save()
+    return JsonResponse(models.TemporalEvolution.objects.get(labeled_collection=lc).content)

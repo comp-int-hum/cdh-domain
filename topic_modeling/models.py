@@ -121,7 +121,7 @@ class TemporalEvolution(models.Model):
         return "{}-{}".format(self.labeled_collection.title)
 
 
-class SpatialEvolution(models.Model):
+class SpatialDistribution(models.Model):
     labeled_collection = models.ForeignKey(LabeledCollection, on_delete=models.CASCADE, null=True)
     content = models.JSONField(null=dict)
     def get_absolute_url(self):
