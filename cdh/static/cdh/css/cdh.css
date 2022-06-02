@@ -53,7 +53,8 @@ blockquote p {
 }
 
 .highlighted {background-color:orange}
-.labeled-token:hover {background-color:lightblue}
+.selected {background-color:lightblue}
+/*.labeled-token:hover {background-color:lightblue}*/
 
 .first {background-color:#00aa00}
 .second {background-color:#00a0aa}

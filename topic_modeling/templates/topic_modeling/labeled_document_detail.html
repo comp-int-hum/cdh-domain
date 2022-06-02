@@ -4,13 +4,13 @@
 
 <div class="card">
   <div class="card-body">
-    <h5 class="card-title">{{title}}</h5>
+    <!--<h5 class="card-title">{{title}}</h5>-->
     <div class="container">
       <p>
 	{% for section in page_obj %}
 	{% for w, t in section.content %}
 	{% if t == -1 %}
-	<span class="">{{w}}</span>
+	<span class="labeled-token">{{w}}</span>
 	{% else %}
 	<span class="labeled-token topic-{{t}}">{{w}}</span>
 	{% endif %}

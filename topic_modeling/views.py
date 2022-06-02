@@ -135,12 +135,17 @@ def topic_model_topic_detail(request, mid, tid):
 
 def labeled_document_detail(request, did):
     ld = LabeledDocument.objects.only("document__title", "labeled_collection").select_related("document").get(id=did)
+    lc = ld.labeled_collection
     lds = LabeledDocumentSection.objects.filter(labeled_document=ld).order_by("id")
     paginator = Paginator(lds, 10)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
     context = {
-        "breadcrumbs" : [("Topic modeling", "topic_modeling:index", None)],
+        "breadcrumbs" : [
+            ("Topic modeling", "topic_modeling:index", None),
+            (lc.collection.name, "topic_modeling:labeled_collection_detail", lc.id),            
+            (ld.document.title, "topic_modeling:labeled_document_detail", did),
+        ],
         "page_obj" : page_obj,
         "title" : ld.document.title
     }
