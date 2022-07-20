@@ -2,12 +2,22 @@
 from turkle.models import Batch, Project, ActiveUser, ActiveProject, TaskAssignment
 from turkle.admin import BatchAdmin, ProjectAdmin, CustomUserAdmin, ActiveProjectAdmin, CustomGroupAdmin, ActiveUserAdmin, TaskAssignmentAdmin
 from django.contrib.auth.admin import GroupAdmin, UserAdmin
+from guardian.admin import GuardedModelAdmin
+
 from django.contrib.auth.models import Group
 from django.contrib.auth import get_user_model
 from cdh import admin
 
 User = get_user_model()
 
+def response_add(self, request, obj):
+    res = super(GuardedModelAdmin, self).response_add(request, obj)
+    print(100)
+    if "next" in request.GET:
+        return HttpResponseRedirect(request.GET['next'])
+    else:
+        return res
+ProjectAdmin.response_add = response_add
 
 model_classes = [
     (Batch, BatchAdmin),

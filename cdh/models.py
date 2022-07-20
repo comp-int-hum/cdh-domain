@@ -1,8 +1,8 @@
 from . import settings
 #from cdh.admin import CDHModelAdmin, site
 #from django.contrib import admin
-
-from django.db import models
+from django.urls import path, reverse
+from django.contrib.gis.db import models
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.base_user import BaseUserManager
 from markdownfield.models import MarkdownField, RenderedMarkdownField
@@ -10,6 +10,10 @@ from markdownfield.validators import VALIDATOR_STANDARD
 if settings.USE_LDAP:
     import ldap
     from ldap import modlist
+
+class BaseModel(models.Model):
+    class Meta:
+        abstract = True
 
 
 class AsyncMixin(models.Model):

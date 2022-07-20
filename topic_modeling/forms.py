@@ -1,30 +1,95 @@
-from markdownfield.widgets import MDEWidget, MDEAdminWidget
-from django.forms import ModelForm, inlineformset_factory, Textarea, modelform_factory, FileField
-from . import models
-from cdh.models import User
+from django.forms import ModelForm, modelform_factory, FileField
+from cdh import widgets
+from .models import Lexicon, TopicModel, Collection, LabeledCollection, Document, LabeledDocument
+from django.forms import FileField, JSONField, CharField
+from cdh.widgets import VegaWidget
+from .vega import TopicModelWordCloud
 
-#TopicModelForm = modelform_factory(
-#    models.TopicModel,
-    #fields=("name", "collection", "topic_count", "max_context_size", "lowercase", "split_pattern", "token_pattern_in", "token_pattern_out"),
-#)
-
-LexiconForm = modelform_factory(
-    models.Lexicon,
-    fields=("name", "lexical_sets"),
-)
-
-
-class CollectionForm(ModelForm):
-    upload = FileField(label="File")
+class LexiconForm(ModelForm):
+    def __init__(self, *args, **kwargs):
+        prefix = "{}-{}-{}".format(
+            Lexicon._meta.app_label,
+            Lexicon._meta.model_name,
+            kwargs["instance"].id if kwargs.get("instance", False) else "unbound"
+        )
+        super().__init__(*args, prefix=prefix, **{k : v for k, v in kwargs.items() if k != "prefix"})
+    
     class Meta:
-        model = models.Collection
-        fields = ("upload", "name", "description")
-        widgets={
-            "description" : MDEWidget,
+        model = Lexicon
+
+        fields = ('lexical_sets', 'name')
+
+        widgets = {
+            'lexical_sets': widgets.MonacoEditorWidget(language="json", content_field="lexical_sets", default_value="""{
+  "positive_items": ["happy", "glad"],
+  "negative_items": ["awful", "sad*"]
+}
+""")
         }
 
-
-LabeledCollectionForm = modelform_factory(
-    models.LabeledCollection,
-    fields=("name", "collection", "model", "lexicon"),
+        
+TopicModelForm = modelform_factory(
+    TopicModel,
+    exclude=["state", "task_id", "message"]
 )
+
+
+class CollectionCreateForm(ModelForm):
+    upload = FileField(label="File")
+    class Meta:
+        model = Collection
+        fields = ("upload", "name")
+
+
+class TopicModelWordCloudForm(ModelForm):
+    topics = CharField(widget=VegaWidget(vega_class=TopicModelWordCloud), label="")
+
+    def __init__(self, *argv, **argd):
+        if argd["instance"]:
+            argd["initial"]["topics"] = argd["instance"].vega
+        super(TopicModelWordCloudForm, self).__init__(*argv, **argd)
+        
+    class Meta:        
+        model = TopicModel
+        fields = ('topics',)
+
+
+class TopicModelWordTableForm(ModelForm):
+    topics = CharField(widget=VegaWidget(vega_class=TopicModelWordCloud), label="")
+
+    def __init__(self, *argv, **argd):
+        if argd["instance"]:
+            argd["initial"]["topics"] = argd["instance"].vega
+        super(TopicModelWordTableForm, self).__init__(*argv, **argd)
+        
+    class Meta:        
+        model = TopicModel
+        fields = ('topics',)
+
+        
+
+class LabeledCollectionTemporalForm(ModelForm):
+    topics = CharField(widget=VegaWidget(vega_class=TopicModelWordCloud), label="")
+
+    def __init__(self, *argv, **argd):
+        if argd["instance"]:
+            argd["initial"]["topics"] = argd["instance"].vega
+        super(LabeledCollectionTemporalForm, self).__init__(*argv, **argd)
+        
+    class Meta:        
+        model = LabeledCollection
+        fields = ('topics',)
+
+
+class LabeledCollectionGeographicForm(ModelForm):
+    topics = CharField(widget=VegaWidget(vega_class=TopicModelWordCloud), label="")
+
+    def __init__(self, *argv, **argd):
+        if argd["instance"]:
+            argd["initial"]["topics"] = argd["instance"].vega
+        super(LabeledCollectionGeographicForm, self).__init__(*argv, **argd)
+        
+    class Meta:        
+        model = LabeledCollection
+        fields = ('topics',)
+        

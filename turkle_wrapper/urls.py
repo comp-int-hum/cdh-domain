@@ -23,9 +23,7 @@ from . import views
 #from turkle.models import Batch, Project
 import turkle.urls
 
-
 urlpatterns = [
-    #path('', views.index, name="index"),
+    path('', views.index, name="index"),
     path('', include('turkle.urls')),
-    #path('admin/', admin_site.urls),
 ]

@@ -7,6 +7,11 @@
     {% addtoblock "css" %}
     <link rel='stylesheet' id='bootstrap-css'  href="{% static 'bootstrap/dist/css/bootstrap.min.css' %}" type='text/css' />
     <link rel='stylesheet' id='main-stylesheet-css'  href="{% static 'cdh/css/cdh.css' %}" type='text/css' media='all' />
+
+    <link rel='stylesheet' id='main-stylesheet-css'  href="{% static 'monaco/min/vs/editor/editor.main.css' %}" type='text/css' media='all' />    
+    {% comment %}
+    <link rel="stylesheet" id="monaco_css" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.0-dev.20220627/min/vs/editor/editor.main.min.css"/>
+    {% endcomment %}
     {% endaddtoblock %}
     
     {% render_block "css" %}
@@ -24,6 +29,8 @@
     <script type='text/javascript' src="{% static 'jquery/dist/jquery.min.js' %}" id='jquery-core-js'></script>
     <script type='text/javascript' src="{% static 'jquery.cookie/jquery.cookie.js' %}" id='theme-cookie-js'></script>
     <script type='text/javascript' src="{% static 'jquery.scrollTo/jquery.scrollTo.js' %}" id='theme-scrollto-js'></script>
+    <script type='text/javascript' src="{% static 'vega/docs/vega.min.js' %}" id='vega'></script>
+    <script type='text/javascript' src="{% static 'cdh/js/htmx.min.js' %}" id='htmx'></script>
     {% endaddtoblock %}
     
     {% render_block "initial_js" %}    
@@ -168,20 +175,42 @@
 	      {% endfor %}
 	    </ul>
 	    {% endif %}
+	    <div id="top_level_content" class="container">
 	    {% block content %}{% endblock %}
-	    {% block body %}{% endblock %}	  
+	    {% block body %}{% endblock %}
+	    </div>
 	  </div>
 	</div>
       </div>
 
-
+      {% block js %}{{block.super}}{% endblock %}
       {% addtoblock "js" %}
       <script type='text/javascript' src="{% static 'cdh/js/jquery.breakpoints.js' %}" id='theme-breakpoints-js'></script>
       <script type='text/javascript' src="{% static 'bootstrap/dist/js/bootstrap.bundle.min.js' %}" id='theme-bootstrap-js'></script>
+      {% comment %}
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.0-dev.20220625/min/vs/loader.min.js"></script>            {% endcomment %}
+      <script type='text/javascript' src="{% static 'monaco/min/vs/loader.js' %}" id='monaco-js'></script>
+
       <script type='text/javascript' src="{% static 'cdh/js/cdh.js' %}" id='cdh-js'></script>
+
       {% endaddtoblock %}
       
       {% render_block "js" %}
-    
+
+      {% block finaljs %}{{block.super}}{% endblock %}
+
+      {% render_block "finaljs" %}
+
+      <script>
+	cdhSetup(document, false);
+
+	htmx.on("htmx:load", function(evt) {
+	    //console.error(evt.detail.elt);
+	    //if(evt.detail.elt.tagName == "FORM"){
+		//console.error(evt.detail.elt);
+		cdhSetup(evt.detail.elt, true);
+	    //}
+	});
+      </script>
   </body>
 </html>

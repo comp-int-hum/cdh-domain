@@ -19,7 +19,7 @@ class CDHAdminSite(admin.AdminSite):
     def has_permission(self, request):
         return request.user.is_authenticated
     
-site = CDHAdminSite()
+site = CDHAdminSite(name="main")
 
 
 class CDHModelAdmin(GuardedModelAdmin):

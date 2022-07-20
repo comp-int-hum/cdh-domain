@@ -5,7 +5,7 @@ import logging
 from datetime import datetime
 from django.shortcuts import render
 from django.http import HttpResponse, HttpResponseRedirect
-from django.views.generic import ListView, TemplateView
+from django.views.generic import ListView, TemplateView, DetailView
 from django.urls import reverse
 from guardian.shortcuts import get_objects_for_user
 from django.contrib.auth.decorators import login_required
@@ -14,274 +14,64 @@ from . import forms
 from . import tasks
 from gensim.models import LdaModel
 from gensim.corpora import Dictionary
-from .vega import WordCloud, TemporalEvolution, SpatialDistribution
+from .vega import TopicModelWordCloud, TemporalEvolution, SpatialDistribution
 from .models import TopicModel, LabeledCollection, Lexicon, Collection, LabeledDocument, Document, LabeledDocumentSection
+from .forms import CollectionCreateForm, LexiconForm
+from django.utils.safestring import mark_safe
 from django.http import JsonResponse
 from django.core.paginator import Paginator
 from topic_modeling import apps
-# TODO: needs pagination, breadcrumbs
+from django.views.generic.detail import TemplateResponseMixin
+from django.views.generic.detail import SingleObjectMixin
+from django.views.generic.edit import CreateView, DeleteView, UpdateView, ModelFormMixin, DeletionMixin, ProcessFormView
+from django.views import View
+from cdh.widgets import VegaWidget
+from .vega import TopicModelWordCloud
 
 
-def index(request):
-    context = {
-        "breadcrumbs" : [("Topic modeling", "topic_modeling:index", None)],
-        "topic_models" : get_objects_for_user(request.user, "topic_modeling.view_topicmodel"),
-    }
-    return render(request, "topic_modeling/index.html", context)
+class CollectionCreateView(TemplateResponseMixin, ProcessFormView, View):
+    form_class = CollectionCreateForm
+    model = Collection
+    template_name = "cdh/simple_interface.html"
+    def __init__(self, *argv, **argd):
+        return super(CollectionCreateView, self).__init__(*argv, **argd)
+    def get(self, request, *argv, **argd):
+        return render(request, self.template_name, {})
 
 
-def collection_list(request):
-    context = {
-        "collections" : [],
-        "breadcrumbs" : [("Topic modeling", "topic_modeling:index", None), ("By collection", "topic_modeling:collection_list", None)]
-    }
-    for collection in get_objects_for_user(request.user, "topic_modeling.view_collection"):
-        context["collections"].append(
-            (
-                collection,
-                get_objects_for_user(
-                    request.user,
-                    "topic_modeling.view_labeledcollection",
-                    LabeledCollection.objects.filter(collection=collection)
-                ),
-                get_objects_for_user(
-                    request.user,
-                    "topic_modeling.view_topicmodel",
-                    TopicModel.objects.filter(collection=collection)
-                )
-            )
+class WordTableView(SingleObjectMixin, View):
+    template_name = "cdh/simple_interface.html"
+    show = 6
+    def render(self, request):
+        topics = {}
+        for item in self.get_object().vega_words:
+            word = item["word"]
+            topic = int(item["topic"])
+            prob = float(item["probability"])
+            topics[topic] = topics.get(topic, [])
+            topics[topic].append((prob, word))
+        topics = {k : sorted(v, reverse=True) for k, v in topics.items()}
+        header_content = "<th scope='col'>Topic</th>" + "".join(["<th scope='col'/>" for i in range(self.show)])
+        rows = ["<tr><td>{topic}</td>{cells}</tr>".format(
+            topic=num,
+            cells="".join(["<td>{}<br/>{:.3}</td>".format(w, p) for p, w in words[:self.show]])
+        ) for num, words in sorted(topics.items())]
+        
+        retval = """
+        <table class="table">
+        <thead>
+        <tr>{header_content}</tr>
+        </thead>
+        <tbody>
+        {row_content}
+        </tbody>
+        </table>
+        """.format(
+            header_content=header_content,
+            row_content="\n".join(rows)
         )
-    return render(request, "topic_modeling/collection_list.html", context)
-
-
-def topic_model_list(request):
-    context = {
-        "topic_models" : [],
-        "breadcrumbs" : [
-            ("Topic modeling", "topic_modeling:index", None),
-            ("By model", "topic_modeling:topic_model_list", None),
-        ]
-    }
-    for topic_model in get_objects_for_user(request.user, "topic_modeling.view_topicmodel"):
-        context["topic_models"].append(
-            (
-                topic_model,
-                get_objects_for_user(
-                    request.user,
-                    "topic_modeling:view_labeledcollection",
-                    klass=models.LabeledCollection.objects.filter(model=topic_model)
-                )
-            )
-        )
-    return render(request, "topic_modeling/topic_model_list.html", context)
-
-
-def lexicon_list(request):
-    context = {
-        "lexicons" : [],
-        "breadcrumbs" : [
-            ("Topic modeling", "topic_modeling:index", None),
-            ("Lexicons", "topic_modeling:lexicon_list", None),
-        ]
-    }
-    for lexicon in get_objects_for_user(request.user, "topic_modeling.view_lexicon"):
-        context["lexicons"].append(
-            (
-                lexicon,
-                get_objects_for_user(
-                    request.user,
-                    "topic_modeling:view_labeledcollection",
-                    klass=models.LabeledCollection.objects.filter(lexicon=lexicon)
-                )
-            )
-        )
-    return render(request, "topic_modeling/lexicon_list.html", context)
-
-
-#TODO
-def lexicon_detail(request, lid):
-    context = {
-        "breadcrumbs" : [("Topic modeling", "topic_modeling:index", None)]
-    }
-    return render(request, "topic_modeling/lexicon_detail.html", context)
-
-
-def topic_model_detail(request, mid):
-    topic_model = models.TopicModel.objects.get(id=mid)
-    model = pickle.loads(topic_model.serialized.tobytes())
-    lcs = get_objects_for_user(
-        request.user,
-        "topic_modeling:view_labeledcollection",
-        klass=models.LabeledCollection.objects.filter(model=topic_model),
-    )
-    topics = [(tid + 1, model.show_topic(tid)) for tid in range(topic_model.topic_count)]
-    context = {
-        "breadcrumbs" : [("Topic modeling", "topic_modeling:index", None)],
-        "topic_model" : topic_model,
-        "topics" : topics,
-        "labeled_collections" : lcs,
-    }
-    return render(request, "topic_modeling/topic_model_detail.html", context)
-
-
-def topic_model_topic_detail(request, mid, tid):
-    context = {
-        "breadcrumbs" : [("Topic modeling", "topic_modeling:index", None)],
-        "model" : models.TopicModel.objects.get(id=mid),
-        "topic" : tid
-    }
-    return render(request, "topic_modeling/topic_model_topic_detail.html", context)
-
-
-def labeled_document_detail(request, did):
-    ld = LabeledDocument.objects.only("document__title", "labeled_collection").select_related("document").get(id=did)
-    lc = ld.labeled_collection
-    lds = LabeledDocumentSection.objects.filter(labeled_document=ld).order_by("id")
-    paginator = Paginator(lds, 10)
-    page_number = request.GET.get("page")
-    page_obj = paginator.get_page(page_number)
-    context = {
-        "breadcrumbs" : [
-            ("Topic modeling", "topic_modeling:index", None),
-            (lc.collection.name, "topic_modeling:labeled_collection_detail", lc.id),            
-            (ld.document.title, "topic_modeling:labeled_document_detail", did),
-        ],
-        "page_obj" : page_obj,
-        "title" : ld.document.title
-    }
-    return render(request, "topic_modeling/labeled_document_detail.html", context)
-
-
-def labeled_collection_detail(request, lcid):
-    lc = LabeledCollection.objects.get(id=lcid)
-    context = {
-        "breadcrumbs" : [
-            ("Topic modeling", "topic_modeling:index", None),
-            ("By collection", "topic_modeling:collection_list", None),
-            (lc.collection.name, "topic_modeling:labeled_collection_detail", lc.id),
-        ],
-        "labeled_collection" : lc,
-        "labeled_documents" : LabeledDocument.objects.only("id", "document__id").filter(labeled_collection=lc).select_related("document")
-    }
-    return render(request, "topic_modeling/labeled_collection_detail.html", context)
-
-
-def spatial(request, lcid):
-    lc = models.LabeledCollection.objects.get(id=lcid)
-    context = {
-        "breadcrumbs" : [
-            ("Topic modeling", "topic_modeling:index", None),
-            ("By model", "topic_modeling:topic_model_list", None),
-            ("Spatial view of {}".format(lc.name), "topic_modeling:spatial_evolution", lcid),
-        ],
-        "labeled_collection" : lc,
-    }
-    return render(request, "topic_modeling/spatial_evolution.html", context)
-
-
-def temporal(request, lcid):
-    lc = models.LabeledCollection.objects.get(id=lcid)
-    context = {
-        "breadcrumbs" : [
-            ("Topic modeling", "topic_modeling:index", None),
-            ("By model", "topic_modeling:topic_model_list", None),
-            ("Temporal view of {}".format(lc.name), "topic_modeling:temporal_evolution", lcid),
-        ],
-        "labeled_collection" : lc,
-    }
-    return render(request, "topic_modeling/temporal_evolution.html", context)
-
-
-def vega_wordcloud(request, mid, tid):
-    topic_model = models.TopicModel.objects.get(id=mid)
-    model = pickle.loads(topic_model.serialized.tobytes())    
-    words = model.show_topic(tid - 1, 50)
-    retval = WordCloud(words)
-    retval = retval.json
-    return JsonResponse(retval)
-
-
-def vega_spatial(request, lcid):
-    lc = models.LabeledCollection.objects.get(id=lcid)
-    vs = models.SpatialDistribution.objects.filter(labeled_collection=lc)
-    if vs.count() == 0:
-        model = pickle.loads(lc.model.serialized.tobytes())    
-        topics = dict([(tid, model.show_topic(tid)) for tid in range(lc.model.topic_count)])
-        coordinates = []
-        for ld in models.LabeledDocument.objects.filter(labeled_collection=lc):
-            counts = {int(k) : v for k, v in ld.metadata["topic_counts"].items()}
-            total = sum(counts.values())
-            for t, v in counts.items():
-                coordinates.append(
-                    {
-                        "topic" : t,
-                        "weight" : v / total,
-                        "latitude" : ld.document.latitude,
-                        "longitude" : ld.document.longitude,
-                    }
-                )
-        vis = models.SpatialDistribution(
-            labeled_collection=lc,
-            content=SpatialDistribution(coordinates).json
-        )
-        vis.save()
-    return JsonResponse(models.SpatialDistribution.objects.get(labeled_collection=lc).content)
-
-
-def vega_temporal(request, lcid):
-    lc = models.LabeledCollection.objects.get(id=lcid)
-    vs = models.TemporalEvolution.objects.filter(labeled_collection=lc)
-    if vs.count() == 0:
-        model = pickle.loads(lc.model.serialized.tobytes())
-        topics = dict([(tid, model.show_topic(tid)) for tid in range(lc.model.topic_count)])
-        min_time, max_time = None, None        
-        vals = []
-        for ld in models.LabeledDocument.objects.filter(labeled_collection=lc):
-            time = ld.document.year
-            min_time = time if min_time == None else min(min_time, time)
-            max_time = time if max_time == None else max(max_time, time)
-            vals.append((time, {int(k) : v for k, v in ld.metadata["topic_counts"].items()}))
-        duration = 10
-        minimum = 1550
-
-        all_years = set()
-        all_labels = set()
-        buckets = {}
-        years = {}
-        year_totals = {}
-        for year, counts in vals:
-            year = year - (year % duration)
-            if year < 1550:
-                continue
-            all_years.add(year)
-            buckets[year] = buckets.get(year, 0) + 1
-            for k, v in counts.items():
-                label = ", ".join([w for w, _ in topics[k][0:10]])
-                all_labels.add(label)
-                years[year] = years.get(year, {})
-                years[year][label] = years[year].get(label, 0.0) + v
-                year_totals[year] = year_totals.get(year, 0.0) + v
-
-        for label in all_labels:
-            for year in all_years:
-                if label not in years[year]:
-                    print(year, label)
-                years[year][label] = years[year].get(label, 0.0)
-
-        data = sum(
-            [
-                [
-                    {
-                        "label" : label,
-                        "value" : value / year_totals[year],
-                        "year" : year
-                    } for label, value in labels.items()] for year, labels in years.items()
-            ],
-            []
-        )
-        vis = models.TemporalEvolution(
-            labeled_collection=lc,
-            content=TemporalEvolution(data).json
-        )
-        vis.save()
-    return JsonResponse(models.TemporalEvolution.objects.get(labeled_collection=lc).content)
+        print(retval)
+        return mark_safe(retval)
+    
+    def get(self, request, *argv, **argd):
+        return render(request, self.template_name, {"content" : self.render(request)})

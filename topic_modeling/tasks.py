@@ -14,19 +14,31 @@ from django.core.files.base import ContentFile
 from . import models
 from gensim.models import LdaModel
 from gensim.corpora import Dictionary
+from jsonpath import JSONPath
+from spacy.lang import en
+    
 if settings.USE_CELERY:
     from celery import shared_task
 else:
     def shared_task(func):
         return func
 
-
 # This needs to be modular
 @shared_task
-def extract_documents(collection_id, fname):
+def extract_documents(
+        collection_id,
+        fname,
+        **argd
+):
+    title_field = JSONPath(argd["title_field"][0])
+    author_field = JSONPath(argd["author_field"][0])
+    temporal_field = JSONPath(argd["temporal_field"][0])
+    spatial_field = JSONPath(argd["spatial_field"][0])
+    text_field = JSONPath(argd["text_field"][0])
     time.sleep(2)
     collection = models.Collection.objects.get(id=collection_id)
     has_temporality = False
+    has_spatiality = False
     try:
         if fname.endswith("zip"):
             prepended_time = False
@@ -41,9 +53,6 @@ def extract_documents(collection_id, fname):
                         if name.endswith("txt"):
                             year, title = re.match(r"^(?:(\d+)\_)?(.*)\.+txt", name).groups()
                             metadata = {}
-                            
-                            #if year:
-                            #    metadata["year"] = int(year)
                             docobj = models.Document(
                                 title=title,                                
                                 text=text,
@@ -70,16 +79,28 @@ def extract_documents(collection_id, fname):
                     )
                     docobj.save()
                     #ofd.write(json.dumps(j) + "\n")
-        elif re.endswith("json.gz"):
+        elif fname.endswith("json.gz"):
             # assume this is already in the right format
-            with open(fname, "rt") as ifd:
-                for line in ifd:
+            with gzip.open(fname, "rt") as ifd:
+                for i, line in enumerate(ifd):
                     j = json.loads(line)
+                    temporal = temporal_field.parse(j)
+                    spatial = spatial_field.parse(j)
+                    if len(temporal) > 0:
+                        has_temporality = True
+                    if len(spatial) > 0:
+                        has_spatiality = True
+                    title = title_field.parse(j)
+                    author = author_field.parse(j)
+                    text = text_field.parse(j)
                     docobj = models.Document(
-                        title=j.get("title", "Unknown")[0:1000],
-                        content=doc,
+                        title=title[0] if len(title) > 0 else "",
+                        text=text[0] if len(text) > 0 else "",
+                        temporal=temporal[0] if len(temporal) > 0 else "",
+                        spatial=spatial[0] if len(spatial) > 0 else "",
+                        author=author[0] if len(author) > 0 else "",
                         collection=collection,
-                    )
+                    )                    
                     docobj.save()                    
         else:
             raise Exception("Unknown file type for '{}'".format(fname))
@@ -91,29 +112,33 @@ def extract_documents(collection_id, fname):
     finally:
         os.remove(fname)
     collection.has_temporality = has_temporality
-    collection.has_spatiality = True
-    logging.info("Randomly generated geography...")
-
+    collection.has_spatiality = has_spatiality
     collection.save()
 
 
 @shared_task
 def train_model(topic_model_id):
+
+    
     time.sleep(2)
     topic_model = models.TopicModel.objects.get(id=topic_model_id)
     collection = topic_model.collection
     random.seed(topic_model.random_seed)
     try:
-        qs = models.Document.objects.filter(collection=collection)
+        print("Querying documents")
+        qs = models.Document.objects.filter(collection=collection).only("id")
+        print("Making indices")        
         indices = list(range(qs.count()))
+        print("Shuffling indices")
         random.shuffle(indices)
+        print("Selecting indices")
         indices = set(indices[:topic_model.maximum_documents])
+        print("Iterating documents")
         docs = []
         for i, doc in enumerate(qs): #enumerate(models.Document.objects.filter(collection=collection)):
-            print(doc.title)
             if i in indices:
                 text = doc.text.lower() if topic_model.lowercase else doc.text
-                toks = [re.sub(topic_model.token_pattern_in, topic_model.token_pattern_out, t) for t in re.split(topic_model.split_pattern, text)]
+                toks = [re.sub(topic_model.token_pattern_in, topic_model.token_pattern_out, t) for t in re.split(topic_model.split_pattern, text) if t.lower() not in en.stop_words.STOP_WORDS]
                 num_subdocs = round(0.5 + len(toks) / topic_model.max_context_size)
                 toks_per = int(len(toks) / num_subdocs)
                 for i in range(num_subdocs):

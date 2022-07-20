@@ -1,18 +1,8 @@
 {% extends "base.html" %}
 
 {% block content %}
-We distinguish three fundamental empirical categories that precede or develop along with computational research:
-
-<ul>
-  <li>Primary sources</li>
-  <li>Domain structure and meaning</li>
-  <li>Scholarly knowledge and annotation</li>
-</ul>
-
-Since these typically refer to one another, and to the broader range of human knowledge, we represent each of them as Resource Description Framework graphs.
-
-<br/>
-
-<a href="{% url 'primary_sources:dataset_list' %}">Browse or upload new datasets</a>
-
+  <form method="post">
+    {% csrf_token %}    
+    {{formset}}
+  </form>
 {% endblock %}

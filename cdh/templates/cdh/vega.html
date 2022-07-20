@@ -1,0 +1,19 @@
+<div id="{{div_identifier}}"></div>
+
+{{ vega_spec|json_script:spec_identifier }}
+
+<script type="text/javascript">  
+  var view;
+  var spec = JSON.parse(document.getElementById("{{spec_identifier}}").textContent);
+  render(spec);
+  function render(spec) {
+      view = new vega.View(vega.parse(spec), {
+          renderer:  'canvas',  // renderer (canvas or svg)
+          container: '#{{div_identifier}}',   // parent DOM container
+          hover:     true       // enable hover processing
+      });
+      view.resize();
+      view.logLevel(vega.Warn);
+      return view.runAsync();
+      }
+</script>

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
-
+{% load admin_urls %}
 {% block body %}
 
 {% if abandoned_assignments %}
@@ -29,11 +29,10 @@
 </div>
 {% endif %}
 
-{% block content %}
-{% endblock %}
 
 <div class="container-fluid content mt-2">
   {% if batch_rows %}
+  <h5>Perform Annotations</h5>
   <table class="table table-bordered table-hover">
     <tr class="thead-dark">
       <th>Project</th>
@@ -63,13 +62,14 @@
     </tr>
     {% endfor %}
   </table>
-  {% else %}
-  <h1>No Tasks available at this time</h1>
-  {% if not user.is_authenticated  %}
-  <h4>
-    You may need to <a href="{% url 'login' %}">Login</a> to see available Tasks
-  </h4>
   {% endif %}
+  
+  <h5>Manage Projects and Tasks</h5>
+  {% include "cdh/snippets/accordion.html" with accordion_id="projects" %}  
+  {% if not user.is_authenticated  %}
+  <h6>
+    You may need to <a href="{% url 'login' %}">Login</a> to see available Tasks, or to create your own.
+  </h6>
   {% endif %}
 </div>
 

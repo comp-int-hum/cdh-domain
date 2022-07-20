@@ -1,134 +1,19 @@
 from cdh import settings
+from cdh.vega import BaseVisualization
 
-class BaseVisualization(object):
 
-    def __init__(self, *argv, **argd):
-        pass
-        #self.project_id = project_id
-        #self.ifield = independent_field
-        #self.schema = schema
-        #self.relationships = {"" : []}
-        #for field in self.schema["entity_types"][self.ifield[0]]["data_fields"]:
-        #    ft = self.schema["data_fields"][field]["type"]
-        #    if field != self.ifield[1] and ft in dependent_types:
-        #        self.relationships[""].append((self.ifield[0], field, ft))
-
-    @property
-    def json(self):
-        retval = {
-            "$schema": "https://vega.github.io/schema/vega/v5.json",
-            "description": self.description,
-            "background": self.background,
-            "width": self.width,
-            "height": self.height,
-            "padding": self.padding,
-            "autosize": self.autosize,
-            "config" : self.config,
-            "signals": self.signals,
-            "data": self.data,
-            "scales": self.scales,
-            "projections": self.projections,
-            "axes": self.axes,
-            "legends": self.legends,
-            "title" : self.title,
-            "marks": self.marks,
-            "encode": self.encode,
-            "usermeta": self.usermeta,
-        }
-        return retval
-
-    @property
-    def description(self):
-        return "A Vega visualization."
-
-    @property
-    def width(self):
-        return 640
-
-    @property
-    def height(self):
-        return 480
-
-    @property
-    def padding(self):
-        return None
-
-    @property
-    def autosize(self):
-        return None
-
-    @property
-    def background(self):
-        return None
-
-    @property
-    def legends(self):
-        return []
-
-    @property
-    def projections(self):
-        return []
-
-    @property
-    def other_data(self):
-        return []
-
-    @property
-    def signals(self):
-        return []
-
-    @property
-    def config(self):
-        return []
-
-    @property
-    def title(self):
-        return None
-
-    @property
-    def transforms(self):
-       return []
-
-    @property
-    def marks(self):
-        return []
-
-    @property
-    def axes(self):
-        return []
-
-    @property
-    def scales(self):
-        return []
-
-    @property
-    def data(self):
-        return []
-
-    @property
-    def scales(self):
-        return []
-
-    @property
-    def encode(self):
-        return []
-
-    @property
-    def usermeta(self):
-        return []
-
-class WordCloud(BaseVisualization):
-    def __init__(self, topic):
-        self.values = []  # spec was word/prob pairs
-        self.values = [
-          {
-              "topic": 0, 
-              "word": word, 
-              "value": float(prob),
-              #"link": "{}://{}:{}/topic_modeling/word_filler/{}".format(settings.PROTO, settings.HOSTNAME, settings.PORT, wid),
-          } for wid, (word, prob) in enumerate(topic)]
-        self.num_topics = 1
-        super(WordCloud, self).__init__()
+class TopicModelWordCloud(BaseVisualization):
+    def __init__(self, words):
+        self.values = words  # spec was word/prob pairs
+        # self.values = [
+        #   {
+        #       "topic": 0, 
+        #       "word": word, 
+        #       "value": float(prob),
+        #       #"link": "{}://{}:{}/topic_modeling/word_filler/{}".format(settings.PROTO, settings.HOSTNAME, settings.PORT, wid),
+        #   } for wid, (word, prob) in enumerate(topic)]
+        # self.num_topics = 1
+        super(TopicModelWordCloud, self).__init__()
 
     @property
     def background(self):
@@ -140,20 +25,16 @@ class WordCloud(BaseVisualization):
             {
                 "name": "groupy",
                 "type": "band",
-                "range": "height",
-                "domain": {"data": "starcoder_data", "field": "topic"}
+                "domain": {"data": "words", "field": "topic"},
+                "range": {"step": {"signal" : "cellHeight"}}
             },
             {
                 "name": "cscale",
                 "type": "ordinal",
                 "range": {"scheme": "category20"},
-                "domain": {"data": "starcoder_data", "field": "type"}
+                "domain": {"data": "words", "field": "topic"}
             },
         ]
-
-    @property
-    def autosize(self):
-        return "pad"
 
     @property
     def signals(self):
@@ -161,14 +42,14 @@ class WordCloud(BaseVisualization):
             {"name": "width", "value": 400},
             {"name": "cellHeight", "value": 300},
             {"name": "cellWidth", "value": 400},
-            {"name": "height", "value": 300 * self.num_topics},
+            {"name": "height", "update": "domain('groupy') * cellHeight"}, #300 * 10},
         ]
 
     @property
     def data(self):
         return [
             {
-                "name": "starcoder_data",
+                "name": "words",
                 "values": self.values,
                 "transform": [
                     {
@@ -191,7 +72,7 @@ class WordCloud(BaseVisualization):
                 "from": {
                     "facet": {
                         "name": "facet",
-                        "data": "starcoder_data",
+                        "data": "words",
                         "groupby": "topic",
                     }
                 },
@@ -211,20 +92,26 @@ class WordCloud(BaseVisualization):
                                 "text": {"signal": "datum.word"},
                                 "align": {"value": "center"},
                                 "baseline": {"value": "alphabetic"},
-                                "fill": {"scale": "cscale", "field": "type"},
+                                "fill": {"scale": "cscale", "field": "topic"},
                             },
                             "update": {
-                              "href": {"signal": "datum.link"}
+                                #"y": {
+                                #    "scale": "groupy",
+                                #    "field": "topic",
+                                    #"offset": {"signal" : "-zoom * 20"}
+                                #}
+
+                                #"href": {"signal": "datum.link"}
                             }
                         },
                         "transform": [
                             {
                                 "type": "wordcloud",
                                 "size": [{"signal": "cellWidth"}, {"signal": "cellHeight"}],
-                                "text": {"field": "datum.word"},
+                                #"text": {"value" : "test"}, #{"field": "datum.word"},
                                 "rotate": {"field": "datum.angle"},
                                 "font": "Helvetica Neue, Arial",
-                                "fontSize": {"field": "datum.size"},
+                                "fontSize": {"field": "datum.probability"},
                                 "fontSizeRange": [12, 56],
                                 "padding": 2
                             }
@@ -275,12 +162,12 @@ class TemporalEvolution(BaseVisualization):
                "range": [6, 0, -6], "zero": False,
                 #"domain": [1730, 2130]
             },
-            # {
-            #     "name": "alpha",
-            #     "type": "linear", "zero": true,
-            #     "domain": {"data": "series", "field": "sum"},
-            #     "range": [0.4, 0.8]
-            # },
+            # # {
+            # #     "name": "alpha",
+            # #     "type": "linear", "zero": true,
+            # #     "domain": {"data": "series", "field": "sum"},
+            # #     "range": [0.4, 0.8]
+            # # },
             {
                 "name": "font",
                 "type": "sqrt",
@@ -302,10 +189,6 @@ class TemporalEvolution(BaseVisualization):
         ]
 
     @property
-    def autosize(self):
-        return "pad"
-
-    @property
     def signals(self):
         return [
             {"name": "width", "value": 800},
@@ -323,10 +206,10 @@ class TemporalEvolution(BaseVisualization):
             {
                 "name" : "topic",
                 "value" : "None",
-                "bind" : {
-                    "element" : "#words"
-                    #"input" : "text"
-                },
+                #"bind" : {
+                #    "element" : "#words"
+                #    #"input" : "text"
+                #},
                 "on" : [
                     {"events" : "area:mouseover", "update" : "datum.label"}
                 ],
@@ -484,15 +367,26 @@ class SpatialDistribution(BaseVisualization):
         return [
         ]
 
-    @property
-    def autosize(self):
-        return "pad"
+    #@property
+    #def autosize(self):
+    #    return "fit"
 
     @property
     def signals(self):
         return [
             {"name": "width", "value": 800},
             {"name": "height", "value": 350},
+
+            #{"name": "tx", "update": "width / 2"},
+            #{"name": "ty", "update": "height / 2"},
+            #{"name": "scale", "value": 150, "on" : [{"events" : {"type" : "wheel", "consume" : True}, "update" : "clamp(scale * pow(1.0005, -event.deltaY * pow(16, event.deltaMode)), 150, 3000)"}]},
+            #{"name": "angles", "value": [0, 0], "on": [{"events": "mousedown", "update": "[rotateX, centerY]"}]},
+            #{"name": "cloned", "value": None, "on": [{"events": "mousedown", "update": "copy('focus')"}]},
+            #{"name": "start", "value": None, "on": [{"events": "mousedown", "update": "invert(cloned, xy())" }]},
+            #{"name": "drag", "value": None, "on": [{"events": "[mousedown, window:mouseup] > window:mousemove", "update": "invert(cloned, xy())"}]},
+            #{"name": "delta", "value": None, "on": [{"events": {"signal": "drag"}, "update": "[drag[0] - start[0], start[1] - drag[1]]"}]},
+            #{"name": "rotateX", "value": 0, "on": [{"events": {"signal": "delta"}, "update": "angles[0] + delta[0]"}]},
+            #{"name": "centerY", "value": 0, "on": [{"events": {"signal": "delta"}, "update": "clamp(angles[1] + delta[1], -60, 60)"}]},
         ]
 
     @property
@@ -625,9 +519,28 @@ class SpatialDistribution(BaseVisualization):
             #    "type" : "mercator",
             #},
             {
-                 "name": "focus",
-                 "type" : "mercator",
-            #     #"fit" : {"signal" : "data('table')"},
+                "name": "focus",
+                "type" : "mercator",
+                #"scale": {"signal": "scale"},
+                #"rotate": [{"signal": "rotateX"}, 0, 0],
+                #"center": [0, {"signal": "centerY"}],
+                #"translate": [{"signal": "tx"}, {"signal": "ty"}]
+                # "scale": {"signal": "scale"},
+                # "rotate": [
+                #     {"signal": "rotate0"},
+                #     {"signal": "rotate1"},
+                #     {"signal": "rotate2"}
+                # ],
+                # "center": [
+                #     {"signal": "center0"},
+                #     {"signal": "center1"}
+                # ],
+                # "translate": [
+                #     {"signal": "translate0"},
+                #     {"signal": "translate1"}
+                # ]
+                
+                #     #"fit" : {"signal" : "data('table')"},
             #     #"scale" : 500,                
             #     #"size" : {"signal" : "[width,height]"},
              }

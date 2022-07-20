@@ -1,31 +1,41 @@
 {% extends "base.html" %}
-{% load static %}
+{% load sekizai_tags static cdh %}
 
 {% block content %}
+
 <script src="{% static 'vega/docs/vega.min.js' %}"></script>
 
 <h4>Dataset: {{dataset.name}}</h4>
 
-<div id="schema_view"></div>
+{% tabs toplevel %}
+
+{% tabnav %}
+Structure
+{% tabcontent %}
 <div id="relational_view"></div>
+{% tabnav %}
+Queries
+{% tabcontent %}
+{% include "cdh/snippets/accordion.html" with accordion_id="queries" %}
+{% endtabs %}
 
-<script type="text/javascript">
-
+<script type="text/javascript">  
   var ontologyView;
-
   fetch('{% url 'primary_sources:dataset_relational_graph' dataset.id %}')
       .then(res => res.json())
       .then(spec => render(spec))
       .catch(err => console.error(err));
-
-    function render(spec) {
+  function render(spec) {
       ontologyView = new vega.View(vega.parse(spec), {
         renderer:  'canvas',  // renderer (canvas or svg)
         container: '#relational_view',   // parent DOM container
         hover:     true       // enable hover processing
       });
+      ontologyView.logLevel(vega.Warn);
       return ontologyView.runAsync();
-    }
+      }
 </script>
-
 {% endblock %}
+
+
+

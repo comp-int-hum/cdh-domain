@@ -125,113 +125,136 @@ class BaseVisualization(object):
         return []
 
 
-class StarcoderVisualization(BaseVisualization):
-    
-    def __init__(self, project_id, schema, independent_field, *argv, **argd):        
-        super(StarcoderVisualization, self).__init__(*argv, **argd)
-        self.project_id = project_id
-        self.ifield = independent_field
-        self.ifield_name = "{}({})".format(self.ifield[0].title(), self.ifield[1])
-        self.schema = schema
-        self.relationships = {"" : []}
-        self.dfield_names = []
-        for field in self.schema["entity_types"][self.ifield[0]]["data_fields"]:
-            ft = self.schema["data_fields"][field]["type"]
-            if field != self.ifield[1] and ft in dependent_types:
-                self.relationships[""].append((self.ifield[0], field, ft))
-                self.dfield_names.append((ft, "{}({})".format(self.ifield[0].title(), field)))
-                
-    @property
-    def title(self):
-        return None #"Plotting against {}({})".format(self.ifield[0].title(), self.ifield[1])
+class PrimarySourceSchemaGraph(BaseVisualization):
 
-    @property
-    def signals(self):
-        return [
-            {
-                "name" : "independent",
-                "value" : self.ifield_name,
-            },
-            {
-                "name": "dependent",
-                "value" : self.dfield_names[0][1],
-                "bind": {
-                    "name" : " ",
-                    "input": "select",
-                    "element" : "#dependent",
-                    "options": sum(
-                        [
-                            [("{1}({2})" if rel == "" else "{0} {1}({2})").format(rel, e.title(), f) for e, f, ft in fields] for rel, fields in self.relationships.items()
-                        ],
-                        []
-                    ),
-                    "labels": sum(
-                        [
-                            [("{1}({2})" if rel == "" else "{0} {1}({2})").format(rel, e.title(), f) for e, f, ft in fields] for rel, fields in self.relationships.items()
-                        ],
-                        []
-                    )
-                    
-                },
-            }
-        ] #if len(sum([f for _, f in self.relationships.items()], [])) > 1 else []
-                
-    @property
-    def data(self):
-        pass
-
-class DatasetRelationalGraph(BaseVisualization):
-
-    def __init__(self, entities, relationships, properties):
-        self._entities = entities
-        self._relationships = relationships
-        self._properties = properties
-        print(entities, relationships, properties)
-        super(DatasetRelationalGraph, self).__init__()
+    def __init__(self, data): # entities, relationships, properties):
+        self._entities = data["entities"]
+        self._relationships = data["relationships"]
+        self._properties = data["properties"]
+        super(PrimarySourceSchemaGraph, self).__init__()
 
     @property
     def signals(self):
         return [
             { "name": "cx", "update": "width / 2" },
             { "name": "cy", "update": "height / 2" },
-            { "name": "nodeRadius", "value": 20},
+            { "name": "nodeRadius", "update": "zoom * 20"},
             { "name": "nodeCharge", "value": -30},
-            { "name": "linkDistance", "value": 30},
-            { "name": "static", "value": False},
+            { "name": "linkDistance", "update": "zoom * 200"},
+            { "name": "static", "value": True},
+            {
+                "description": "State variable for active node fix status.",
+                "name": "fix", "value": False,
+                "on": [
+                    {
+                        "events": "*:mouseout[!event.buttons], window:mouseup",
+                        "update": "false"
+                    },
+                    {
+                        "events": "*:mouseover",
+                        "update": "fix || true"
+                    },
+                    {
+                        "events": "[*:mousedown, window:mouseup] > window:mousemove!",
+                        "update": "xy()",
+                        "force": True
+                    }
+                ]
+            },
+            {
+                "description": "Graph node most recently interacted with.",
+                "name": "node", "value": None,
+                "on": [
+                    {
+                        "events": "*:mouseover",
+                        "update": "fix === true ? group() : node"
+                    }
+                ]
+            },
+            {
+                "description": "Flag to restart Force simulation upon data changes.",
+                "name": "restart", "value": False,
+                "on": [
+                    {"events": {"signal": "fix"}, "update": "fix && fix.length"}
+                ]
+            },
+            {
+                "name": "zoom",
+                "value": 0.75,
+                "on": [{
+                    "events": {"type": "wheel", "consume": True},
+                    "update": "clamp(zoom * pow(1.0005, -event.deltaY * pow(16, event.deltaMode)), 0.1, 1)"
+                }]
+            },
+            {
+                "name": "create_entity",
+                "on": [{
+                    "events": "window:mouseup!",
+                    "update": "warn(xy())",
+                }]
+            },            
+            {
+                "name": "create_relationship_or_property",
+                "on": [
+                    {
+                        "events" : "@entityBackground:mousedown!",
+                        "update" : "warn('entity')",
+                        #"consume" : True
+                    },
+                    {
+                        "events" : "@entityBackground:mouseup!",
+                        "update" : "warn('entity')",
+                        #"consume" : True                        
+                    },                    
+                ]
+            },
         ]
 
-    @property
-    def autosize(self):
-        return "fit"
+    #@property
+    #def autosize(self):
+    #    return {"type" : "fit", "resize" : True}
 
     @property
     def data(self):
         return [
             {
                 "name": "entities",
-                "values" : [{"label" : n, "index" : i} for i, n in enumerate(self._entities)]
+                "values" : self._entities,
+                #"on" : [
+                #    {
+                #        "trigger": "create_entity",
+                #        "insert" : "{entity_label: 'Unnamed'}"
+                #    }
+                #]
             },
             {
                 "name": "relationships",
-                "values" : self._relationships,
+                "values" : [dict(list(x.items()) + [("source", x["source_label"]), ("target", x["target_label"])]) for x in self._relationships],
             },
             {
                 "name" : "properties",
                 "values" : self._properties,
-            },
+                #"on" : [
+                #    {
+                #        "trigger": "create_entity",
+                #        "insert" : "warn({entity_label: 'Unnamed', property_label: 'Some property'})"
+                #    }
+                #]
+                
+            }
         ]
     
-    @property
-    def height(self):
-      return 300
+    #@property
+    #def height(self):
+    #  return 300
 
-    @property
-    def width(self):
-      return 1024 #800
+    #@property
+    #def width(self):
+    #  return None
     
-    @property
-    def padding(self):
-        return 5
+    #@property
+    #def padding(self):
+    #    return 5
     
     @property
     def scales(self):
@@ -239,7 +262,7 @@ class DatasetRelationalGraph(BaseVisualization):
             {
                 "name": "color",
                 "type": "ordinal",
-                "domain" : {"data" : "entities", "field" : "label"},
+                "domain" : {"data" : "properties", "field" : "source"},
                 "range": {"scheme": "category20c"}
             }
         ]
@@ -247,114 +270,130 @@ class DatasetRelationalGraph(BaseVisualization):
     @property
     def axes(self):
         return []
-    
+
     @property
     def marks(self):
         return [
             {
-                #"name": "nodes",
                 "type" : "group",
-                "fill" : "blue",
+                "name" : "node_group",
                 "zindex": 1,
+                "on" : [
+                    {
+                        "trigger": "fix",
+                        "modify": "node",
+                        "values": "fix === true ? {fx: node.x, fy: node.y} : {fx: fix[0], fy: fix[1]}"
+                    },
+                    {
+                        "trigger": "!fix",
+                        "modify": "node", "values": "{fx: null, fy: null}"
+                    }
+                ],
+                "scales": [
+                    {
+                        "name": "property_scale",
+                        "type": "band",
+                        "domain": {"data": "entity", "field": "property_label"},
+                        "range": {"step": {"signal" : "zoom * 10"}}
+                    }
+                ],
+                "encode": {
+                    "enter": {
+                        #"fill": {"value" : "lightblue"},
+                        "stroke": {"value": "blue"}
+                    },
+                    "update": {
+                        "size": {"signal": "25 * nodeRadius * nodeRadius"},
+                    }
+                },
                 "from" : {
                     "facet" : {
                         "data" : "properties",
-                        "groupby" : "source",
-                        "name" : "nodes"
+                        "groupby" : ["entity_label"],
+                        "name" : "entity"
                     }
                 },
-                # "on": [
-                #     {
-                #         "trigger": "fix",
-                #         "modify": "node",
-                #         "values": "fix === true ? {fx: node.x, fy: node.y} : {fx: fix[0], fy: fix[1]}"
-                #     },
-                #     {
-                #         "trigger": "!fix",
-                #         "modify": "node", "values": "{fx: null, fy: null}"
-                #     }
-                # ],
-                "scales" : [
-                    {
-                        "name" : "propertyScale",
-                        "type" : "band",
-                        "domain" : {"data" : "nodes", "field" : "label"},
-                        "range" : "height",
-                    }
-                ],
                 "marks" : [
                     {
                         "type" : "symbol",
-                        "from" : {"data" : "nodes"},
-
-                        "name" : "ent",
+                        "from" : {"data" : "entity"},
+                        "name" : "entityBackground",
                         "encode": {
                             "enter": {
-                                "fill": {"value" : "lightblue"}, #{"scale": "color", "field": "source"},
+                                "fill": {"value" : "lightblue"},
                                 "stroke": {"value": "blue"}
                             },
                             "update": {
-                                "shape" : {"value" : "square"},
-                                "size": {"signal": "25 * nodeRadius * nodeRadius"},
+                                "shape" : {"value" : "M-1.5,-1H1.5V0.5H-1.5Z"},
+                                "size": {"signal": "30 * nodeRadius * nodeRadius"},
                                 "cursor": {"value": "pointer"},
-                                "tooltip" : {"signal" : "datum.source"},
-                                "zindex" : {"value" : 1},
+                                "zindex" : {"value" : 1},                                
                             }
-                        },
+                        }
                     },
                     {
                         "type" : "text",
-                        "from" : {"data" : "ent"},
-
+                        "from" : {"data" : "entityBackground"},
                         "encode" : {
                             "enter": {
                                 "fill": {"value" : "red"},
+                                "y":{
+                                    "offset": {"signal" : "-zoom * 35"}
+                                }
                             },
                             "update": {
                                 "align" : {"value" : "center"},
-                                "dy" : {"value" : -30},
-                                "fontSize" : {"value" : 15},
+                                "fontSize" : {"signal" : "zoom * 15"},
                                 "fontStyle" : {"value" : "bold"},
                                 "fill": {"value" : "red"},
-                                "text" : {"signal" : "parent.source"},
-                            }
-                            
+                                "text" : {"signal" : "parent.entity_label"},
+                                "y":{
+                                    "offset": {"signal" : "-zoom * 35"}
+                                }
+                            }                            
                         }
                     },
                     {
-                        "type" : "text",
-                        "from" : {"data" : "ent"},
-
-                        "encode" : {
+                        "type": "text",
+                        "zindex": 3,
+                        "from": {"data": "entity"},
+                        "encode": {
                             "enter": {
-                                "fill": {"value" : "red"},
+                                "fill": {"value": "black"},
+                                "y": {
+                                    "scale": "property_scale",
+                                    "field": "property_label",
+                                }
                             },
                             "update": {
-                                "align" : {"value" : "center"},
-                                "dy" : {"value" : 30},
-                                "fontSize" : {"value" : 10},
-                                "fill": {"value" : "red"},
-                                "text" : {"field" : "datum.label"},
-                            }
+                                "align": {"value": "center"},
+                                "fontSize": {"signal": "zoom * 10"},
+                                "fontStyle": {"value": "bold"},
+                                "fill": {"value": "black"},
+                                "text": {"field": "property_label"},
+                                "y": {
+                                    "scale": "property_scale",
+                                    "field": "property_label",
+                                    "offset": {"signal" : "-zoom * 20"}
+                                }
+
+                            },
                             
                         }
-                    }
-                            
-                ],
-
+                    }                    
+                ],                
                 "transform": [
                     {
                         "type": "force",
                         "iterations": 300,
-                        #"restart": {"signal": "restart"},
+                        "restart": {"signal": "restart"},
                         "static": {"signal": "static"},
                         "signal": "force",
                         "forces": [
-                            #{"force" : "y", "y" : "datum.direction", "strength" : 0.03},
                             {"force": "center", "x": {"signal": "cx"}, "y": {"signal": "cy"}},
-                            {"force": "collide", "radius": {"signal": "nodeRadius * 6"}, "iterations" : 10},
-                            #{"force": "nbody", "strength": {"signal": "nodeCharge"}},
-                            {"force": "link", "links": "relationships", "distance": {"signal": "linkDistance"}}
+                            {"force": "collide", "radius": {"signal": "nodeRadius * 2"}}, #, "iterations" : 10},
+                            {"force": "nbody", "strength": {"signal": "nodeCharge / 10"}},
+                            {"force": "link", "links": "relationships", "distance": {"signal": "linkDistance"}, "id" : "datum.entity_label"}
                         ]
                     }
                 ]
@@ -365,96 +404,52 @@ class DatasetRelationalGraph(BaseVisualization):
                 "from": {"data": "relationships"},
                 "encode": {
                     "update": {
-                        "stroke": {"value": "#ccc"},
-                        "strokeWidth": {"value": 10},
-                        #"tooltip" : {"signal" : "datum.label"},
+                        "stroke": {"value": "#aaa"},
+                        "strokeWidth": {"signal": "zoom * 10"},
+                        "tooltip" : {"field" : "relationship_label"}
                     }
                 },
                 "transform": [
                     {
-                        "type": "linkpath",
-                        "require": {"signal": "force"},
-                        "shape": "line",
-                        "sourceX": "datum.source.x",
-                        "sourceY": "datum.source.y",
-                        "targetX": "datum.target.x",
-                        "targetY": "datum.target.y"
-                    }
+                       "type": "linkpath",
+                       "require": {"signal": "force"},
+                       "shape": "line",
+                       "sourceX": "datum.source.x",
+                       "sourceY": "datum.source.y",
+                       "targetX": "datum.target.x",
+                       "targetY": "datum.target.y"
+                    },
+                    #{"type" : "formula", "as" : "midx", "expr" : "warn(min(datum.sourceX, datum.targetX) + abs(datum.sourceX - datum.targetX))"},
+                    #{"type" : "formula", "as" : "midx", "expr" : "warn(datum.source)"},
+                    #{"type" : "formula", "as" : "midy", "expr" : "100"},
                 ]
             },
-            {
-                "type" : "text",
-                "from" : {"data" : "relationships"},
-                "encode" : {
-                    "update": {
-                        "x": {"field" : "source.x"},
-                            #"field": "x", "offset": 4},
-                        "y": {"field": "source.y"},
-                        "align" : {"value" : "center"},
-                        #"dy" : {"value" : 30},
-                        "fontSize" : {"value" : 10},
-                        "fill": {"value" : "red"},
-                        "text" : {"value" : "test"}, #{"signal" : "datum.label"},
-                    }
-                }
-            }
             # {
-            #     "type": "symbol",
-            #     "from": {"data": "relationships"},
-            #     "interactive": False,
-            #     #"style" : ["triangle"],
+            #     "type": "text",
+            #     "zindex": 4,
+            #     "from": {"data" : "links"},
+            #     "transform" : [
+            #         #{"type" : "lookup", "from" : "node_group", "key" : "entity_label", "fields" : ["source_label"], "values" : ["x"], "as" : ["sx"]},
+            #         #{"type" : "lookup", "from" : "node_group", "key" : "entity_label", "fields" : ["source_label"], "values" : ["y"], "as" : ["sy"]},
+            #         #{"type" : "lookup", "from" : "node_group", "key" : "entity_label", "fields" : ["target_label"], "values" : ["x"], "as" : ["tx"]},
+            #         #{"type" : "lookup", "from" : "node_group", "key" : "entity_label", "fields" : ["target_label"], "values" : ["y"], "as" : ["ty"]},
+            #         #{"type" : "formula", "expr" : "100", "as" : "sx"},
+            #     ],
             #     "encode": {
             #         "enter": {
-            #             #"shape" : {"value" : "triangle"},
-            #             "fill": {"scale": "color", "field": "group"},
-            #             "stroke": {"value": "red"},
-            #             "x" : {"signal" : "datum.target.x"},
-            #             "y" : {"signal" : "datum.target.y"},                        
+            #             "fill" : {"value" : "black"},
+            #             #"x" : {"signal" : "datum.source.x"},
+            #             #"y" : {"signal" : "datum.source.y"},
             #         },
             #         "update": {
-            #             "shape" : {"value" : "triangle"},
-            #             "x" : {"signal" : "datum.target.x"},
-            #             "y" : {"signal" : "datum.target.y"},
+            #             "align" : {"value" : "center"},
+            #             "fontSize" : {"signal" : "zoom * 10"},
+            #             "fontStyle" : {"value" : "bold"},
+            #             "fill" : {"value" : "black"},
+            #             "text" : {"field" : "relationship_label"},
+            #             #"x" : {"field" : "source.x"},
+            #             #"y" : {"field" : "source.y"},
             #         }
-            #     },
-            #     "transform": [
-            #         {
-            #             "type": "linkpath",
-            #             "require": {"signal": "force"},
-            #             "shape": "line",
-            #             "sourceX": "datum.source.x", "sourceY": "datum.source.y",
-            #             "targetX": "datum.target.x", "targetY": "datum.target.y"
-            #         }
-            #     ]
-            # },
-            # {
-            #     "type": "symbol",
-            #     "from": {"data": "properties"},
-            #     "interactive": False,
-            #     #"style" : ["triangle"],
-            #     "encode": {
-            #         "enter": {
-            #             #"shape" : {"value" : "triangle"},
-            #             "fill": {"scale": "color", "field": "group"},
-            #             "stroke": {"value": "red"},
-            #             "x" : {"signal" : "datum.target.x"},
-            #             "y" : {"signal" : "datum.target.y"},                        
-            #         },
-            #         "update": {
-            #             "shape" : {"value" : "triangle"},
-            #             "x" : {"signal" : "datum.target.x"},
-            #             "y" : {"signal" : "datum.target.y"},
-            #         }
-            #     },
-            #     "transform": [
-            #         {
-            #             "type": "linkpath",
-            #             "require": {"signal": "force"},
-            #             "shape": "line",
-            #             "sourceX": "datum.source.x", "sourceY": "datum.source.y",
-            #             "targetX": "datum.target.x", "targetY": "datum.target.y"
-            #         }
-            #     ]
-            # }
-
+            #     }
+            # }            
         ]

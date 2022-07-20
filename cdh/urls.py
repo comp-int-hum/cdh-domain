@@ -35,6 +35,7 @@ from django.conf.urls.static import static
 urlpatterns = [
     path("{}/".format(k), getattr(views, k) if hasattr(views, k) else include("{}.urls".format(k)), name=k) for k, v in settings.BUILTIN_PAGES.items()
 ] + [
+    path('__debug__/', include('debug_toolbar.urls')),
     path('', views.index, name="index"),
     path('slides/<int:sid>/', views.slide_detail, name="slide"),
     path('manage/', admin_site.urls, name="manage"),

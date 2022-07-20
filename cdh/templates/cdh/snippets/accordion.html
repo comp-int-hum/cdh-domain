@@ -1,0 +1,56 @@
+{% load sekizai_tags static %}
+  {% csrf_token %}
+{% if accordion.form %}
+<form method="post">
+
+  <input type="hidden" name="object_id" value="{{accordion.object.id}}" />
+  <div class="btn-group" role="group" aria-label="actions">
+  {% if accordion.buttons %}
+  {% for action, style, text in accordion.buttons %}
+  <button class="btn {{style}}" name="action" value="{{action}}">{{text}}</button>
+  {% endfor %}
+  {% else %}
+  <button class="btn btn-primary" name="action" value="change">Save</button>
+  <button class="btn btn-danger" name="action" value="delete">Delete</button>
+  {% endif %}
+  </div>
+  {{accordion.form}}
+</form>
+{% endif %}
+      
+{% if accordion.subitems|length > 0 or accordion.empty_form %}
+<h5>{{accordion.subitems_title}}</h5>
+<div class="accordion" id="{{accordion_id}}">
+  {% for item in accordion.subitems %}
+  <div class="accordion-item" id="{{accordion_id}}-item-{{forloop.counter}}">
+    <h2 class="accordion-header" id="{{accordion_id}}-heading-{{forloop.counter}}">
+      <button class="accordion-button cdh-accordion-button collapsed" id="button-{{accordion_id}}-collapse-{{forloop.counter}}" type="button" data-bs-toggle="collapse" data-bs-target="#{{accordion_id}}-collapse-{{forloop.counter}}" aria-expanded="false" aria-controls="{{accordion_id}}-collapse-{{forloop.counter}}">
+	{{item.name}}
+      </button>
+    </h2>
+    <div id="{{accordion_id}}-collapse-{{forloop.counter}}" class="accordion-collapse collapse w-75 ps-4" aria-labelledby="{{accordion_id}}-heading-{{forloop.counter}}">
+      {{item.description}}
+      {% include "cdh/snippets/accordion.html" with accordion_id=accordion_id|add:item.name|slugify accordion=item %}
+    </div>
+  </div>
+  {% endfor %}
+  {% if accordion.empty_form %}
+  <div class="accordion-item" id="{{accordion_id}}-item-0">
+    <h2 class="accordion-header" id="{{accordion_id}}-heading-0">
+      <button class="accordion-button cdh-accordion-button collapsed" id="button-{{accordion_id}}-collapse-0" type="button" data-bs-toggle="collapse" data-bs-target="#{{accordion_id}}-collapse-0" aria-expanded="false" aria-controls="{{accordion_id}}-collapse-0">
+	+
+      </button>
+    </h2>  
+    <div id="{{accordion_id}}-collapse-0" class="accordion-collapse collapse w-75 ps-4" aria-labelledby="{{accordion_id}}-heading-0">
+      <form method="post">
+	{% csrf_token %}
+	<button class="btn btn-primary" name="action" value="save">Save</button>		
+	{{accordion.empty_form}}
+      </form>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+

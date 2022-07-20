@@ -1,29 +1,100 @@
-"""cdh URL Configuration
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/3.2/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 from django.contrib import admin
 from django.urls import path
 from django.conf import settings
 from django.urls import re_path, include
 from django.views.generic.list import ListView
-from . import views
+from django.views.generic.edit import FormView, CreateView, UpdateView
+from cdh.views import AccordionView, TabView
+from .models import PrimarySource
+from .forms import PrimarySourceForm, PrimarySourceGraphicalForm, PrimarySourceEditorForm, QueryForm
+from .views import primarysource_relational_graph_spec
+
+# the overall accordion and tab layout for primary source management
+spec = {
+    "children" : [
+        {
+            "model_class" : PrimarySource,
+            "tabs" : [
+                {
+                    "title" : "Graph",
+                    "url" : "primary_sources:primarysource_graphical_update"
+                },
+                {
+                    "title" : "Editor",
+                    "url" : "primary_sources:primarysource_editor_update"
+                },
+                #{
+                #    "title" : "Queries",
+                #}
+            ]
+        },
+    ],
+}
 
 
 app_name = "primary_sources"
 urlpatterns = [
-    path('', views.dataset_list, name="dataset_list"),
-    path('dataset/<int:did>/', views.dataset_detail, name="dataset_detail"),
-    path('dataset_relational_graph/<int:dataset_id>/', views.dataset_relational_graph, name="dataset_relational_graph"),
+    #path(
+    #    '',
+    #    AccordionTabView.as_view(spec=spec),
+    #    name="index"
+    #),
+    path(
+        '',
+        AccordionView.as_view(
+            model=PrimarySource,
+            children={
+                "model" : PrimarySource,
+                "url" : "primary_sources:primarysource_tabs"
+            }
+        ),
+        name="index"
+    ),
+    path(
+        'primarysource/tabs/<int:pk>/',
+        TabView.as_view(
+            model=PrimarySource,
+            tabs=[
+                {
+                    "title" : "Graphical",
+                    "url" : "primary_sources:primarysource_graphical"
+                },
+                {
+                    "title" : "Editor",
+                    "url" : "primary_sources:primarysource_editor"
+                }
+            ]
+        ),
+        name="primarysource_tabs"
+    ),
+    # path(
+    #     'primarysource/<int:pk>/',
+    #     UpdateView.as_view(model=PrimarySource, form_class=PrimarySourceForm, template_name="cdh/simple_form.html"),
+    #     name="primarysource_update"
+    # ),
+    # path(
+    #     'primarysource/create/',
+    #     CreateView.as_view(model=PrimarySource, form_class=PrimarySourceForm, template_name="cdh/simple_form.html"),
+    #     name="primarysource_create"
+    # ),
+
+    path(
+        'primarysource/editor/<int:pk>/',
+        UpdateView.as_view(model=PrimarySource, form_class=PrimarySourceEditorForm, template_name="cdh/simple_form.html"),
+        name="primarysource_editor"
+    ),
+    path(
+        'primarysource/graphical/<int:pk>/',
+        UpdateView.as_view(model=PrimarySource, form_class=PrimarySourceGraphicalForm, template_name="cdh/simple_form.html"),
+        name="primarysource_graphical"
+    ),
+
+    
+    
+    #path(
+    #    'primarysource_relational_graph/<int:pk>/',
+    #    UpdateView.as_view(model=Primarysource, form_class=PrimarysourceVegaForm, template_name="cdh/simple_form.html"),
+    #    name="primarysource_relational_graph"
+    #),
+    #path('primarysource/relational_graph_spec/<int:pk>/', primarysource_relational_graph_spec, name="primarysource_relational_graph_spec"),
 ]
