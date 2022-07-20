@@ -498,7 +498,11 @@ class AccordionView(View):
                         "title" : str(obj),
                         "instance" : obj,
                         "url" : self.children["url"]                        
-                    } for obj in get_objects_for_user(request.user, klass=self.children["model"], perms=["view"])
+                    } for obj in get_objects_for_user(
+                        request.user,
+                        klass=self.children["model"],
+                        perms=["view_{}".format(self.children["model"]._meta.model_name)]
+                    )
                 ]
                 perms = get_perms(request.user, self.children["model"])
                 actions = set([x.split("_")[0] for x in perms])                

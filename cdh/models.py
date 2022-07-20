@@ -85,7 +85,7 @@ class User(AbstractUser):
         else:
             super().set_password(raw_password)
     def __str__(self):
-        return "{} {}".format(self.first_name, self.last_name)
+        return "{} {}".format(self.first_name, self.last_name) if self.last_name else self.username
 
     
 class Slide(models.Model):
