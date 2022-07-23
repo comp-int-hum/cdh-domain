@@ -8,12 +8,10 @@ class VegaWidget(Widget):
     def __init__(self, vega_class, *argv, **argd):
         super(VegaWidget, self).__init__(*argv, **argd)
         self.vega_class = vega_class
-        #self.url = "/primary_sources/primarysource/relational_graph_spec/28/"
         
     def get_context(self, name, value, attrs):
         ctx = super(VegaWidget, self).get_context(name, value, attrs)
         ctx["vega_spec"] = self.vega_class(value).json
-        print(ctx["vega_spec"])
         ctx["spec_identifier"] = "s_{}".format(random_token(8))
         ctx["div_identifier"] = "d_{}".format(random_token(8))
         return ctx
@@ -49,8 +47,12 @@ class MonacoEditorWidget(Textarea):
         context["css"] = self.media._css["all"]
         context["js"] = self.media._js
         context["widget"]["value_id"] = "value_{}".format(context["widget"]["attrs"]["id"])
-        context["widget"]["list_value"] = (context["widget"]["value"] if context["widget"].get("value", None) else self.default_value).split("\n")
+        context["widget"]["value"] = context["widget"]["value"] if context["widget"].get("value", None) else self.default_value
+        context["widget"]["list_value"] = context["widget"]["value"].split("\n")        
         return context
+
+    def value_from_datadict(self, data, files, name):
+        return super().value_from_datadict(data, files, name)
     
     @property
     def media(self):

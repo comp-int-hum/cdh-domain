@@ -11,10 +11,7 @@ if settings.USE_LDAP:
     import ldap
     from ldap import modlist
 
-class BaseModel(models.Model):
-    class Meta:
-        abstract = True
-
+    
 
 class AsyncMixin(models.Model):
     PROCESSING = "PR"
@@ -112,4 +109,9 @@ class SlidePage(models.Model):
         return self.name
     def get_absolute_url(self):
         return reverse("cdh:slide", args=(self.id,))
+
     
+class CdhModel(MetadataMixin, models.Model):
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    class Meta:
+        abstract = True

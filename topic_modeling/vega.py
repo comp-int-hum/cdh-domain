@@ -4,15 +4,7 @@ from cdh.vega import BaseVisualization
 
 class TopicModelWordCloud(BaseVisualization):
     def __init__(self, words):
-        self.values = words  # spec was word/prob pairs
-        # self.values = [
-        #   {
-        #       "topic": 0, 
-        #       "word": word, 
-        #       "value": float(prob),
-        #       #"link": "{}://{}:{}/topic_modeling/word_filler/{}".format(settings.PROTO, settings.HOSTNAME, settings.PORT, wid),
-        #   } for wid, (word, prob) in enumerate(topic)]
-        # self.num_topics = 1
+        self.values = words
         super(TopicModelWordCloud, self).__init__()
 
     @property
@@ -404,13 +396,13 @@ class SpatialDistribution(BaseVisualization):
             {
                 "name": "topics",
                 "values": self.values,
-                "transform" : [
-                    {
-                        "type" : "geopoint",
-                        "projection" : "focus",
-                        "fields" : ["longitude", "latitude"],
-                    }
-                ],
+                #"transform" : [
+                #    {
+                #        "type" : "geoshape",
+                #        #"projection" : "focus",
+                #        "field" : "datum.bounding_box",
+                #    }
+                #],
             },
             {
                 "name" : "world",
@@ -475,22 +467,20 @@ class SpatialDistribution(BaseVisualization):
                 ]
             },
             {
-                "type": "symbol",
+                "type": "shape",
                 "from": {"data": "topics"},
-                "shape" : "circle",
+                #"shape" : "circle",
                 "encode": {
-                    "enter": {
-                        "size": {"value" : 4}, #{"scale": "size", "field": "traffic.flights"},
-                        "fill": {"value": "steelblue"},
-                        "fillOpacity": {"value": 0.8},
-                        "stroke": {"value": "white"},
-                        "strokeWidth": {"value": 0}
-                    },
                     "update": {
-                        "x": {"field": "x"},
-                        "y": {"field": "y"}
-                    }
-                }
+                        "strokeWidth": {"value" : 1},
+                        "stroke": {"value": "red"},
+                        "fill": {"value": "blue"},
+                        "zindex": {"value": 1}
+                    },
+                },
+                "transform": [
+                    { "type": "geoshape", "projection": "focus", "field": "datum.bounding_box" }
+                ]
 
                 # "encode": {
                 #     "update": {

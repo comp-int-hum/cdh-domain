@@ -3,7 +3,7 @@ from django.db import models
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 from cdh import settings
-from cdh.models import BaseModel, User, AsyncMixin
+from cdh.models import CdhModel, User, AsyncMixin
 from django.urls import path, reverse
 import requests
 from rdflib import Graph
@@ -29,7 +29,7 @@ WHERE {
 """
 
 
-class PrimarySource(BaseModel):
+class PrimarySource(CdhModel):
     name = models.CharField(max_length=1000)
     def __str__(self):
         return self.name
@@ -119,7 +119,7 @@ class PrimarySource(BaseModel):
                     #     )
 
     
-class Query(BaseModel):
+class Query(CdhModel):
     name = models.CharField(max_length=1000)
     sparql = models.TextField()
     dataset = models.ForeignKey(PrimarySource, on_delete=models.CASCADE, null=True)

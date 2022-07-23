@@ -1,11 +1,88 @@
 {% extends "base.html" %}
 
 {% block content %}
-{% if buttons %}
+
+<div {% for k, v in reactive_properties.items %}
+     {{k}}="{{v}}"
+     {% endfor %}
+     id="{{prefix}}-reactive-properties"
+     >
+
+{% if form %}
+<form method="post" action="{{request.path_info}}" id="{{form_id}}"
+      hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+      {% if form.is_multipart %}
+      hx-encoding="multipart/form-data"
+      enctype="multipart/form-data"
+      _="on htmx:xhr:progress(loaded, total) set #progress.value to (loaded/total)*100"
+      {% endif %}
+      >
+{% endif %}
+
+
+{% if preamble %}
+<div class="container w-75">
+  {{preamble|safe}}
+</div>
+{% comment %}
+This needs to be fixed:
+<div class="accordion" id="{{prefix}}-preamble-accordion">
+  <div class="accordion-item" id="{{prefix}}-preamble-accordionitem" aria-labeledby="{{prefix}}-preamble-accordion">
+    <div class="accordion-header" id ="{{prefix}}-preamble-accordionheader">
+      <div class="d-grid gap-2">
+      <button id="{{prefix}}-preamble-button"
+	      class="accordion-button cdh-accordion-button collapsed"
+	      type="button"
+	      data-bs-toggle="collapse"
+	      data-bs-target="#{{prefix}}-preamble-accordioncontent"
+	      aria-expanded="false"
+	      aria-controls="{{prefix}}-preamble-accordioncontent"
+	      >
+	{% if preamble_title %}{{preamble_title}}{% else %}More information{% endif %}
+      </button>
+      </div>
+    </div>    
+    <div class="accordion-collapse collapse"
+	 id="{{prefix}}-preamble-accordioncontent"
+	 aria-labeledby="{{prefix}}-preamble-accordionheader"
+	 data-bs-parent="{{prefix}}-preamble-accordion"
+	 >
+      {{preamble}}
+    </div>
+  </div>
+</div>
+{% endcomment %}
+{% endif %}
+
+{% if buttons and top_buttons %}
 <div class="btn-group" role="group" aria-label="actions">
   {% for button in buttons %}
   <button class="btn btn-{{button.style}}"
-	  {% comment %}{% if button.method %}hx-vals='{"method" : "{{button.method}}"}'{% endif %}{% endcomment %}
+	  {% if button.hx_post %}hx-post="{{button.hx_post}}"{% endif %}
+	  {% if button.hx_delete %}hx-delete="{{button.hx_delete}}"{% endif %}	    
+	  {% if button.hx_confirm %}hx-confirm='{{button.hx_confirm}}'{% endif %}
+	  {% if button.hx_target %}hx-target='#{{button.hx_target}}'{% endif %}
+	  {% if button.hx_select %}hx-select='{{button.hx_select}}'{% endif %}
+	  {% if button.hx_swap %}hx-swap='{{button.hx_swap}}'{% endif %}
+	  hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+	  >
+    {{button.label}}
+  </button>
+  {% endfor %}
+</div>
+{% endif %}
+
+{{content}}
+{{form}}
+
+{% if form.is_multipart %}
+<progress id='progress' value='0' max='100'></progress>
+{% endif %}
+
+{% if buttons and top_buttons %}
+<div class="btn-group" role="group" aria-label="actions">
+  {% for button in buttons %}
+  <button class="btn btn-{{button.style}}"
 	  {% if button.hx_post %}hx-post="{{request.path_info}}"{% endif %}
 	  {% if button.hx_delete %}hx-delete="{{request.path_info}}"{% endif %}	    
 	  {% if button.hx_confirm %}hx-confirm='{{button.hx_confirm}}'{% endif %}
@@ -20,6 +97,28 @@
 </div>
 {% endif %}
 
+{% if buttons and not top_buttons %}
+<div class="btn-group" role="group" aria-label="actions">
+  {% for button in buttons %}
+  <button class="btn btn-{{button.style}}"
+	  {% if button.hx_post %}hx-post="{{request.path_info}}"{% endif %}
+	  {% if button.hx_delete %}hx-delete="{{request.path_info}}"{% endif %}	    
+	  {% if button.hx_confirm %}hx-confirm='{{button.hx_confirm}}'{% endif %}
+	  {% if button.hx_target %}hx-target='#{{form_id}}'{% endif %}
+	  {% if button.hx_select %}hx-select='{{button.hx_select}}'{% endif %}
+	  {% if button.hx_swap %}hx-swap='{{button.hx_swap}}'{% endif %}
+	  hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+	  >
+    {{button.label}}
+  </button>
+  {% endfor %}
+</div>
+{% endif %}
 
-{{content}}
+{% if form %}
+</form>
+{% endif %}
+
+</div>
+
 {% endblock %}

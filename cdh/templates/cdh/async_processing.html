@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h5>
-  This object is still being processed!
+<h5 hx-trigger="load delay:600ms" hx-get="{{path}}" hx-swap="outerHTML" hx-select="#top_level_content > *">
+  This object is still being processed{% if object.message %}: {{object.message}}{% endif %}
 </h5>
 {% endblock %}

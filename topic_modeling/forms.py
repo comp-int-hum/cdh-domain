@@ -13,7 +13,7 @@ class LexiconForm(ModelForm):
             kwargs["instance"].id if kwargs.get("instance", False) else "unbound"
         )
         super().__init__(*args, prefix=prefix, **{k : v for k, v in kwargs.items() if k != "prefix"})
-    
+
     class Meta:
         model = Lexicon
 
@@ -21,8 +21,8 @@ class LexiconForm(ModelForm):
 
         widgets = {
             'lexical_sets': widgets.MonacoEditorWidget(language="json", content_field="lexical_sets", default_value="""{
-  "positive_items": ["happy", "glad"],
-  "negative_items": ["awful", "sad*"]
+  "positive_words": ["happy", "glad"],
+  "negative_words": ["awful", "sad.*"]
 }
 """)
         }

@@ -80,10 +80,12 @@ function collapseChild(btn){
     ct.classList.remove("show");    
 }
 
+
 function cdhSetup(root, htmxSwap){
     console.info("Running CDH setup on ", root);
 
     // reactivate accordion items
+    /*
     var seenAccordionItems = new Map();
     for(let el of root.getElementsByClassName("cdh-accordion-button")){
 	ct = document.getElementById(el.getAttribute("aria-controls"));
@@ -111,16 +113,19 @@ function cdhSetup(root, htmxSwap){
 	});
 	ct.addEventListener("show.bs.collapse", event => { addValue("active_accordion_items", event.target.id) });
     }
-
+    */
     // remove unseen accorion items
+    /*
     for(let aid of getList("active_accordion_items")){
 	if(!seenAccordionItems.has(aid)){
 	    console.info("removing unseen accordion item", aid);
 	    removeValue("active_accordion_items", aid);
 	}
     }
-
+    */
+    
     // reactivate tab items
+    /*
     for(let el of root.getElementsByClassName("cdh-tab-button")){
 	ct = document.getElementById(el.getAttribute("aria-controls"));
 	if(checkValue("active_tab_items", el.id)){
@@ -140,7 +145,7 @@ function cdhSetup(root, htmxSwap){
 	el.addEventListener("show.bs.tab", event => { addValue("active_tab_items", event.target.id); });
 	el.addEventListener("hide.bs.tab", event => { removeValue("active_tab_items", event.target.id) });
     }
-
+    */
     // make sure exactly one tab is visible for every set of tabs
     for(let el of root.getElementsByClassName("cdh-nav-tabs")){
 	console.info("Processing tabs ", el);
@@ -204,4 +209,29 @@ function cdhSetup(root, htmxSwap){
 	    el.setAttribute("processed", "true");
 	}
     }
+    
+}
+
+function handleCdhEvent(event){
+    console.warn(event.detail);
+    for(let el of document.getElementsByClassName("accordion-item")){
+	if(event.detail.app == el.getAttribute("app") && event.detail.model == el.getAttribute("model") && event.detail.id == el.getAttribute("obj_id")){
+	    if(event.detail.type == "delete"){
+		// remove element
+		el.remove();
+		for(let ch of el.children){
+		    if(ch.classList.contains("accordion-collapse")){
+			// remove id from active
+		    }
+		}
+	    }
+	    else if(event.detail.type == "update"){
+		
+	    }
+	    else if(event.detail.type == "create"){
+	    }
+	}
+    }
+
+    //event.detail.type/app/model/id
 }

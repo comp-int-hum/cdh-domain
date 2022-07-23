@@ -30,7 +30,8 @@
     <script type='text/javascript' src="{% static 'jquery.cookie/jquery.cookie.js' %}" id='theme-cookie-js'></script>
     <script type='text/javascript' src="{% static 'jquery.scrollTo/jquery.scrollTo.js' %}" id='theme-scrollto-js'></script>
     <script type='text/javascript' src="{% static 'vega/docs/vega.min.js' %}" id='vega'></script>
-    <script type='text/javascript' src="{% static 'cdh/js/htmx.min.js' %}" id='htmx'></script>
+    <script type='text/javascript' src="{% static 'cdh/js/hyperscript.min.js' %}" id="hyperscript"></script>
+    <script type='text/javascript' src="{% static 'cdh/js/htmx.min.js' %}" id='htmx'></script>    
     {% endaddtoblock %}
     
     {% render_block "initial_js" %}    
@@ -211,6 +212,7 @@
 		cdhSetup(evt.detail.elt, true);
 	    //}
 	});
+	document.body.addEventListener("cdhEvent", handleCdhEvent);
       </script>
   </body>
 </html>

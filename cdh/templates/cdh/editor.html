@@ -1,6 +1,11 @@
 {% load i18n %}
 
-<div field_name="{{widget.name}}" value_id="{{widget.value_id}}" class="cdh-editor" {% include "django/forms/widgets/attrs.html" %} style="width: 800px; height: 200px; border: 1px solid grey"></div>
+<div field_name="{{widget.name}}"
+     value_id="{{widget.value_id}}"
+     class="cdh-editor"
+     {% include "django/forms/widgets/attrs.html" %}
+     style="width: 800px; height: 200px; border: 1px solid grey">
+</div>
 
 {{ widget.list_value|json_script:widget.value_id }}
 <input type="hidden" name="{{widget.name}}" id="{{widget.name}}-hidden" value="{{widget.value}}"/>

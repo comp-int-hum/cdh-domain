@@ -16,7 +16,8 @@ from gensim.models import LdaModel
 from gensim.corpora import Dictionary
 from jsonpath import JSONPath
 from spacy.lang import en
-    
+from gensim.models.callbacks import Metric
+
 if settings.USE_CELERY:
     from celery import shared_task
 else:
@@ -35,8 +36,11 @@ def extract_documents(
     temporal_field = JSONPath(argd["temporal_field"][0])
     spatial_field = JSONPath(argd["spatial_field"][0])
     text_field = JSONPath(argd["text_field"][0])
+    lang_field = JSONPath(argd["language_field"][0])
     time.sleep(2)
     collection = models.Collection.objects.get(id=collection_id)
+    collection.message = "Preparing to extract documents"
+    collection.save()
     has_temporality = False
     has_spatiality = False
     try:
@@ -87,17 +91,26 @@ def extract_documents(
                     temporal = temporal_field.parse(j)
                     spatial = spatial_field.parse(j)
                     if len(temporal) > 0:
-                        has_temporality = True
+                        temporal = datetime.fromtimestamp(float(temporal[0]) / 1000)
                     if len(spatial) > 0:
+                        spatial = spatial[0]
+                    if temporal:
+                        has_temporality = True
+                    if spatial:
                         has_spatiality = True
                     title = title_field.parse(j)
                     author = author_field.parse(j)
                     text = text_field.parse(j)
+                    lang = lang_field.parse(j)
+                    if i % 1000 == 0:
+                        collection.message = "{} document processed".format(i)
+                        collection.save()
                     docobj = models.Document(
                         title=title[0] if len(title) > 0 else "",
                         text=text[0] if len(text) > 0 else "",
-                        temporal=temporal[0] if len(temporal) > 0 else "",
-                        spatial=spatial[0] if len(spatial) > 0 else "",
+                        language = lang[0][:2] if len(lang) > 0 else "",
+                        temporal=temporal,
+                        spatial=spatial,
                         author=author[0] if len(author) > 0 else "",
                         collection=collection,
                     )                    
@@ -116,12 +129,32 @@ def extract_documents(
     collection.save()
 
 
-@shared_task
-def train_model(topic_model_id):
+class EpochLogger(Metric):
+    logger = "cdh"
+    title = "epochs"
+    
+    def __init__(self, obj, *argv, **argd):
+        super(EpochLogger, self).__init__()
+        self.epoch = 0
+        self.object = obj
+        self.set_epoch()
+
+    def set_epoch(self):
+        self.epoch += 1
+        self.object.message = "On pass #{}/{}".format(self.epoch, self.object.passes)
+        self.object.save()
+        
+    def get_value(self, *argv, **argd):
+        self.set_epoch()
+        return 0
 
     
+@shared_task
+def train_model(topic_model_id):
     time.sleep(2)
     topic_model = models.TopicModel.objects.get(id=topic_model_id)
+    topic_model.message = "Preparing training data"
+    topic_model.save()
     collection = topic_model.collection
     random.seed(topic_model.random_seed)
     try:
@@ -147,6 +180,7 @@ def train_model(topic_model_id):
         dictionary = Dictionary(docs)
         dictionary.filter_extremes(no_below=topic_model.minimum_occurrence, no_above=topic_model.maximum_proportion, keep_n=topic_model.maximum_vocabulary)
         corpus = [dictionary.doc2bow(doc) for doc in docs]
+        el = EpochLogger(topic_model)
         model = LdaModel(
             corpus=corpus,
             id2word=dictionary,
@@ -156,7 +190,8 @@ def train_model(topic_model_id):
             iterations=topic_model.iterations,
             passes=topic_model.passes,
             random_state=topic_model.random_seed,
-            eval_every=None
+            eval_every=None,
+            callbacks=[el],
         )
         topic_model.state = topic_model.COMPLETE
         topic_model.serialized = pickle.dumps(model)
@@ -164,54 +199,90 @@ def train_model(topic_model_id):
         topic_model.state = topic_model.ERROR
         topic_model.message = "{}".format(e)
         raise e
+    topic_model.message = ""
     topic_model.save()
 
 
 @shared_task
-def apply_model(labeled_collection_id):
+def apply_model(labeledcollection_id):
     time.sleep(2)
-    labeled_collection = models.LabeledCollection.objects.get(id=labeled_collection_id)
+    labeledcollection = models.LabeledCollection.objects.get(id=labeledcollection_id)
+    labeledcollection.message = "Preparing to label documents"
+    labeledcollection.save()
     try:
-        if labeled_collection.lexicon:
+        print("Querying documents")
+        qs = models.Document.objects.filter(collection=labeledcollection.collection).only("id")
+        print("Making indices")        
+        indices = list(range(qs.count()))
+        print("Shuffling indices")
+        random.shuffle(indices)
+        print("Selecting indices")
+        indices = set(indices[:labeledcollection.maximum_documents])
+        number_labeled = 0        
+        if labeledcollection.lexicon:
+            lexicon = json.loads(labeledcollection.lexicon.lexical_sets)
             cache = {}
-            lexical_sets = {name : "^({})$".format("|".join(terms)) for name, terms in output.lexicon.lexical_sets.items()}
-            with gzip.open(output.collection.disk_serialized_processed.path, "rt") as ifd:
-                for line in ifd:
-                    j = json.loads(line)
-                    text = j["text"]
-                    toks = re.sub(r"\s+", " ", text).split()
-                    labeled_toks = []
-                    for tok in toks:
-                        if tok not in cache:
-                            cache[tok] = ""
-                            for name, pattern in lexical_sets.items():
-                                if re.match(pattern, tok, re.I):
-                                    cache[tok] = name
-                                    break
-                        labeled_toks.append((tok, cache[tok]))
-                    ofd.write(json.dumps(labeled_toks) + "\n")                            
-        elif labeled_collection.model:
-            model = pickle.loads(labeled_collection.model.serialized.tobytes()) #LdaModel.load(output.model.disk_serialized.path)
-            for j, doc in enumerate(models.Document.objects.filter(collection=labeled_collection.collection)):
+            lexical_sets = {name : "^({})$".format("|".join(terms)) for name, terms in lexicon.items()}
+            for j, doc in enumerate(models.Document.objects.only("id").filter(collection=labeledcollection.collection)):
+                if j not in indices:
+                    continue
                 labeled_doc = models.LabeledDocument(
                     document=doc,
-                    labeled_collection=labeled_collection,
-                    #content=json.dumps(labeled_toks).encode(),
+                    labeledcollection=labeledcollection,
                 )
                 labeled_doc.save()
                 text = doc.text
-                print(j, doc.title)
-                toks = [re.sub(labeled_collection.model.token_pattern_in, labeled_collection.model.token_pattern_out, t) for t in re.split(labeled_collection.model.split_pattern, text)]
-                num_subdocs = round(0.5 + len(toks) / labeled_collection.model.max_context_size)
+                toks = re.split(r"\s+", text)
+                num_subdocs = round(0.5 + len(toks) / 2000)
+                toks_per = int(len(toks) / num_subdocs)
+                labeled_toks = []
+                topic_counts = {}
+                number_labeled += 1
+                if number_labeled % 1000 == 0:
+                    labeledcollection.message = "Labeling document #{}/{}".format(number_labeled, len(indices))
+                    labeledcollection.save()
+                for i in range(num_subdocs):
+                    subdoc_toks = toks[i * toks_per : (i + 1) * toks_per]
+                    content = [(t, [k for k, v in lexical_sets.items() if re.match(v, t, re.I)]) for t in subdoc_toks]
+                    content = [(o, v[0]) for o, v in content if len(v) > 0]
+                    subdoc_topic_counts = {}
+                    for _, t in content:
+                        topic_counts[t] = topic_counts.get(t, 0) + 1
+                        subdoc_topic_counts[t] = subdoc_topic_counts.get(t, 0) + 1
+                    subdoc = models.LabeledDocumentSection(
+                        content=content,
+                        labeleddocument=labeled_doc,
+                        metadata={"topic_counts" : subdoc_topic_counts},
+                    )
+                    subdoc.save()
+                labeled_doc.metadata = {"topic_counts" : topic_counts}
+                labeled_doc.save()
+        elif labeledcollection.model:
+            model = pickle.loads(labeledcollection.model.serialized.tobytes()) #LdaModel.load(output.model.disk_serialized.path)
+            for j, doc in enumerate(models.Document.objects.only("id").filter(collection=labeledcollection.collection)):
+                if j not in indices:
+                    continue
+                labeled_doc = models.LabeledDocument(
+                    document=doc,
+                    labeledcollection=labeledcollection,
+                )
+                labeled_doc.save()
+                number_labeled += 1
+                if number_labeled % 1000 == 0:
+                    labeledcollection.message = "Labeling document #{}/{}".format(number_labeled, len(indices))
+                    labeledcollection.save()
+                text = doc.text
+                toks = [re.sub(labeledcollection.model.token_pattern_in, labeledcollection.model.token_pattern_out, t) for t in re.split(labeledcollection.model.split_pattern, text)]
+                num_subdocs = round(0.5 + len(toks) / labeledcollection.model.max_context_size)
                 toks_per = int(len(toks) / num_subdocs)
                 labeled_toks = []
                 topic_counts = {}
                 for i in range(num_subdocs):
                     orig_subdoc_toks = toks[i * toks_per : (i + 1) * toks_per]
-                    subdoc_toks = [t.lower() for t in orig_subdoc_toks] if labeled_collection.model.lowercase else orig_subdoc_toks
+                    subdoc_toks = [t.lower() for t in orig_subdoc_toks] if labeledcollection.model.lowercase else orig_subdoc_toks
                     _, text_topics, _ = model.get_document_topics(model.id2word.doc2bow(subdoc_toks), per_word_topics=True)
                     word2topic = {model.id2word[wid] : -1 if len(topics) == 0 else topics[0] for wid, topics in text_topics}
-                    #labeled_toks +=
+                    #labeled_toks =
                     content = [(o, word2topic.get(t, -1)) for o, t in zip(orig_subdoc_toks, subdoc_toks)]
                     subdoc_topic_counts = {}
                     for _, t in content:
@@ -221,24 +292,16 @@ def apply_model(labeled_collection_id):
                             
                     subdoc = models.LabeledDocumentSection(
                         content=content,
-                        labeled_document=labeled_doc,
+                        labeleddocument=labeled_doc,
                         metadata={"topic_counts" : subdoc_topic_counts},
                     )
                     subdoc.save()
                 labeled_doc.metadata = {"topic_counts" : topic_counts}
                 labeled_doc.save()
-                #text = text.lower() if labeled_collection.model.lowercase else text
-                #toks = [re.sub(labeled_collection.model.token_pattern_in, labeled_collection.model.token_pattern_out, t) for t in re.split(labeled_collection.model.split_pattern, text)]
-                
-                #_, text_topics, _ = model.get_document_topics(model.id2word.doc2bow(toks), per_word_topics=True)
-                #word2topic = {model.id2word[wid] : -1 if len(topics) == 0 else topics[0] for wid, topics in text_topics}
-                #labeled_toks = [(otok, word2topic.get(tok, "")) for tok, otok in zip(toks, otoks)]
-                        #print(len(labeled_toks))
-                        #labeled_doc.save()
-        labeled_collection.state = labeled_collection.COMPLETE
-        
+        labeledcollection.state = labeledcollection.COMPLETE
     except Exception as e:
-        labeled_collection.state = labeled_collection.ERROR
-        labeled_collection.message = "{}".format(e)
-        raise e        
-    labeled_collection.save()
+        labeledcollection.state = labeledcollection.ERROR
+        labeledcollection.message = "{}".format(e)
+        raise e
+    labeledcollection.message = ""
+    labeledcollection.save()

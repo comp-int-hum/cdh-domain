@@ -17,27 +17,35 @@ from .views import WordTableView, CollectionCreateView
 from cdh.views import TabView, AccordionView, VegaView, CdhView
 from .vega import TopicModelWordCloud, SpatialDistribution, TemporalEvolution
 from .tasks import extract_documents, train_model, apply_model
+from guardian.shortcuts import get_perms, get_objects_for_user, assign_perm
+from cdh.models import User
 
 
 def create_topicmodel(self, request, *argv, **argd):
     form = self.get_form_class()(request.POST, request.FILES)
-    form.is_valid()
+    print(form.is_valid())
+    print(form)
     obj = form.save()
+    #assign_perm("view_topicmodel", request.user, obj)
+    #assign_perm("delete_topicmodel", request.user, obj)
+    #assign_perm("view_topicmodel", User.get_anonymous(), obj)
     train_model.delay(obj.id)
-    return HttpResponseRedirect(obj.get_absolute_url())
+    return (obj, HttpResponseRedirect(obj.get_absolute_url()))
 
 
 def create_collection(self, request, *argv, **argd):
     form = self.get_form_class()(request.POST, request.FILES)
     form.is_valid()
     ufname = request.FILES["file"].name
-    #ext = os.path.splitext(ufname)[-1]
     path = settings.MEDIA_ROOT / "shared" / "topic_modeling" / "collections"
     if not os.path.exists(path):
         os.makedirs(path)
     obj = Collection.objects.create(
         name=form.cleaned_data["name"],
-    )        
+    )
+    #assign_perm("view_collection", request.user, obj)
+    #assign_perm("delete_collection", request.user, obj)
+    #assign_perm("view_collection", User.get_anonymous(), obj)
     ofname = path / "{}_{}".format(obj.id, ufname)
     with open(ofname, "wb") as ofd:
         for chunk in request.FILES["file"].chunks():
@@ -47,7 +55,17 @@ def create_collection(self, request, *argv, **argd):
         str(ofname),
         **request.POST
     )
-    return HttpResponseRedirect(obj.get_absolute_url())
+    return (obj, HttpResponseRedirect(obj.get_absolute_url()))
+
+
+def create_labeledcollection(self, request, *argv, **argd):
+    form = self.get_form_class()(request.POST, request.FILES)
+    form.is_valid()
+    obj = form.save()
+    apply_model.delay(
+        obj.id,
+    )
+    return (obj, HttpResponseRedirect(obj.get_absolute_url()))
 
 
 app_name = "topic_modeling"
@@ -57,19 +75,22 @@ urlpatterns = [
     path(
         '',
         AccordionView.as_view(
+            preamble="""
+            Topic models and manual lexicons are two methods for exploring how text collections differ across dimensions like author, space, and time.  This interface allows scholars to upload collections of documents, train topic models on them and define lexicons, and apply both models and lexicons to the collections to produce labeled collections that surface semantically-coherent information.
+            """,
             model=TopicModel,
             children=[
                 {
-                    "title" : "Models",
+                    "title" : "Collections",
+                    "url" : "topic_modeling:collection_list"
+                },
+                {
+                    "title" : "Topic Models",
                     "url" : "topic_modeling:topicmodel_list"
                 },
                 {
                     "title" : "Lexicons",
                     "url" : "topic_modeling:lexicon_list"
-                },
-                {
-                    "title" : "Collections",
-                    "url" : "topic_modeling:collection_list"
                 },
                 {
                     "title" : "Labeled Collections",
@@ -93,6 +114,16 @@ urlpatterns = [
     path(
         'collection/create/',
         CdhView.as_view(
+            preamble="""
+            To create a new collection, choose a meaningful name, and upload a file in one of the following formats:
+
+            <ul>
+            <li>CSV file ending in "csv" or "csv.gz" :: test</li>
+            <li>JSON file ending in "json" or "json.gz" :: test2</li>
+            <li>Tar file ending in "tar" or "tar.gz" :: test3</li>
+            <li>Zip file ending in "zip" :: test4</li>
+            </ul>
+            """,
             model=Collection,
             fields=["name"],
             extra_fields={
@@ -101,14 +132,16 @@ urlpatterns = [
                 "text_field" : CharField,                
                 "author_field" : CharField,
                 "temporal_field" : CharField,
-                "spatial_field" : CharField                
+                "spatial_field" : CharField,
+                "language_field" : CharField,
             },
             initial={
                 "title_field" : "$.id_str",
                 "text_field" : "$.text",
                 "author_field" : "$.user.screen_name",
-                "temporal_field" : "$.created_at",
-                "spatial_field" : "$.user.location"
+                "temporal_field" : "$.timestamp_ms",
+                "spatial_field" : "$.place.bounding_box",
+                "language_field" : "$.lang",
             },
             can_create=True,
             create_lambda=create_collection,
@@ -132,7 +165,19 @@ urlpatterns = [
         CdhView.as_view(
             model=Lexicon,
             form_class=LexiconForm,
-            can_create=True
+            can_create=True,
+            preamble="""
+            A lexicon is simply specified as a mapping from meaningful labels (could be topics, sentiments, styles,
+            etc) to lists of word-patterns that indicate the label.  The syntax should be clear from the initial example in
+            the editor below.  The word-patterns can include "wildcards" such as in "sad.*", which will match "sad", "sadly",
+            "saddened", etc.  Note that it is a period followed by an asterisk, not just an asterisk (this is because
+            you can actually specify arbitrary "regular expressions" as defined in the Python language's core library,
+            for advanced situations).  Bear in mind that, while the word-patterns are applied to each word of the documents,
+            and therefore you needn't worry about wildcards matching across multiple words, you should still be careful in
+            using them: they can easily become too general and match many unintended words.  Also, the collective matching
+            behavior of the different labels should not overlap: if two labels both have word-patterns matching a word, the
+            word will only "count" for one of them, chosen at random.
+            """
         ),
         name="lexicon_create"
     ),
@@ -145,11 +190,11 @@ urlpatterns = [
             tabs=[                
                 {
                     "title" : "Word clouds",
-                    "url" : "topic_modeling:topicmodel_wordcloud"
+                    "url" : "topic_modeling:topicmodel_wordcloud",
                 },
                 {
                     "title" : "Topic table",
-                    "url" : "topic_modeling:topicmodel_wordtable"
+                    "url" : "topic_modeling:topicmodel_wordtable",
                 }
             ],
             can_delete=True
@@ -160,10 +205,14 @@ urlpatterns = [
         'topicmodel/create/',
         CdhView.as_view(
             model=TopicModel,
-            fields=["name", "collection", "topic_count", "lowercase", "max_context_size", "maximum_documents"],
+            fields=["name", "collection", "topic_count", "lowercase", "max_context_size", "maximum_documents", "passes"],
             can_create=True,
             create_lambda=create_topicmodel,
-            initial={}
+            initial={},
+            preamble="""
+            The most important choices in training a topic model are the collection it will be based on, and
+            the number of topics to infer.
+            """
         ),
         name="topicmodel_create"
     ),
@@ -188,6 +237,7 @@ urlpatterns = [
     path(
         'labeledcollection/detail/<int:pk>/',
         TabView.as_view(
+            can_delete=True,
             model=LabeledCollection,
             tabs=[
                 {
@@ -229,33 +279,54 @@ urlpatterns = [
         CdhView.as_view(
             model=LabeledCollection,
             fields=["name", "collection", "model", "lexicon"],
-            can_create=True
+            can_create=True,
+            create_lambda=create_labeledcollection,
+            preamble="""
+            To create a labeled collection, choose a meaningful name, and then select the collection to be labeled, and either a topic model or a lexicon to use.  After creation, it will take a while for the process to complete: until then, the new entry will display a progress indicator, or a red error message if something goes wrong.
+            """
         ),
         name="labeledcollection_create"
     ),
 
     # LabeledDocument-related
-    # path(
-    #     'labeleddocument/<int:pk>/',
-    #     UpdateView.as_view(model=LabeledDocument, fields=["name"], template_name="cdh/simple_form.html"),
-    #     name="labeleddocument_update"
-    # ),
+    #path(
+    #    'labeleddocument/<int:pk>/',
+    #    UpdateView.as_view(model=LabeledDocument, fields=["name"], template_name="cdh/simple_form.html"),
+    #    name="labeleddocument_update"
+    #),
     # path(
     #     'labeleddocument/create/',
     #     CreateView.as_view(model=LabeledDocument, fields=["name"], template_name="cdh/simple_form.html"),
     #     name="labeleddocument_create"
     # ),
 
+
+    
 ] + [
         path(
             '{}/list/'.format(model._meta.model_name),
             AccordionView.as_view(
                 model=model,
+                preamble=preamble,
                 children={
                     "model" : model,
                     "url" : "topic_modeling:{}_detail".format(model._meta.model_name),
-                    "create_url" : "topic_modeling:{}_create".format(model._meta.model_name)
-                }
+                    "create_url" : "topic_modeling:{}_create".format(model._meta.model_name),
+                },
             ),
             name="{}_list".format(model._meta.model_name)
-        ) for model in [TopicModel, Lexicon, Collection, LabeledCollection]]
+        ) for model, preamble in [
+            (TopicModel, """
+            A topic model is a learned representation that tries to explain observed patterns of word-occurrence (i.e. documents) by positing some number of unobserved "topics", each of which consists of a different distribution over the vocabulary.
+            """),
+            (Lexicon, """
+            In a lexicon, the scholar specifies topics directly as lists of words.
+            """),
+            (Collection, """
+            A collection is a set of text documents with optional additional information about author, location, time, and other arbitrary properties that the scholar deems interesting.
+            """),
+            (LabeledCollection, """
+            A labeled collection is the result of applying either a lexicon or a topic model to a collection.  In either case, each word in each document is potentially assigned a topic.  This information is aggregated and displayed in several automatic ways: if the original collection had temporal or spatial fields, for instance.  A document-level view allows the scholar to directly inspect how words in specific documents have been labeled.
+            """)
+        ]
+]

@@ -70,7 +70,6 @@ class WordTableView(SingleObjectMixin, View):
             header_content=header_content,
             row_content="\n".join(rows)
         )
-        print(retval)
         return mark_safe(retval)
     
     def get(self, request, *argv, **argd):
