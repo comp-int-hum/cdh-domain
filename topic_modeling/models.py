@@ -119,7 +119,7 @@ class LabeledCollection(AsyncMixin, CdhModel):
         #model = pickle.loads(self.model.serialized.tobytes())    
         #topics = dict([(tid, model.show_topic(tid)) for tid in range(self.model.topic_count)])
         coordinates = []
-        for ld in LabeledDocument.objects.filter(labeledcollection=self):
+        for ld in LabeledDocument.objects.filter(labeledcollection=self).select_related("document"):
             if not ld.document.spatial:
                 continue
             counts = {k : v for k, v in ld.metadata["topic_counts"].items()}
@@ -140,11 +140,12 @@ class LabeledCollection(AsyncMixin, CdhModel):
         #topics = dict([(tid, model.show_topic(tid)) for tid in range(self.model.topic_count)])
         min_time, max_time = None, None        
         vals = []
-        for ld in LabeledDocument.objects.filter(labeledcollection=self):
-            time = int(ld.document.temporal.timestamp())
-            min_time = time if min_time == None else min(min_time, time)
-            max_time = time if max_time == None else max(max_time, time)
-            vals.append((time, {k : v for k, v in ld.metadata["topic_counts"].items()}))
+        for ld in LabeledDocument.objects.select_related("document").filter(labeledcollection=self):
+            if ld.document.temporal:
+                time = int(ld.document.temporal.timestamp())
+                min_time = time if min_time == None else min(min_time, time)
+                max_time = time if max_time == None else max(max_time, time)
+                vals.append((time, {k : v for k, v in ld.metadata["topic_counts"].items()}))
         timespan = max_time - min_time
         duration = int(timespan / 20)
         all_labels = set()
