@@ -1,4 +1,10 @@
-<div id="{{div_identifier}}"></div>
+{% if preamble %}
+<div class="container w-75">
+  {{preamble|safe}}
+</div>
+{% endif %}
+
+<div class="overflow-scroll vh-100" id="{{div_identifier}}"></div>
 
 {{ vega_spec|json_script:spec_identifier }}
 
@@ -11,8 +17,11 @@
           renderer:  'canvas',  // renderer (canvas or svg)
           container: '#{{div_identifier}}',   // parent DOM container
           hover:     true       // enable hover processing
-      });
+      });      
       view.resize();
+      var el = document.getElementById("{{div_identifier}}");
+      //view.width(el.offsetWidth);
+      //view.height(el.offsetHeight);
       view.logLevel(vega.Warn);
       return view.runAsync();
       }

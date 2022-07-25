@@ -31,10 +31,13 @@ WHERE {
 
 class PrimarySource(CdhModel):
     name = models.CharField(max_length=1000)
+
     def __str__(self):
         return self.name
+
     def get_absolute_url(self):
-        return reverse("primary_sources:primarysource_update", args=(self.id,))
+        return reverse("primary_sources:primarysource_detail", args=(self.id,))
+
     @property
     def schema(self):
         resp = requests.get(
@@ -43,8 +46,9 @@ class PrimarySource(CdhModel):
             auth=requests.auth.HTTPBasicAuth(settings.JENA_USER, settings.JENA_PASSWORD)
         )
         return json.loads(resp.content.decode("utf-8"))
+
     @property
-    def vega(self):
+    def vega_triples(self):
         value = self.schema
         entities, relationships, properties = [], [], []
         for triple in value["@graph"]:
@@ -90,33 +94,27 @@ class PrimarySource(CdhModel):
         )
         return resp.content.decode("utf-8")
     
-    def delete(self):
+    def save(self, schema_fd=None, annotation_fd=None, data_fd=None, materials_fd=None):
+        super(PrimarySource, self).save()
         if settings.USE_JENA:
-            for graph_name in ["schema", "annotation", "data"]:
-                requests.delete(
-                    "http://{}:{}/$/datasets/{}_{}".format(settings.JENA_HOST, settings.JENA_PORT, obj.id, graph_name),
-                    auth=requests.auth.HTTPBasicAuth(settings.JENA_USER, settings.JENA_PASSWORD)                    
+            for graph_name, data_fd in [
+                    ("schema", schema_fd),
+                    ("annotation", annotation_fd),
+                    ("data", data_fd)
+            ]:                
+                dbName = "{}_{}".format(self.id, graph_name)
+                requests.post(
+                    "http://{}:{}/$/datasets".format(settings.JENA_HOST, settings.JENA_PORT),
+                    params={"dbName" : dbName, "dbType" : "tdb"},
+                    auth=requests.auth.HTTPBasicAuth(settings.JENA_USER, settings.JENA_PASSWORD)
                 )
-        super(PrimarySource, self).delete()
-
-    def save(self):
-        if settings.USE_JENA:
-            for graph_name in ["schema", "annotation", "data"]:
-                fid = request.FILES.get("{}_file".format(graph_name), None)
-                if settings.USE_JENA:
-                    dbName = "{}_{}".format(self.id, graph_name)
-                    # requests.post(
-                    #     "http://{}:{}/$/datasets".format(settings.JENA_HOST, settings.JENA_PORT),
-                    #     params={"dbName" : dbName, "dbType" : "tdb"},
-                    #     auth=requests.auth.HTTPBasicAuth(settings.JENA_USER, settings.JENA_PASSWORD)
-                    # )
-                    # if fid:
-                    #     requests.put(
-                    #         "http://{}:{}/{}/data".format(settings.JENA_HOST, settings.JENA_PORT, dbName),
-                    #         headers={"default" : "", "Content-Type" : fid.content_type},
-                    #         data=fid,
-                    #         auth=requests.auth.HTTPBasicAuth(settings.JENA_USER, settings.JENA_PASSWORD)                    
-                    #     )
+                if data_fd != None:
+                    resp = requests.put(
+                        "http://{}:{}/{}/data".format(settings.JENA_HOST, settings.JENA_PORT, dbName),
+                        headers={"default" : "", "Content-Type" : data_fd.content_type},
+                        data=data_fd,
+                        auth=requests.auth.HTTPBasicAuth(settings.JENA_USER, settings.JENA_PASSWORD)                    
+                    )
 
     
 class Query(CdhModel):
@@ -126,31 +124,16 @@ class Query(CdhModel):
     def __str__(self):
         return self.name
     def get_absolute_url(self):
-        return reverse("primary_sources:index", args=(self.id,))        
+        return reverse("primary_sources:index", args=(self.id,))
+
+
+@receiver(pre_delete, sender=PrimarySource, dispatch_uid="unique enough")
+def remove_dataset(sender, instance, **kwargs):
+    if settings.USE_JENA:
+        for graph_name in ["schema", "data", "annotation"]:
+            requests.delete(
+                "http://{}:{}/$/datasets/{}_{}".format(settings.JENA_HOST, settings.JENA_PORT, instance.id, graph_name),
+                auth=requests.auth.HTTPBasicAuth(settings.JENA_USER, settings.JENA_PASSWORD)
+            )
+    else:
         pass
-    #class Meta:
-    #    permissions = (
-    #        ("manage_dataset", "Full management of the Dataset"),
-    #    )
-
-# @receiver(post_save, sender=Dataset, dispatch_uid="unique enough")
-# def create_dataset(sender, instance, **kwargs):
-#     if settings.USE_JENA:
-#         requests.post(
-#             "http://{}:{}/$/datasets".format(settings.JENA_HOST, settings.JENA_PORT),
-#             params={"dbName" : str(instance.id), "dbType" : "tdb"},
-#             auth=requests.auth.HTTPBasicAuth(settings.JENA_USER, settings.JENA_PASSWORD)
-#         )
-#     else:
-#         pass
-
-
-# @receiver(pre_delete, sender=Dataset, dispatch_uid="unique enough")
-# def remove_dataset(sender, instance, **kwargs):
-#     if settings.USE_JENA:
-#         requests.delete(
-#             "http://{}:{}/$/datasets/{}".format(settings.JENA_HOST, settings.JENA_PORT, instance.id),
-#             auth=requests.auth.HTTPBasicAuth(settings.JENA_USER, settings.JENA_PASSWORD)                    
-#         )
-#     else:
-#         pass

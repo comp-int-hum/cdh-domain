@@ -1,4 +1,4 @@
-class BaseVisualization(object):
+class CdhVisualization(object):
 
     def __init__(self, *argv, **argd):
         pass
@@ -41,7 +41,7 @@ class BaseVisualization(object):
 
     @property
     def width(self):
-        return 640
+        return None
 
     @property
     def height(self):

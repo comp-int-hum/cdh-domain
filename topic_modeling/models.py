@@ -77,21 +77,27 @@ class TopicModel(AsyncMixin, CdhModel):
         return reverse("topic_modeling:topicmodel_detail", args=(self.id,))
 
     @property
-    def vega_words(self):
-        try:
-            model = pickle.loads(self.serialized.tobytes())
-        except:
-            return []
+    def vega_words(self, num_words=50):
+        model = pickle.loads(self.serialized.tobytes())
         words = sum(
             [
                 [
-                    {"word" : w, "probability" : float(p), "topic" : str(i + 1)} for w, p in model.show_topic(i, 50)
+                    {"word" : w, "probability" : float(p), "topic" : str(i + 1)} for w, p in model.show_topic(i, num_words)
                 ] for i in range(model.num_topics)
             ],
             []
         )
         return words
 
+    @property
+    def vega_topic_names(self, word_count=10):
+        words = self.vega_words
+        topic_names = {}
+        for topic_id in range(self.topic_count):
+            topic_words = [w for w in words if w["topic"] == str(topic_id + 1)]
+            topic_names[topic_id] = ",".join([w["word"] for w in sorted(topic_words, key=lambda x : x["probability"], reverse=True)[:word_count]])
+        return topic_names
+    
     def __str__(self):
         return self.name
 
@@ -116,8 +122,6 @@ class LabeledCollection(AsyncMixin, CdhModel):
         
     @property
     def vega_spatial(self):
-        #model = pickle.loads(self.model.serialized.tobytes())    
-        #topics = dict([(tid, model.show_topic(tid)) for tid in range(self.model.topic_count)])
         coordinates = []
         for ld in LabeledDocument.objects.filter(labeledcollection=self).select_related("document"):
             if not ld.document.spatial:
@@ -129,15 +133,26 @@ class LabeledCollection(AsyncMixin, CdhModel):
                     {
                         "topic" : t,
                         "weight" : v / total,
-                        "bounding_box" : ld.document.spatial
+                        "bounding_box" : ld.document.spatial,
+                        "content" : "{}: {}".format(ld.document.author, ld.document.text),                        
                     }
                 )
+        coordinates = [
+            {
+                "topic" : x["topic"],
+                "weight" : x["weight"],
+                "content" : x["content"],
+                "bounding_box" : {
+                    "type" : "Point",
+                    "coordinates" : x["bounding_box"]["coordinates"][0][0]
+                }
+            } for x in coordinates
+        ]
         return coordinates
     
     @property
     def vega_temporal(self):
-        #model = pickle.loads(self.model.serialized.tobytes())
-        #topics = dict([(tid, model.show_topic(tid)) for tid in range(self.model.topic_count)])
+        topic_names = self.model.vega_topic_names
         min_time, max_time = None, None        
         vals = []
         for ld in LabeledDocument.objects.select_related("document").filter(labeledcollection=self):
@@ -156,7 +171,7 @@ class LabeledCollection(AsyncMixin, CdhModel):
             bucket = ts - (ts % duration)
             all_buckets.add(bucket)
             for k, v in counts.items():
-                label = str(k)
+                label = topic_names[int(k)]
                 all_labels.add(label)
                 buckets[bucket] = buckets.get(bucket, {})
                 buckets[bucket][label] = buckets[bucket].get(label, 0.0) + v
@@ -176,7 +191,7 @@ class LabeledCollection(AsyncMixin, CdhModel):
                     {
                         "label" : label,
                         "value" : value / bucket_totals[bucket],
-                        "year" : bucket
+                        "time" : bucket
                     } for label, value in labels.items()] for bucket, labels in buckets.items()
             ],
             []
@@ -203,26 +218,5 @@ class LabeledDocumentSection(CdhModel):
         return reverse("topic_modeling:labeleddocumentsection_detail", args=(self.id,))
 
     def __str__(self):
-        return "{}-{}".format(self.labeled_document.title, self.id)
-    
+        return "{}-{}".format(self.labeleddocument.document.title, self.id)
 
-class TemporalEvolution(CdhModel):
-    labeledcollection = models.ForeignKey(LabeledCollection, on_delete=models.CASCADE, null=True)
-    content = models.JSONField(null=dict)
-
-    def get_absolute_url(self):
-        return reverse("topic_modeling:temporalevolution_detail", args=(self.id,))
-
-    def __str__(self):
-        return "{}-{}".format(self.labeled_collection.title)
-
-
-class SpatialDistribution(CdhModel):
-    labeledcollection = models.ForeignKey(LabeledCollection, on_delete=models.CASCADE, null=True)
-    content = models.JSONField(null=dict)
-
-    def get_absolute_url(self):
-        return reverse("topic_modeling:spatialevolution_detail", args=(self.id,))
-
-    def __str__(self):
-        return "{}-{}".format(self.labeled_collection.title)

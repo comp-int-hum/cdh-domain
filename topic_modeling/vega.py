@@ -1,10 +1,11 @@
 from cdh import settings
-from cdh.vega import BaseVisualization
+from cdh.vega import CdhVisualization
 
 
-class TopicModelWordCloud(BaseVisualization):
-    def __init__(self, words):
+class TopicModelWordCloud(CdhVisualization):
+    def __init__(self, words, prefix=None):
         self.values = words
+        self.prefix = prefix
         super(TopicModelWordCloud, self).__init__()
 
     @property
@@ -114,13 +115,48 @@ class TopicModelWordCloud(BaseVisualization):
         ]
 
 
-class TemporalEvolution(BaseVisualization):
+class TemporalEvolution(CdhVisualization):
 
-    def __init__(self, values):
+    def __init__(self, values, prefix=None):
+        self.prefix = prefix
         self.values = values
         #self.topics = topics
         super(TemporalEvolution, self).__init__()
 
+    @property
+    def data(self):
+        return [
+            {
+                "name": "temporal_weights",
+                "values": self.values,
+                "transform": [
+                    {
+                        "type": "stack",
+                        "field": "value",
+                        "groupby": ["time"],
+                        "sort": {
+                            "field": ["label"],
+                            "order": ["descending"]
+                        }
+                    }
+                ]
+            },
+            {
+                "name": "sseries",
+                "source": "temporal_weights",
+                "transform": [
+                    {
+                        "type": "aggregate",
+                        "groupby": ["time"],
+                        "fields": ["value", "value"],
+                        "ops": ["sum", "argmax"],
+                        "as": ["sum", "argmax"]
+                    }
+                ]
+            }
+        ]
+
+        
     @property
     def background(self):
         return {"value": "white"}
@@ -129,13 +165,13 @@ class TemporalEvolution(BaseVisualization):
     def scales(self):
         return [
             {
-                "name": "x",
+                "name": "xscale",
                 "type": "point",
                 "range": "width",
-                "domain": {"data": "temporal_weights", "field": "year"}
+                "domain": {"data": "temporal_weights", "field": "time"}
             },
             {
-                "name": "y",
+                "name": "yscale",
                 "type": "linear",
                 "range": "height",
                 "nice": True,
@@ -184,9 +220,7 @@ class TemporalEvolution(BaseVisualization):
     def signals(self):
         return [
             {"name": "width", "value": 800},
-            {"name": "cellWidth", "value": 800},
             {"name": "height", "value": 350},
-            {"name": "cellHeight", "value": 350},
             {
                 "name": "tooltip",
                 "value": {},
@@ -198,14 +232,28 @@ class TemporalEvolution(BaseVisualization):
             {
                 "name" : "topic",
                 "value" : "None",
-                #"bind" : {
-                #    "element" : "#words"
-                #    #"input" : "text"
-                #},
+                "bind" : {
+                    "element" : "#{}_topicinfo".format(self.prefix) if self.prefix else "#topicinfo"
+                },
                 "on" : [
-                    {"events" : "area:mouseover", "update" : "datum.label"}
+                    {"events" : "area:mouseover", "update" : "datum.label"},
+                    {"events" : "area:mouseout", "update" : {"value" : ""}}
                 ],
-            }
+            },
+            {
+                "name" : "time",
+                "value" : "None",
+                "bind" : {
+                    "element" : "#{}_timeinfo".format(self.prefix) if self.prefix else "#timeinfo"
+                },
+                "on" : [
+                    {
+                        "events" : "area:mousemove",
+                        "update" : "utcFormat(1000*round(extent(pluck(data('temporal_weights'), 'time'))[0] + ((x() / width) * ((extent(pluck(data('temporal_weights'), 'time'))[1]) - (extent(pluck(data('temporal_weights'), 'time'))[0])))), '%m/%d/%Y')",
+                    },
+                    {"events" : "area:mouseout", "update" : {"value" : ""}}
+                ],
+            },
         ]
 
     @property
@@ -213,6 +261,10 @@ class TemporalEvolution(BaseVisualization):
         return [
         ]
 
+    #@property
+    #def autosize(self):
+    #    return "pad"
+    
     @property
     def title(self):
         return {}
@@ -233,59 +285,22 @@ class TemporalEvolution(BaseVisualization):
         #     }
         # }
     
-    @property
-    def data(self):
-        return [
-            {
-                "name": "temporal_weights",
-                "values": self.values,
-                "transform": [
-                    {
-                        "type": "stack",
-                        "field": "value",
-                        "groupby": ["year"],
-                        "sort": {
-                            "field": ["label"],
-                            "order": ["descending"]
-                        }
-                    }
-                ]
-            },
-            #{
-            #    "name": "topics",
-            #    "values": self.topics,
-            #    "transform": [
-            #    ]
-            #},
-            {
-                "name": "sseries",
-                "source": "temporal_weights",
-                "transform": [
-                    {
-                        "type": "aggregate",
-                        "groupby": ["year"],
-                        "fields": ["value", "value"],
-                        "ops": ["sum", "argmax"],
-                        "as": ["sum", "argmax"]
-                    }
-                ]
-            }
-        ]
 
     @property
     def axes(self):
         return [
-            {
-                "orient": "bottom", "scale": "x", "zindex" : 1, "format": "d"
-            },
-            {
-                "orient": "right", "scale": "y", "zindex" : 1 #"format": "%", "tickCount": 10
+            #{
+                #"labelColor" : "white", "orient": "bottom", "scale": "xscale", "zindex" : 19,
+                #"formatType": "time", "format" : {"signal" : "timeFormat(datum)"} #"timeUnitSpecifier()"}
+            #},
+            #{
+            #    "orient": "right", "scale": "yscale", "zindex" : 1 #"format": "%", "tickCount": 10
                 #"grid": True, "domain": False, "tickSize": 12,
                 #"encode": {
                 #    "grid": {"enter": {"stroke": {"value": "#ccc"}}},
                 #    "ticks": {"enter": {"stroke": {"value": "#ccc"}}}
                 #}
-            }
+            #}
         ]
     
     @property
@@ -307,9 +322,9 @@ class TemporalEvolution(BaseVisualization):
                         #"tooltip" : {"value" : "dsadsa"},
                         "encode": {
                             "update": {
-                                "x": {"scale": "x", "field": "year"},
-                                "y": {"scale": "y", "field": "y0"},
-                                "y2": {"scale": "y", "field": "y1"},
+                                "x": {"scale": "xscale", "field": "time"},
+                                "y": {"scale": "yscale", "field": "y0"},
+                                "y2": {"scale": "yscale", "field": "y1"},
                                 "fill": {"scale": "color", "field": "label"},
                                 "fillOpacity": {"value": 1.0}
                             },
@@ -327,14 +342,14 @@ class TemporalEvolution(BaseVisualization):
             #     "interactive": False,
             #     "encode": {
             #         "update": {
-            #             "x": {"scale": "x", "field": "year"},
-            #             #"dx": {"scale": "offset", "field": "argmax.year"},
+            #             "x": {"scale": "x", "field": "time"},
+            #             #"dx": {"scale": "offset", "field": "argmax.time"},
             #             "y": {"signal": "scale('y', 0.5 * (datum.y0 + datum.y1))"},
             #             "fill": {"value": "#000"},
             #             "fillOpacity": {"scale": "opacity", "field": "value"},
             #             "fontSize": {"scale": "font", "field": "value", "offset": 5},
             #             "text": {"field": "label"},
-            #             #"align": {"scale": "align", "field": "year"},
+            #             #"align": {"scale": "align", "field": "time"},
             #             "baseline": {"value": "middle"}
             #         }
             #     }
@@ -344,10 +359,11 @@ class TemporalEvolution(BaseVisualization):
 
 
 
-class SpatialDistribution(BaseVisualization):
+class SpatialDistribution(CdhVisualization):
 
-    def __init__(self, values):
+    def __init__(self, values, prefix=None):
         self.values = values
+        self.prefix = prefix
         super(SpatialDistribution, self).__init__()
 
     @property
@@ -359,16 +375,27 @@ class SpatialDistribution(BaseVisualization):
         return [
         ]
 
-    #@property
-    #def autosize(self):
-    #    return "fit"
+    @property
+    def autosize(self):
+        return "none"
 
     @property
     def signals(self):
         return [
             {"name": "width", "value": 800},
             {"name": "height", "value": 350},
-
+            { "name": "scale", "value": 150},
+            { "name": "rotate0", "value": 0},
+            { "name": "rotate1", "value": 0},
+            { "name": "rotate2", "value": 0},
+            { "name": "center0", "value": 0},
+            { "name": "center1", "value": 0},
+            { "name": "translate0", "update": "width / 2" },
+            { "name": "translate1", "update": "height / 2" },
+            { "name": "graticuleDash", "value": 0},
+            { "name": "borderWidth", "value": 1},
+            { "name": "background", "value": "#ffffff"},
+            { "name": "invert", "value": False},
             #{"name": "tx", "update": "width / 2"},
             #{"name": "ty", "update": "height / 2"},
             #{"name": "scale", "value": 150, "on" : [{"events" : {"type" : "wheel", "consume" : True}, "update" : "clamp(scale * pow(1.0005, -event.deltaY * pow(16, event.deltaMode)), 150, 3000)"}]},
@@ -475,28 +502,13 @@ class SpatialDistribution(BaseVisualization):
                         "strokeWidth": {"value" : 1},
                         "stroke": {"value": "red"},
                         "fill": {"value": "blue"},
-                        "zindex": {"value": 1}
+                        "zindex": {"value": 1},
+                        "tooltip" : {"signal" : "datum.content"},
                     },
                 },
                 "transform": [
                     { "type": "geoshape", "projection": "focus", "field": "datum.bounding_box" }
                 ]
-
-                # "encode": {
-                #     "update": {
-                #         "x": {"field": "longitude"},
-                #         "y": {"field": "latitude"},
-                #         "fill" : {
-                #             #"scale" : "color",
-                #             "value" : "red",
-                #             "field" : "weight",#{"signal" : "dependent"},
-                #         },
-                #         "size" : {"value" : 40},
-                #     }
-                # },
-                #"transform" : [
-                #    {"type" : "geopoint", "projection": "focus"}
-                #]
             },
 
         ]
@@ -504,34 +516,23 @@ class SpatialDistribution(BaseVisualization):
     @property
     def projections(self):
         return [
-            #{
-            #    "name": "overall",
-            #    "type" : "mercator",
-            #},
             {
                 "name": "focus",
-                "type" : "mercator",
-                #"scale": {"signal": "scale"},
-                #"rotate": [{"signal": "rotateX"}, 0, 0],
-                #"center": [0, {"signal": "centerY"}],
-                #"translate": [{"signal": "tx"}, {"signal": "ty"}]
-                # "scale": {"signal": "scale"},
-                # "rotate": [
-                #     {"signal": "rotate0"},
-                #     {"signal": "rotate1"},
-                #     {"signal": "rotate2"}
-                # ],
-                # "center": [
-                #     {"signal": "center0"},
-                #     {"signal": "center1"}
-                # ],
-                # "translate": [
-                #     {"signal": "translate0"},
-                #     {"signal": "translate1"}
-                # ]
-                
-                #     #"fit" : {"signal" : "data('table')"},
-            #     #"scale" : 500,                
-            #     #"size" : {"signal" : "[width,height]"},
-             }
+                "type": "mercator", #{"signal": "type"},
+                "scale": {"signal": "scale"},
+                "rotate": [
+                    {"signal": "rotate0"},
+                    {"signal": "rotate1"},
+                    {"signal": "rotate2"}
+                ],
+                "center": [
+                    {"signal": "center0"},
+                    {"signal": "center1"}
+                ],
+                "translate": [
+                    {"signal": "translate0"},
+                    {"signal": "translate1"}
+                ]
+            },
         ]
+

@@ -1,5 +1,6 @@
 #from interact import models
 import datetime
+from cdh.vega import CdhVisualization
 
 dependent_types = [
     "scalar",
@@ -7,127 +8,11 @@ dependent_types = [
     "categorical"
 ]
 
-class BaseVisualization(object):
-    
-    def __init__(self, *argv, **argd):
-        pass
-        #self.project_id = project_id
-        #self.ifield = independent_field
-        #self.schema = schema
-        #self.relationships = {"" : []}
-        #for field in self.schema["entity_types"][self.ifield[0]]["data_fields"]:
-        #    ft = self.schema["data_fields"][field]["type"]
-        #    if field != self.ifield[1] and ft in dependent_types:
-        #        self.relationships[""].append((self.ifield[0], field, ft))
-        
-    @property
-    def json(self):
-        retval = {
-            "$schema": "https://vega.github.io/schema/vega/v5.json",
-            "description": self.description,
-            "background": self.background,
-            "width": self.width,
-            "height": self.height,
-            "padding": self.padding,
-            "autosize": self.autosize,
-            "config" : self.config,
-            "signals": self.signals,
-            "data": self.data,
-            "scales": self.scales,
-            "projections": self.projections,
-            "axes": self.axes,
-            "legends": self.legends,
-            "title" : self.title,
-            "marks": self.marks,
-            "encode": self.encode,
-            "usermeta": self.usermeta,            
-        }
-        return retval
 
-    @property
-    def description(self):
-        return "A specification outline example."
-    
-    @property
-    def width(self):
-        return 640
+class PrimarySourceSchemaGraph(CdhVisualization):
 
-    @property
-    def height(self):
-        return 480
-
-    @property
-    def padding(self):
-        return None
-
-    @property
-    def autosize(self):
-        return None
-
-    @property
-    def background(self):
-        return None
-    
-    @property
-    def legends(self):
-        return []
-
-    @property
-    def projections(self):
-        return []
-    
-    @property
-    def other_data(self):
-        return []
-    
-    @property
-    def signals(self):
-        return []
-    
-    @property
-    def config(self):
-        return []
-    
-    @property
-    def title(self):
-        return None
-    
-    @property
-    def transforms(self):
-       return []
-
-    @property
-    def marks(self):
-        return []
-
-    @property
-    def axes(self):
-        return []
-
-    @property
-    def scales(self):
-        return []
-
-    @property
-    def data(self):
-        return []
-    
-    @property
-    def scales(self):
-        return []
-
-    @property
-    def encode(self):
-        return []
-
-    @property
-    def usermeta(self):
-        return []
-
-
-class PrimarySourceSchemaGraph(BaseVisualization):
-
-    def __init__(self, data): # entities, relationships, properties):
+    def __init__(self, data, prefix=None): # entities, relationships, properties):
+        self.prefix = prefix
         self._entities = data["entities"]
         self._relationships = data["relationships"]
         self._properties = data["properties"]
@@ -136,6 +21,8 @@ class PrimarySourceSchemaGraph(BaseVisualization):
     @property
     def signals(self):
         return [
+            {"name": "width", "value": 800},
+            {"name": "height", "value": 350},
             { "name": "cx", "update": "width / 2" },
             { "name": "cy", "update": "height / 2" },
             { "name": "nodeRadius", "update": "zoom * 20"},

@@ -5,15 +5,21 @@ from secrets import token_hex as random_token
 
 class VegaWidget(Widget):
     template_name = "cdh/vega.html"
-    def __init__(self, vega_class, *argv, **argd):
+    preamble = None
+    def __init__(self, vega_class, *argv, preamble=None, **argd):
         super(VegaWidget, self).__init__(*argv, **argd)
         self.vega_class = vega_class
+        self.preamble = preamble
         
     def get_context(self, name, value, attrs):
         ctx = super(VegaWidget, self).get_context(name, value, attrs)
-        ctx["vega_spec"] = self.vega_class(value).json
-        ctx["spec_identifier"] = "s_{}".format(random_token(8))
-        ctx["div_identifier"] = "d_{}".format(random_token(8))
+        self.prefix = "prefix_{}".format(random_token(8))
+        ctx["vega_spec"] = self.vega_class(value, prefix=self.prefix).json
+        ctx["spec_identifier"] = "s_{}".format(self.prefix)
+        ctx["div_identifier"] = "d_{}".format(self.prefix)
+        if self.preamble:
+            ctx["preamble_identifier"] = "p_{}".format(self.prefix)
+            ctx["preamble"] = self.preamble.format(prefix=self.prefix)
         return ctx
         
     @property

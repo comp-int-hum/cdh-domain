@@ -7,28 +7,22 @@ from django.urls import re_path, include
 from django.views.decorators.cache import cache_page
 from django.forms import FileField, modelform_factory, CharField
 from django.http import HttpResponse, HttpResponseRedirect
-from . import views
-from . import models
 from django.views.generic.edit import FormView, CreateView, UpdateView
 from django.views.generic import DetailView
-from .models import Collection, Document, Lexicon, LabeledDocument, LabeledCollection, TopicModel
-from .forms import LexiconForm, CollectionCreateForm, TopicModelForm, TopicModelWordCloudForm, TopicModelWordTableForm
-from .views import WordTableView, CollectionCreateView
-from cdh.views import TabView, AccordionView, VegaView, CdhView
-from .vega import TopicModelWordCloud, SpatialDistribution, TemporalEvolution
-from .tasks import extract_documents, train_model, apply_model
 from guardian.shortcuts import get_perms, get_objects_for_user, assign_perm
 from cdh.models import User
+from cdh.views import TabView, AccordionView, VegaView, CdhView, CdhSelectView
+from .models import Collection, Document, Lexicon, LabeledDocument, LabeledCollection, TopicModel
+from .vega import TopicModelWordCloud, SpatialDistribution, TemporalEvolution
+from .tasks import extract_documents, train_model, apply_model
+from .forms import LexiconForm
+from .views import WordTableView, CollectionCreateView, LabeledDocumentView
 
 
 def create_topicmodel(self, request, *argv, **argd):
     form = self.get_form_class()(request.POST, request.FILES)
-    print(form.is_valid())
-    print(form)
+    form.is_valid()
     obj = form.save()
-    #assign_perm("view_topicmodel", request.user, obj)
-    #assign_perm("delete_topicmodel", request.user, obj)
-    #assign_perm("view_topicmodel", User.get_anonymous(), obj)
     train_model.delay(obj.id)
     return (obj, HttpResponseRedirect(obj.get_absolute_url()))
 
@@ -43,9 +37,6 @@ def create_collection(self, request, *argv, **argd):
     obj = Collection.objects.create(
         name=form.cleaned_data["name"],
     )
-    #assign_perm("view_collection", request.user, obj)
-    #assign_perm("delete_collection", request.user, obj)
-    #assign_perm("view_collection", User.get_anonymous(), obj)
     ofname = path / "{}_{}".format(obj.id, ufname)
     with open(ofname, "wb") as ofd:
         for chunk in request.FILES["file"].chunks():
@@ -116,14 +107,15 @@ urlpatterns = [
         CdhView.as_view(
             preamble="""
             To create a new collection, choose a meaningful name, and upload a file in one of the following formats:
-
-            <ul>
-            <li>CSV file ending in "csv" or "csv.gz" :: test</li>
-            <li>JSON file ending in "json" or "json.gz" :: test2</li>
-            <li>Tar file ending in "tar" or "tar.gz" :: test3</li>
-            <li>Zip file ending in "zip" :: test4</li>
-            </ul>
+            TODO
             """,
+            # <ul>
+            # <li>CSV file ending in "csv" or "csv.gz" :: test</li>
+            # <li>JSON file ending in "json" or "json.gz" :: test2</li>
+            # <li>Tar file ending in "tar" or "tar.gz" :: test3</li>
+            # <li>Zip file ending in "zip" :: test4</li>
+            # </ul>
+            # """,
             model=Collection,
             fields=["name"],
             extra_fields={
@@ -184,7 +176,7 @@ urlpatterns = [
 
     # TopicModel-related
     path(
-        'topicmodel/detail/<int:pk>/',
+        'topicmodel/<int:pk>/',
         TabView.as_view(
             model=TopicModel,
             tabs=[                
@@ -221,7 +213,11 @@ urlpatterns = [
         VegaView.as_view(
             model_attr="vega_words",
             model=TopicModel,
-            vega_class=TopicModelWordCloud
+            vega_class=TopicModelWordCloud,
+            preamble="""
+            Each word cloud corresponds to a topic inferred by the model, with the words sized according to their
+            likelihood.  Note that the spatial arrangement is not meaningful in such visualizations.
+            """
         ),
         name="topicmodel_wordcloud"
     ),
@@ -248,10 +244,10 @@ urlpatterns = [
                     "title" : "Spatial",
                     "url" : "topic_modeling:labeledcollection_spatial"
                 },
-                #{
-                #    "title" : "Highlighted Documents",
-                #    "url" : "topic_modeling:labeleddocument_list",
-                #}
+                {
+                    "title" : "Highlighted Documents",
+                    "url" : "topic_modeling:labeledcollection_labeleddocument_list",
+                }
             ]
         ),
         name="labeledcollection_detail"
@@ -261,13 +257,21 @@ urlpatterns = [
         VegaView.as_view(
             model_attr="vega_temporal",
             model=LabeledCollection,
-            vega_class=TemporalEvolution
+            vega_class=TemporalEvolution,
+            preamble="""
+            If the original collection included temporal information, this figure shows the waxing and waning of the inferred topics over time.  As the mouse moves over the figure, the display shows the top words for the highlighted topic, and the date at which the pointer is located.
+            <input id="{prefix}_topicinfo" class="w-100"></input>
+            <input id="{prefix}_timeinfo" class="w-100"></input>
+            """
         ),
         name="labeledcollection_temporal"
     ),
     path(
         'labeledcollection/spatial/<int:pk>/',
         VegaView.as_view(
+            preamble="""
+            If the original collection included spatial information, this figure shows a rudimentary projection onto a world map.  Hovering over points will show the text of the particular document.
+            """,
             model_attr="vega_spatial",
             model=LabeledCollection,
             vega_class=SpatialDistribution
@@ -289,19 +293,24 @@ urlpatterns = [
     ),
 
     # LabeledDocument-related
-    #path(
-    #    'labeleddocument/<int:pk>/',
-    #    UpdateView.as_view(model=LabeledDocument, fields=["name"], template_name="cdh/simple_form.html"),
-    #    name="labeleddocument_update"
-    #),
-    # path(
-    #     'labeleddocument/create/',
-    #     CreateView.as_view(model=LabeledDocument, fields=["name"], template_name="cdh/simple_form.html"),
-    #     name="labeleddocument_create"
-    # ),
-
-
-    
+    path(
+        'labeleddocument/list/<int:pk>/',
+        CdhSelectView.as_view(
+            preamble="""
+            This dropdown box lets you select specific documents from the collection and inspect how the words were annotated by topic.  At the moment this simply highlights, when the pointer passes over a word with a particular topic, the other words from the same topic.
+            """,
+            model=LabeledCollection,
+            child_model=LabeledDocument,
+            relationship="labeledcollection",
+            child_url="topic_modeling:labeleddocument_detail"
+        ),
+        name="labeledcollection_labeleddocument_list"
+    ),
+    path(
+        'labeleddocument/<int:pk>/',
+        LabeledDocumentView.as_view(),
+        name="labeleddocument_detail"
+    ),    
 ] + [
         path(
             '{}/list/'.format(model._meta.model_name),

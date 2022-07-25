@@ -24,6 +24,6 @@ from . import views
 import turkle.urls
 
 urlpatterns = [
-    path('', views.index, name="index"),
+    #path('', views.index, name="index"),
     path('', include('turkle.urls')),
 ]

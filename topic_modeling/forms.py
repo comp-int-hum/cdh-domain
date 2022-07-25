@@ -1,9 +1,7 @@
-from django.forms import ModelForm, modelform_factory, FileField
-from cdh import widgets
+from django.forms import ModelForm, modelform_factory, FileField, CharField
 from .models import Lexicon, TopicModel, Collection, LabeledCollection, Document, LabeledDocument
-from django.forms import FileField, JSONField, CharField
-from cdh.widgets import VegaWidget
-from .vega import TopicModelWordCloud
+from cdh.widgets import VegaWidget, MonacoEditorWidget
+
 
 class LexiconForm(ModelForm):
     def __init__(self, *args, **kwargs):
@@ -20,7 +18,7 @@ class LexiconForm(ModelForm):
         fields = ('lexical_sets', 'name')
 
         widgets = {
-            'lexical_sets': widgets.MonacoEditorWidget(language="json", content_field="lexical_sets", default_value="""{
+            'lexical_sets': MonacoEditorWidget(language="json", content_field="lexical_sets", default_value="""{
   "positive_words": ["happy", "glad"],
   "negative_words": ["awful", "sad.*"]
 }
@@ -39,57 +37,4 @@ class CollectionCreateForm(ModelForm):
     class Meta:
         model = Collection
         fields = ("upload", "name")
-
-
-class TopicModelWordCloudForm(ModelForm):
-    topics = CharField(widget=VegaWidget(vega_class=TopicModelWordCloud), label="")
-
-    def __init__(self, *argv, **argd):
-        if argd["instance"]:
-            argd["initial"]["topics"] = argd["instance"].vega
-        super(TopicModelWordCloudForm, self).__init__(*argv, **argd)
-        
-    class Meta:        
-        model = TopicModel
-        fields = ('topics',)
-
-
-class TopicModelWordTableForm(ModelForm):
-    topics = CharField(widget=VegaWidget(vega_class=TopicModelWordCloud), label="")
-
-    def __init__(self, *argv, **argd):
-        if argd["instance"]:
-            argd["initial"]["topics"] = argd["instance"].vega
-        super(TopicModelWordTableForm, self).__init__(*argv, **argd)
-        
-    class Meta:        
-        model = TopicModel
-        fields = ('topics',)
-
-        
-
-class LabeledCollectionTemporalForm(ModelForm):
-    topics = CharField(widget=VegaWidget(vega_class=TopicModelWordCloud), label="")
-
-    def __init__(self, *argv, **argd):
-        if argd["instance"]:
-            argd["initial"]["topics"] = argd["instance"].vega
-        super(LabeledCollectionTemporalForm, self).__init__(*argv, **argd)
-        
-    class Meta:        
-        model = LabeledCollection
-        fields = ('topics',)
-
-
-class LabeledCollectionGeographicForm(ModelForm):
-    topics = CharField(widget=VegaWidget(vega_class=TopicModelWordCloud), label="")
-
-    def __init__(self, *argv, **argd):
-        if argd["instance"]:
-            argd["initial"]["topics"] = argd["instance"].vega
-        super(LabeledCollectionGeographicForm, self).__init__(*argv, **argd)
-        
-    class Meta:        
-        model = LabeledCollection
-        fields = ('topics',)
         

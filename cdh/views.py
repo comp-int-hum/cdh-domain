@@ -166,8 +166,11 @@ class CdhView(DeletionMixin, UpdateView):
             class AugmentedForm(ModelForm):
                 def __init__(sself, *argv, **argd):
                     super(AugmentedForm, sself).__init__(*argv, **argd)
-                    for k, v in self.extra_fields.items():                
-                        sself.fields[k] = v()
+                    for k, v in self.extra_fields.items():
+                        if isinstance(v, tuple):
+                            sself.fields[k] = v[0](**v[1])
+                        else:
+                            sself.fields[k] = v()
                 class Meta:
                     model = self.model
                     fields = self.fields
@@ -240,8 +243,9 @@ class CdhView(DeletionMixin, UpdateView):
             assign_perm("{}.view_{}".format(self.model._meta.app_label, self.model._meta.model_name), request.user, obj)
             assign_perm("{}.delete_{}".format(self.model._meta.app_label, self.model._meta.model_name), request.user, obj)
             assign_perm("{}.change_{}".format(self.model._meta.app_label, self.model._meta.model_name), request.user, obj)
-            assign_perm("{}.view_{}".format(self.model._meta.app_label, self.model._meta.model_name), User.get_anonymous(), obj)
-            #if from_htmx:
+            #assign_perm("{}.view_{}".format(self.model._meta.app_label, self.model._meta.model_name), User.get_anonymous(), obj)
+            obj.created_by = request.user
+            obj.save()
             resp.headers["HX-Trigger"] = """{{"cdhEvent" : {{"type" : "create", "app" : "{app}", "model" : "{model}", "id" : "{id}"}}}}""".format(
                 app=self.model._meta.app_label,
                 model=self.model._meta.model_name,
@@ -299,7 +303,7 @@ class VegaView(SingleObjectMixin, View):
     preamble = None
 
     def render(self, request):        
-        w = VegaWidget(vega_class=self.vega_class)
+        w = VegaWidget(vega_class=self.vega_class, preamble=self.preamble)
         retval = w.render("", getattr(self.get_object(), self.model_attr))
         return mark_safe(retval)
     
@@ -616,8 +620,8 @@ class AccordionView(View):
                 #print(obj_perms, model_perms)
                 #perms = get_perms(request.user, self.children["model"])
                 #print(request.user, self.children["model"], perms)
-                #actions = set([x.split("_")[0] for x in perms])                
-                if request.user.username != "AnonymousUser" and "create_url" in self.children:                
+                #actions = set([x.split("_")[0] for x in perms])
+                if request.user.id != None and "create_url" in self.children:                
                     retval.append(
                         {
                             "title" : """
@@ -695,7 +699,49 @@ class AccordionView(View):
         
     def get(self, request, *argv, **argd):
         return render(request, self.template, {"content" : self.render(request), "preamble" : self.preamble})
-        
+
+
+class CdhSelectView(SingleObjectMixin, View):
+    template_name = "cdh/simple_interface.html"
+    model = None
+    child_model = None
+    relationship = None
+    child_name_field = None
+    child_url = None
+    preamble = None
+    
+    def render(self, request):
+        prefix = "selection_{}".format(slugify(request.path_info))
+        obj = self.get_object()
+        children = self.child_model.objects.filter(**{self.relationship : obj}).select_related()[0:1000]
+        first = children[0]
+        return mark_safe(
+            """
+            <select class="cdh-select">
+            {options}
+            </select>
+            <div id="{prefix}_documentview" hx-get="{url}" hx-trigger="intersect" hx-select="#top_level_content > *" hx-swap="innerHTML">
+            </div>
+            """.format(
+                prefix=prefix,
+                id=obj.id,
+                url=reverse(self.child_url, args=(first.id,)),
+                options="\n".join(
+                    [
+                        """<option id="{prefix}_{index}" hx-get="{url}" hx-target="#{prefix}_documentview" hx-trigger="select" hx-swap="innerHTML" hx-select="#top_level_content" value="{prefix}_{index}">{name}</option>""".format(
+                            url=reverse(self.child_url, args=(c.id,)),
+                            name=str(c),
+                            prefix=prefix,
+                            index=i
+                        ) for i, c in enumerate(children)
+                    ]
+                )
+            )
+        )
+
+    def get(self, request, *argv, **argd):
+        return render(request, self.template_name, {"content" : self.render(request), "preamble" : self.preamble})
+    
     
 def slide_page(request, page):    
     context = {
@@ -768,3 +814,4 @@ def about(request):
     context = {
     }
     return render(request, 'cdh/about.html', context)
+

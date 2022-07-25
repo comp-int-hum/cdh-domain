@@ -1,39 +1,3 @@
-var elms=document.getElementsByClassName("labeled-token");
-for(var i=0;i<elms.length;i++){
-    elms[i].onmousedown = function(event){
-	var targetClass = Array.from(event.target.classList.values()).find(el => el.startsWith("topic"));
-        for(var k=0;k<elms.length;k++){
-	    if(elms[k].classList.contains(targetClass)){
-		elms[k].classList.toggle("selected");
-	    }
-	    else{
-		elms[k].classList.remove("selected");
-	    }
-        }
-    }
-    elms[i].onmouseenter = function(event){
-	var targetClass = Array.from(event.target.classList.values()).find(el => el.startsWith("topic"));
-        for(var k=0;k<elms.length;k++){
-	    if(elms[k].classList.contains(targetClass)){
-		elms[k].classList.toggle("highlighted");
-	    }
-	    else{
-		elms[k].classList.remove("highlighted");
-	    }
-        }
-    }
-    elms[i].onmouseexit = function(event){
-	var targetClass = Array.from(event.target.classList.values()).find(el => el.startsWith("topic"));
-        for(var k=0;k<elms.length;k++){
-	    if(elms[k].classList.contains(targetClass)){
-		elms[k].classList.toggle("highlighted");
-	    }
-	    else{
-		elms[k].classList.remove("highlighted");
-	    }
-        }
-    }
-}
 
 function getList(name){
     var retval = sessionStorage.getItem(name);
@@ -175,7 +139,19 @@ function cdhSetup(root, htmxSwap){
 	}
     }
 
+    for(let el of root.getElementsByClassName("cdh-select")){
+	el.addEventListener("change", event => {
+	    var tgt = document.getElementById(event.target.value);
+	    htmx.trigger(tgt, "select");
+	});
+    }
 
+    if(root.parentNode != null && root.classList.contains("cdh-select")){
+	root.addEventListener("change", event => {
+	    var tgt = document.getElementById(event.target.value);
+	    htmx.trigger(tgt, "select");
+	});
+    }
     // remember and restore where you were on the page (this probably doesn't work in some situations!)
     /*
     var pathName = document.location.pathname;
@@ -209,11 +185,48 @@ function cdhSetup(root, htmxSwap){
 	    el.setAttribute("processed", "true");
 	}
     }
-    
+
+    // annotated documents
+    var elms=root.getElementsByClassName("labeled-token");
+    for(var i=0;i<elms.length;i++){
+	elms[i].onmousedown = function(event){
+	    var targetClass = Array.from(event.target.classList.values()).find(el => el.startsWith("topic"));
+            for(var k=0;k<elms.length;k++){
+		if(elms[k].classList.contains(targetClass)){
+		    elms[k].classList.toggle("selected");
+		}
+		else{
+		    elms[k].classList.remove("selected");
+		}
+            }
+	}
+	elms[i].onmouseenter = function(event){
+	    var targetClass = Array.from(event.target.classList.values()).find(el => el.startsWith("topic"));
+            for(var k=0;k<elms.length;k++){
+		if(elms[k].classList.contains(targetClass)){
+		    elms[k].classList.toggle("highlighted");
+		}
+		else{
+		    elms[k].classList.remove("highlighted");
+		}
+            }
+	}
+	elms[i].onmouseexit = function(event){
+	var targetClass = Array.from(event.target.classList.values()).find(el => el.startsWith("topic"));
+            for(var k=0;k<elms.length;k++){
+		if(elms[k].classList.contains(targetClass)){
+		    elms[k].classList.toggle("highlighted");
+		}
+		else{
+		    elms[k].classList.remove("highlighted");
+		}
+            }
+	}
+    }
 }
 
+
 function handleCdhEvent(event){
-    console.warn(event.detail);
     for(let el of document.getElementsByClassName("accordion-item")){
 	if(event.detail.app == el.getAttribute("app") && event.detail.model == el.getAttribute("model") && event.detail.id == el.getAttribute("obj_id")){
 	    if(event.detail.type == "delete"){
@@ -232,6 +245,4 @@ function handleCdhEvent(event){
 	    }
 	}
     }
-
-    //event.detail.type/app/model/id
 }
