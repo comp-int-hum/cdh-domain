@@ -3,6 +3,7 @@ from django.contrib.gis.db import models
 from django.urls import reverse
 from cdh.models import CdhModel, User, AsyncMixin, MetadataMixin
 import pickle
+import json
 
 
 def default_lexicon():
@@ -152,7 +153,10 @@ class LabeledCollection(AsyncMixin, CdhModel):
     
     @property
     def vega_temporal(self):
-        topic_names = self.model.vega_topic_names
+        if self.model:
+            topic_names = self.model.vega_topic_names
+        else:
+            topic_names = list(json.loads(self.lexicon.lexical_sets).keys())
         min_time, max_time = None, None        
         vals = []
         for ld in LabeledDocument.objects.select_related("document").filter(labeledcollection=self):
