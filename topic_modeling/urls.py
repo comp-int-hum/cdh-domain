@@ -282,7 +282,7 @@ urlpatterns = [
         'labeledcollection/create/',
         CdhView.as_view(
             model=LabeledCollection,
-            fields=["name", "collection", "model", "lexicon"],
+            fields=["name", "collection", "model", "lexicon", "maximum_documents"],
             can_create=True,
             create_lambda=create_labeledcollection,
             preamble="""
