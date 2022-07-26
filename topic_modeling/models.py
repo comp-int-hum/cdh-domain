@@ -175,7 +175,10 @@ class LabeledCollection(AsyncMixin, CdhModel):
             bucket = ts - (ts % duration)
             all_buckets.add(bucket)
             for k, v in counts.items():
-                label = topic_names[int(k)]
+                try:
+                    label = topic_names[int(k)]
+                except:
+                    label = k
                 all_labels.add(label)
                 buckets[bucket] = buckets.get(bucket, {})
                 buckets[bucket][label] = buckets[bucket].get(label, 0.0) + v
