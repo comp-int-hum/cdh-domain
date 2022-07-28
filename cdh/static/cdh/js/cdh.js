@@ -44,6 +44,18 @@ function collapseChild(btn){
     ct.classList.remove("show");    
 }
 
+function collapseAccordionItem(item){
+    
+}
+
+function expandAccordionItem(item){
+}
+
+function collapseAccordion(accordion){
+}
+
+function refreshAccordionItem(item){
+}
 
 function cdhSetup(root, htmxSwap){
     console.info("Running CDH setup on ", root);
@@ -164,7 +176,7 @@ function cdhSetup(root, htmxSwap){
 	}
 	*/
 
-    // rerun initialization for Monaco editor widgets
+    // run initialization for Monaco editor widgets
     for(let el of root.getElementsByClassName("cdh-editor")){
 	if(el.getAttribute("processed") != "true"){
 	require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.0-dev.20220625/min/vs' } });	
@@ -227,22 +239,58 @@ function cdhSetup(root, htmxSwap){
 
 
 function handleCdhEvent(event){
-    for(let el of document.getElementsByClassName("accordion-item")){
-	if(event.detail.app == el.getAttribute("app") && event.detail.model == el.getAttribute("model") && event.detail.id == el.getAttribute("obj_id")){
-	    if(event.detail.type == "delete"){
-		// remove element
-		el.remove();
+    var event_type = event.detail.event_type;
+    var app_label = event.detail.app_label;
+    var model_name = event.detail.model_name;
+    var pk = event.detail.pk;
+    if(event_type == "delete"){
+	for(let el of document.getElementsByClassName("accordion-item")){
+	    if(
+		app_label == el.getAttribute("app_label") &&
+		    model_name == el.getAttribute("model_name") &&
+		    pk == el.getAttribute("pk")
+	    ){
+		
 		for(let ch of el.children){
 		    if(ch.classList.contains("accordion-collapse")){
 			// remove id from active
+			console.info("(not yet) removing active id", ch.id);
 		    }
 		}
-	    }
-	    else if(event.detail.type == "update"){
-		
-	    }
-	    else if(event.detail.type == "create"){
+		console.info("Deleting", el);
+		el.remove();
 	    }
 	}
+    }
+    else if(event_type == "update"){
+	for(let el of document.getElementsByClassName("accordion-item")){
+	    if(
+		app_label == el.getAttribute("app") &&
+		    model_name == el.getAttribute("model_name") &&
+		    pk == el.getAttribute("pk")
+	    ){
+		console.error("(not yet) refreshing", el);
+		// refresh
+	    }
+	}	
+    }
+    else if(event_type == "create"){
+	var accItem = event.target.parentElement.parentElement.parentElement.parentElement;
+	var acc = accItem.parentElement;
+	console.error("(not yet) inserting", app_label, model_name, pk, event.target, acc);
+	
+	htmx.ajax("GET", acc.getAttribute("accordion_url"), {target: accItem.id, swap: "beforebegin", handler: function(resp){
+	    for(let el of resp.getElementsByClassName("accordion-item")){
+		console.error(el);
+		if(el.getAttribute("app_label") == app_label && el.getAttribute("model_name") == model_name && el.getAttribute("pk") == pk){
+		    console.error(el);
+		}
+		
+	    }
+
+	} });
+    }
+    else{
+	console.warn("Unknown CDH event type:", event_type);
     }
 }

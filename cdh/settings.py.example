@@ -98,6 +98,12 @@ LOGGING = {
         'handlers': ['console'],
         'level': 'INFO',
     },
+    "loggers" : {
+        'django': {
+            'handlers': ['console'],
+            'propagate': True,
+        }
+    }
 }
 
 ALLOWED_HOSTS = [HOSTNAME, IP]

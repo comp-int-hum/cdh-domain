@@ -2,10 +2,11 @@ from django.core.exceptions import ValidationError, NON_FIELD_ERRORS
 from django.contrib.gis.db import models
 from django.urls import reverse
 from cdh.models import CdhModel, User, AsyncMixin, MetadataMixin
+from cdh.views import cdh_cache_method
 import pickle
 import json
 
-
+# this is no longer used, but must remain for the sake of some migration code
 def default_lexicon():
     return {
         "some_positive_words_and_patterns" : ["happy", "joy.*"],
@@ -13,9 +14,10 @@ def default_lexicon():
     }
 
 
+
 class Lexicon(CdhModel):
     name = models.CharField(max_length=200)
-    lexical_sets = models.TextField(default="")
+    lexical_sets = models.TextField(default="""{\n  "positive_words": ["happy", "glad"],\n  "negative_words": ["awful", "sad.*"]\n}""")
 
     def get_absolute_url(self):
         return reverse("topic_modeling:lexicon_detail", args=(self.id,))
@@ -77,8 +79,9 @@ class TopicModel(AsyncMixin, CdhModel):
     def get_absolute_url(self):
         return reverse("topic_modeling:topicmodel_detail", args=(self.id,))
 
-    @property
-    def vega_words(self, num_words=50):
+    @property    
+    @cdh_cache_method
+    def vega_words(self, num_words=50):        
         model = pickle.loads(self.serialized.tobytes())
         words = sum(
             [
@@ -90,13 +93,14 @@ class TopicModel(AsyncMixin, CdhModel):
         )
         return words
 
-    @property
-    def vega_topic_names(self, word_count=10):
+    @property    
+    @cdh_cache_method
+    def vega_topic_names(self, num_words=10):
         words = self.vega_words
         topic_names = {}
         for topic_id in range(self.topic_count):
             topic_words = [w for w in words if w["topic"] == str(topic_id + 1)]
-            topic_names[topic_id] = ",".join([w["word"] for w in sorted(topic_words, key=lambda x : x["probability"], reverse=True)[:word_count]])
+            topic_names[topic_id] = ",".join([w["word"] for w in sorted(topic_words, key=lambda x : x["probability"], reverse=True)[:num_words]])
         return topic_names
     
     def __str__(self):
@@ -122,6 +126,7 @@ class LabeledCollection(AsyncMixin, CdhModel):
         super(LabeledCollection, self).clean()
         
     @property
+    @cdh_cache_method
     def vega_spatial(self):
         coordinates = []
         for ld in LabeledDocument.objects.filter(labeledcollection=self).select_related("document"):
@@ -152,6 +157,7 @@ class LabeledCollection(AsyncMixin, CdhModel):
         return coordinates
     
     @property
+    @cdh_cache_method    
     def vega_temporal(self):
         if self.model:
             topic_names = self.model.vega_topic_names
@@ -175,7 +181,10 @@ class LabeledCollection(AsyncMixin, CdhModel):
             bucket = ts - (ts % duration)
             all_buckets.add(bucket)
             for k, v in counts.items():
-                label = topic_names[int(k)]
+                try:
+                    label = topic_names[int(k)]
+                except:
+                    label = k
                 all_labels.add(label)
                 buckets[bucket] = buckets.get(bucket, {})
                 buckets[bucket][label] = buckets[bucket].get(label, 0.0) + v

@@ -8,27 +8,8 @@ from django.views.generic.list import ListView
 from django_registration.backends.activation.views import RegistrationView
 from . import forms
 from .admin import site as admin_site
-
-# from schedule.feeds import CalendarICalendar, UpcomingEventsFeed
-# from schedule.models import Calendar
-# from schedule.periods import Day, Month, Week, Year
-# from schedule.views import (
-#     CalendarByPeriodsView,
-#     CalendarView,
-#     CancelOccurrenceView,
-#     CreateEventView,
-#     CreateOccurrenceView,
-#     DeleteEventView,
-#     EditEventView,
-#     EditOccurrenceView,
-#     EventView,
-#     FullCalendarView,
-#     OccurrencePreview,
-#     OccurrenceView,
-#     api_move_or_resize_by_code,
-#     api_occurrences,
-#     api_select_create,
-# )
+from .views import CdhView
+from .models import User
 from . import views
 from django.conf.urls.static import static
 
@@ -48,6 +29,15 @@ urlpatterns = [
     ),
     path('accounts/', include('django_registration.backends.activation.urls')),
     path('accounts/', include('django.contrib.auth.urls')),
+    path(
+        'accounts/manage/<int:pk>/',
+        CdhView.as_view(
+            model=User,
+            fields=["first_name", "last_name", "homepage", "photo", "title", "description"],
+            can_update=True,
+        ),
+        name="manage_account"
+    ),
 ] + [path("{}/".format(k), include("{}.urls".format(k))) for k, v in settings.APPS.items()]
 
 

@@ -1,4 +1,7 @@
+from datetime import datetime
 from django.forms import ModelForm, modelform_factory, FileField
+from django.template.engine import Engine
+from django.template import Context
 import re
 import logging
 from secrets import token_hex as random_token
@@ -11,13 +14,15 @@ from django.urls import re_path, reverse
 from django.views.generic.list import ListView, MultipleObjectMixin
 from django.utils.decorators import classonlymethod
 
-from django.views.generic.base import TemplateView, TemplateResponseMixin
+from django.views.generic.base import TemplateView, TemplateResponseMixin, ContextMixin
 from django.views.generic.detail import SingleObjectMixin, SingleObjectTemplateResponseMixin
 from django.views.generic import DetailView
 from django.views.generic.edit import CreateView, DeleteView, UpdateView, DeletionMixin, ModelFormMixin, ProcessFormView
 from django.views import View
 from django.contrib.auth.models import Group
-from guardian.shortcuts import get_perms, get_objects_for_user, assign_perm
+from django.core.cache import cache
+from guardian.shortcuts import get_perms, get_objects_for_user, assign_perm, get_users_with_perms, get_groups_with_perms, remove_perm
+from guardian.forms import UserObjectPermissionsForm, GroupObjectPermissionsForm
 
 from schedule.feeds import CalendarICalendar, UpcomingEventsFeed
 from schedule.models import Calendar
@@ -48,8 +53,67 @@ from .widgets import VegaWidget
 if settings.USE_LDAP:
     from django_auth_ldap.backend import LDAPBackend
 
+template_engine = Engine.get_default()
 
-class CdhView(DeletionMixin, UpdateView):
+logger = logging.getLogger("django")
+
+
+def cdh_cache_method(method):
+    def cached_method(*argv, **argd):
+        obj = argv[0]
+        key = "{}_{}_{}_{}".format(obj._meta.app_label, obj._meta.model_name, obj.id, method.__name__)
+        timestamp_key = "TIMESTAMP_{}_{}_{}_{}".format(obj._meta.app_label, obj._meta.model_name, obj.id, method.__name__)
+        cache_ts = cache.get(timestamp_key)
+        obj_ts = obj.modified_at
+        if cache_ts == None or cache_ts < obj_ts:
+            logger.info("cache miss for key '{}'".format(key))
+            retval = method(*argv, **argd)
+            cache.set(timestamp_key, obj_ts, timeout=None)
+            cache.set(key, retval, timeout=None)
+            return retval
+        else:
+            logger.info("cache hit for key '{}'".format(key))
+            return cache.get(key)
+    return cached_method
+
+
+def cdh_cache_function(func):
+    raise Exception("cdh_cache_function not implemented yet!")
+    def cached_func(*argv, **argd):
+        return func(*argv, **argd)
+    return cached_func
+
+
+class IdMixin(object):
+    
+    def __init__(self, *argv, **argd):
+        super(IdMixin, self).__init__(*argv, **argd)
+        self.random_suffix = random_token(argd.get("random_length", 6))
+
+    @property
+    def sid(self):
+        if getattr(self, "object", None) != None:
+            model_properties = [
+                self.object._meta.app_label,
+                self.object._meta.model_name,
+                self.object.id
+            ]
+        
+        elif getattr(self, "model", None) != None:
+            model_properties = [
+                self.model._meta.app_label,
+                self.model._meta.model_name
+            ]
+        else:
+            return None
+        return "_".join([str(x) for x in model_properties])
+
+    @property
+    def uid(self):
+        return "{}_{}".format(self.sid, self.random_suffix)
+    
+
+class CdhView(IdMixin, DeletionMixin, UpdateView):
     """
     CdhView is intended as the "ground-level" view for a single CDH-related object
     in a CRUD form.  The as_view() method accepts the following arguments:
@@ -69,9 +133,9 @@ class CdhView(DeletionMixin, UpdateView):
 
     Depending on the (successful) action, its responses will set the following headers:
 
-      "deleted{app}{model}":
-      "created{app}{model}":
-      "updated{app}{model}{id}":
+      "{app}_{model}_{pk}_deleted":
+      "{app}_{model}_":
+      "updated{app}{model}{pk}":
 
     Furthermore, if the created object is asynchronous and in a "processing" state, the
     returned content will be a self-updating HTMX placeholder.  If in an "error" state,
@@ -90,7 +154,6 @@ class CdhView(DeletionMixin, UpdateView):
     update_lambda = None
     form_htmx = {
     }
-    form_id = "form_{}".format(random_token(6))
     buttons = None
     can_delete = False
     can_update = False
@@ -98,22 +161,37 @@ class CdhView(DeletionMixin, UpdateView):
     object = None
     fields = []
     preamble = None
+    widgets = None
     
     def __init__(self, *argv, **argd):        
         super(CdhView, self).__init__(*argv, **argd)
-            
+
     def get_object(self):
         try:
             return super(CdhView, self).get_object()
         except:
             return None
         
-    def get_context_data(self, request, from_htmx, model_perms, obj_perms, *argv, **argd):
-        retval = super(CdhView, self).get_context_data(*argv, **argd)
+    def get_context_data(self, request, *argv, **argd):
+        self.object = self.get_object()
+        
+        user_perms = get_users_with_perms(self.object, with_group_users=False, attach_perms=True) if self.object else {}
+        group_perms = get_groups_with_perms(self.object, attach_perms=True) if self.object else {}
+        
+        ctx = super(CdhView, self).get_context_data(*argv, **argd)
+        ctx["from_htmx"] = request.headers.get("Hx-Request", False) and True
+        ctx["request"] = request
+        ctx["object"] = self.object
+        ctx["uid"] = self.uid
+        ctx["sid"] = self.sid
+        
+        obj_perms = [x.split("_")[0] for x in (get_perms(request.user, self.object) if self.object else [])]
+        model_perms = [x.split("_")[0] for x in (get_perms(request.user, self.model) if self.model else [])]
+
         if self.buttons:
-            retval["buttons"] = self.buttons
+            ctx["buttons"] = self.buttons
         elif self.can_create and request.user.username != "AnonymousUser":
-            retval["buttons"] = [
+            ctx["buttons"] = [
                 {
                     "label" : "Create",
                     "style" : "primary",
@@ -122,33 +200,33 @@ class CdhView(DeletionMixin, UpdateView):
                 }
             ]
         else:
-            retval["buttons"] = []
+            ctx["buttons"] = []
             if self.can_update and "change" in obj_perms:
-                retval["buttons"].append(
+                ctx["buttons"].append(
                     {
                         "label" : "Save",
                         "style" : "primary",
-                        "hx_target" : "#{}".format(self.form_id),
+                        "hx_target" : "#{}".format(self.uid),
                         "hx_swap" : "none",
                         "hx_post" : request.path_info,
                     }                    
                 )
+                ctx["user_permissions_options"] = [(u, [p.split("_")[0] for p in user_perms.get(u, [])]) for u in User.objects.all()]
+                ctx["group_permissions_options"] = [(g, [p.split("_")[0] for p in group_perms.get(g, [])]) for g in Group.objects.all()]
+                ctx["perms"] = ["delete", "view", "change"]
             if self.can_delete and "delete" in obj_perms:
-                retval["buttons"].append(
+                ctx["buttons"].append(
                     {
                         "label" : "Delete",
                         "style" : "danger",
                         "hx_confirm" : "Are you sure you want to delete this object and any others derived from it?",
-                        "hx_target" : "#{}".format(self.form_id),
+                        "hx_target" : "#{}".format(self.uid),
                         "hx_swap" : "none",
                         "hx_delete" : request.path_info,
                     }
                 )
-        retval["form_id"] = self.form_id
-        retval["from_htmx"] = from_htmx
-        if self.preamble:
-            retval["preamble"] = self.preamble
-        return retval
+        ctx["preamble"] = self.preamble
+        return ctx
         
     def form_valid(self, form):
         form.instance.created_by = self.request.user
@@ -174,11 +252,11 @@ class CdhView(DeletionMixin, UpdateView):
                 class Meta:
                     model = self.model
                     fields = self.fields
+                    widgets = self.widgets if self.widgets else None
             return AugmentedForm
     
     def get(self, request, *argv, **argd):
-        from_htmx = request.headers.get("Hx-Request", False) and True
-        self.request = request
+        ctx = self.get_context_data(request)
         self.initial["created_by"] = request.user
         print(
             "GET to {} with HX-Trigger={} and HX-Request={}".format(
@@ -187,18 +265,11 @@ class CdhView(DeletionMixin, UpdateView):
                 request.headers.get("HX-Request")
             )
         )
-        obj = self.get_object()
-        state = getattr(obj, "state", None)
-        model_perms = [x.split("_")[0] for x in get_perms(request.user, self.model)]
-        obj_perms = [x.split("_")[0] for x in (get_perms(request.user, obj) if obj else [])]
-        ctx = self.get_context_data(request, from_htmx, model_perms, obj_perms)
-        if obj:
-            ctx["form"] = self.get_form_class()(instance=obj)
-        else:
-            ctx["form"] = self.get_form_class()(initial=self.initial)
-        ctx["htmx_request"] = from_htmx
-        ctx["path"] = request.path_info
-        ctx["object"] = obj
+        ctx["form"] = self.get_form_class()(
+            instance=self.object,
+            initial=None if self.object else self.initial
+        )
+        state = getattr(self.object, "state", None)
         if state == "PR":
             return render(request, "cdh/async_processing.html", ctx)
         elif state == "ER":
@@ -206,54 +277,68 @@ class CdhView(DeletionMixin, UpdateView):
         else:
             return self.render_to_response(ctx)
 
+    def create(self, request, *argv, **argd):
+        if self.create_lambda:
+            obj, resp = self.create_lambda(self, request, *argv, **argd)
+        else:
+            obj = self.get_form_class()(request.POST).save()                
+            resp = HttpResponse() #HttpResponseRedirect(obj.get_absolute_url())
+        assign_perm("{}.view_{}".format(self.model._meta.app_label, self.model._meta.model_name), request.user, obj)
+        assign_perm("{}.delete_{}".format(self.model._meta.app_label, self.model._meta.model_name), request.user, obj)
+        assign_perm("{}.change_{}".format(self.model._meta.app_label, self.model._meta.model_name), request.user, obj)
+        obj.created_by = request.user
+        obj.save()
+        resp.headers["HX-Trigger"] = """{{"cdhEvent" : {{"event_type" : "create", "app_label" : "{app_label}", "model_name" : "{model_name}", "pk" : "{pk}"}}}}""".format(
+            app_label=self.model._meta.app_label,
+            model_name=self.model._meta.model_name,
+            pk=obj.id
+        )
+        print("Created an instance of {}".format(self.model))
+        print(resp.headers)
+        return resp
+
+    def update(self, request, ctx, *argv, **argd):
+        if self.update_lambda:
+            resp = self.update_lambda(request, *argv, **argd)
+        else:
+            form = self.get_form_class()(request.POST, request.FILES, instance=self.object)
+            if not form.is_valid():
+                return render(form) ###
+            if form.has_changed():
+                self.object = form.save()
+            resp = HttpResponse() #Redirect(obj.get_absolute_url())
+        for ptype in ["user", "group"]:
+            for option, _ in ctx.get("{}_permissions_options".format(ptype), []):
+                for perm in ctx.get("perms", []):
+                    if str(option.id) in request.POST.getlist("{}_{}".format(ptype, perm), []):
+                        to_add = "{}_{}".format(perm, option._meta.model_name)
+                        assign_perm("{}_{}".format(perm, self.model._meta.model_name), option, self.object)
+                    else:
+                        to_remove = "{}_{}".format(perm, option._meta.model_name)
+                        remove_perm("{}_{}".format(perm, self.model._meta.model_name), option, self.object)
+
+        resp.headers["HX-Trigger"] = """{{"cdhEvent" : {{"event_type" : "update", "app_label" : "{app_label}", "model_name" : "{model_name}", "pk" : "{pk}"}}}}""".format(
+            app_label=self.model._meta.app_label,
+            model_name=self.model._meta.model_name,
+            pk=self.object.id
+        )
+        print("Updated {} instance {} and redirecting to {}".format(self.model, self.object, resp))
+        print(resp.headers)            
+        return resp
+        
     def post(self, request, *argv, **argd):
-        from_htmx = request.headers.get("Hx-Request", False) and True
-        self.request = request
-        obj = self.get_object()
+        ctx = self.get_context_data(request)
         print(
-            "POST to {} with HX-Trigger={} and HX-Request={}".format(
+            "Handling POST to {} with HX-Trigger={} and HX-Request={}".format(
                 request.path_info,
                 request.headers.get("HX-Trigger"),
                 request.headers.get("HX-Request")
             )
         )
-        if obj:
-            if self.update_lambda:
-                resp = self.update_lambda(request, *argv, **argd)
-            else:
-                form = self.get_form_class()(request.POST, instance=obj)
-                if form.has_changed():
-                    form.save()
-                resp = HttpResponse() #Redirect(obj.get_absolute_url())
-            #if from_htmx:
-            resp.headers["HX-Trigger"] = """{{"cdhEvent" : {{"type" : "update", "app" : "{app}", "model" : "{model}", "id" : "{id}"}}}}""".format(
-                app=self.model._meta.app_label,
-                model=self.model._meta.model_name,
-                id=obj.id
-            )
-            print("Updated {} instance {} and redirecting to {}".format(self.model, obj, resp))
-            print(resp.headers)            
-            return resp
+        if self.object:
+            return self.update(request, ctx, *argv, **argd)
         else:
-            if self.create_lambda:
-                obj, resp = self.create_lambda(self, request, *argv, **argd)
-            else:
-                obj = self.get_form_class()(request.POST).save()                
-                resp = HttpResponse() #HttpResponseRedirect(obj.get_absolute_url())
-            assign_perm("{}.view_{}".format(self.model._meta.app_label, self.model._meta.model_name), request.user, obj)
-            assign_perm("{}.delete_{}".format(self.model._meta.app_label, self.model._meta.model_name), request.user, obj)
-            assign_perm("{}.change_{}".format(self.model._meta.app_label, self.model._meta.model_name), request.user, obj)
-            #assign_perm("{}.view_{}".format(self.model._meta.app_label, self.model._meta.model_name), User.get_anonymous(), obj)
-            obj.created_by = request.user
-            obj.save()
-            resp.headers["HX-Trigger"] = """{{"cdhEvent" : {{"type" : "create", "app" : "{app}", "model" : "{model}", "id" : "{id}"}}}}""".format(
-                app=self.model._meta.app_label,
-                model=self.model._meta.model_name,
-                id=obj.id
-            )
-            print("Created an instance of {}".format(self.model))
-            print(resp.headers)
-            return resp
+            return self.create(request, ctx, *argv, **argd)
 
     def delete(self, request, *argv, **argd):
         from_htmx = request.headers.get("Hx-Request", False) and True
@@ -266,7 +351,7 @@ class CdhView(DeletionMixin, UpdateView):
             )
         )
         obj = self.get_object()
-        obj_id = obj.id
+        pk = obj.id
         if self.delete_lambda:
             resp = self.delete_lambda(request, *argv, **argd)
         else:
@@ -276,10 +361,10 @@ class CdhView(DeletionMixin, UpdateView):
             #resp = HttpResponseRedirect(reverse("{}:{}_list".format(obj._meta.app_label, obj._meta.model_name)))
         #if from_htmx:
         
-        resp.headers["HX-Trigger"] = """{{"cdhEvent" : {{"type" : "delete", "app" : "{app}", "model" : "{model}", "id" : "{id}"}}}}""".format(
-            app=self.model._meta.app_label,
-            model=self.model._meta.model_name,
-            id=obj_id
+        resp.headers["HX-Trigger"] = """{{"cdhEvent" : {{"event_type" : "delete", "app_label" : "{app_label}", "model_name" : "{model_name}", "pk" : "{pk}"}}}}""".format(
+            app_label=self.model._meta.app_label,
+            model_name=self.model._meta.model_name,
+            pk=pk
         )
         print("Deleted an instance of {} and redirecting to {}".format(self.model, resp))
         print(resp.headers)        
@@ -311,7 +396,7 @@ class VegaView(SingleObjectMixin, View):
         return render(request, self.template, {"content" : self.render(request)})
     
 
-class TabView(SingleObjectMixin, View):
+class TabView(IdMixin, SingleObjectMixin, View):
     """
     A TabView renders its "tabs" as siblings in a Bootstrap tab component.
     The as_view() method accepts the following arguments:
@@ -348,7 +433,9 @@ class TabView(SingleObjectMixin, View):
             return None
         
     def get_context_data(self, request, from_htmx, obj_perms, *argv, **argd):
+        self.object = self.get_object()
         retval = super(TabView, self).get_context_data(*argv, **argd)
+        retval["instance"] = self.object
         if self.buttons:
             retval["buttons"] = self.buttons
         else:
@@ -379,62 +466,73 @@ class TabView(SingleObjectMixin, View):
                     }
                 )
             retval["content"] = self.render(request)
-            retval["prefix"] = self.prefix
+            retval["prefix"] = self.uid
             return retval
-
         
-    def render_tab(self, request, tab, obj, index):
-        url = reverse(tab["url"], args=(obj.id,))
-        return """
-        <div id="{prefix}_{index}_tabdescription">{description}</div>
-        <div id="{prefix}_{index}_tabcontent" hx-get="{url}" hx-trigger="intersect" hx-select="#top_level_content > *" hx-swap="outerHTML">
-        </div>
-        """.format(
-            prefix=self.prefix,
-            index=index,
-            url=url,
-            description=tab.get("description", "")
-        )
+    # def render_tab(self, request, tab, obj, index):
+    #     url = reverse(tab["url"], args=(obj.id,))
+    #     return """
+    #     <div id="{prefix}_{index}_tabdescription">{description}</div>
+    #     <div id="{prefix}_{index}_tabcontent" hx-get="{url}" hx-trigger="intersect" hx-select="#top_level_content > *" hx-swap="outerHTML">
+    #     </div>
+    #     """.format(
+    #         prefix=self.uid, #prefix,
+    #         index=index,
+    #         url=url,
+    #         description=tab.get("description", "")
+    #     )
     
     def render(self, request):
-        self.prefix = "prefix_{}".format(slugify(request.path_info))
-        obj = self.get_object()        
-        controls = [
-            """
-            <li class="nav-item" role="presentation">
-            <button class="nav-link cdh-tab-button" id="{prefix}_{index}_control" data-bs-toggle="tab" data-bs-target="#{prefix}_{index}_content" type="button" role="tab" aria-controls="{prefix}_{index}_content" aria-selected="false">{title}</button>
-            </li>
-            """.format(
-                prefix=self.prefix,
-                index=i,
-                title=tab["title"]
-            ) for i, tab in enumerate(self.tabs)]
-        contents = [
-            """
-            <div class="tab-pane fade" id="{prefix}_{index}_content" role="tabpanel" aria-labelledby="{prefix}_{index}_control">
-            {content}
-            </div>
-            """.format(
-                prefix=self.prefix,
-                index=i,
-                content=self.render_tab(request, tab, obj, i)
-            ) for i, tab in enumerate(self.tabs)]
-        return mark_safe(
-            """
-            <div id="{prefix}_tabs">
-            <ul class="nav nav-tabs cdh-nav-tabs" id="{prefix}_controls" role="tablist">
-            {controls}
-            </ul>
-            <div class="tab-content" id="{prefix}_contents">
-            {contents}
-            </div>
-            </div>
-            """.format(
-                prefix=self.prefix,
-                controls="\n".join(controls),
-                contents="\n".join(contents),
+        content = template_engine.get_template("cdh/snippets/tabs.html").render(
+            Context(
+                {
+                    "tabs" : self.tabs,
+                    "uid" : self.uid,
+                    "sid" : self.sid,
+                    "instance" : self.get_object()
+                }
             )
         )
+        return mark_safe(content)
+
+        # #self.prefix = "prefix_{}".format(slugify(request.path_info))
+        # obj = self.get_object()        
+        # controls = [
+        #     """
+        #     <li class="nav-item" role="presentation">
+        #     <button class="nav-link cdh-tab-button" id="{prefix}_{index}_control" data-bs-toggle="tab" data-bs-target="#{prefix}_{index}_content" type="button" role="tab" aria-controls="{prefix}_{index}_content" aria-selected="false">{title}</button>
+        #     </li>
+        #     """.format(
+        #         prefix=self.uid,
+        #         index=i,
+        #         title=tab["title"]
+        #     ) for i, tab in enumerate(self.tabs)]
+        # contents = [
+        #     """
+        #     <div class="tab-pane fade" id="{prefix}_{index}_content" role="tabpanel" aria-labelledby="{prefix}_{index}_control">
+        #     {content}
+        #     </div>
+        #     """.format(
+        #         prefix=self.uid,
+        #         index=i,
+        #         content=self.render_tab(request, tab, obj, i)
+        #     ) for i, tab in enumerate(self.tabs)]
+        # return mark_safe(
+        #     """
+        #     <div id="{prefix}_tabs">
+        #     <ul class="nav nav-tabs cdh-nav-tabs" id="{prefix}_controls" role="tablist">
+        #     {controls}
+        #     </ul>
+        #     <div class="tab-content" id="{prefix}_contents">
+        #     {contents}
+        #     </div>
+        #     </div>
+        #     """.format(
+        #         prefix=self.uid,
+        #         controls="\n".join(controls),
+        #         contents="\n".join(contents),
+        #     )
+        # )
     
     def get(self, request, *argv, **argd):
         from_htmx = request.headers.get("Hx-Request", False) and True
@@ -467,7 +565,7 @@ class TabView(SingleObjectMixin, View):
         return resp
         
         
-class AccordionView(View):
+class AccordionView(IdMixin, TemplateResponseMixin, ContextMixin, View):
     """
     An AccordionView renders its "children" as siblings in a Bootstrap accordion component.
     The as_view() method accepts the following arguments:
@@ -492,16 +590,7 @@ class AccordionView(View):
     creating a new object should the user have permission.
 
     An accordion should only allow a single child to be expanded at any given time, and should
-    preserve state across page refresh/other navigation.
-
-    Custom HTMX signals should produce the following behaviors:
-
-      "deleted{app}{model}{id}": remove the corresponding instance wherever it occurs, if it was
-                                 active, set it's preceding sibling to active if it exists.
-      "created{app}{model}{id}": refresh all accordions based on the model, set current active
-                                 item to the corresponding new entry.
-      "updated{app}{model}{id}": refresh all children based on the instance
-    
+    preserve state across page refresh/other navigation.    
     """
     children = None
     content = None
@@ -519,90 +608,15 @@ class AccordionView(View):
         except:
             return None
 
-    # def deletion_reactivity(self, request, child):
-    #     if "instance" in child:
-    #         return """
-    #         hx-trigger="deleted{app}{model}{id} from:body"
-    #         hx-swap="delete"
-    #         hx-target="#{prefix}_{id}_accordionitem"
-    #         hx-get="{url}"
-    #         id="{prefix}_{id}"
-    #         """.format(
-    #             app=child["instance"]._meta.app_label.replace("_", ""),
-    #             model=child["instance"]._meta.model_name,
-    #             id=child["instance"].id,
-    #             prefix=self.prefix,
-    #             url=request.path_info
-    #         )
-    #     else:
-    #         return ""
+    def get_context_data(self, request, *argv, **argd):
+        ctx = super(AccordionView, self).get_context_data(*argv, **argd)
+        ctx["sid"] = self.sid
+        ctx["uid"] = self.uid
+        ctx["content"] = self.render(request)
+        ctx["preamble"] = self.preamble
+        return ctx
         
-    # def update_reactivity(self, request, child):
-    #     if "instance" in child:
-    #         return """
-    #         hx-trigger="updated{app}{model}{id} from:body"
-    #         hx-swap="outerHTML"
-    #         hx-target="#{prefix}_{id}_accordionitem"
-    #         hx-select="#{prefix}_{id}_accordionitem"
-    #         hx-get="{url}"
-    #         """.format(
-    #             app=child["instance"]._meta.app_label.replace("_", ""),
-    #             model=child["instance"]._meta.model_name,
-    #             id=child["instance"].id,
-    #             prefix=self.prefix,
-    #             url=request.path_info,                
-    #         )
-    #     else:
-    #         return ""
-
-    # def creation_reactivity(self, request, child):
-    #     if "model" in child:
-    #         return """
-    #         hx-trigger="created{app}{model} from:body"
-    #         hx-swap="outerHTML"
-    #         hx-target="#{prefix}_accordion"
-    #         hx-select="#{prefix}_accordion"
-    #         hx-get="{url}"
-    #         """.format(
-    #             app=child["model"]._meta.app_label.replace("_", ""),
-    #             model=child["model"]._meta.model_name,
-    #             prefix=self.prefix,
-    #             url=request.path_info,                                
-    #             # url=reverse(
-    #             #     "{}:{}_list".format(
-    #             #         child["model"]._meta.app_label,
-    #             #         child["model"]._meta.model_name
-    #             #     )
-    #             # )
-    #         )           
-
-
-    #     else:
-    #         return ""
-        
-    def render_child(self, request, child, index):
-        if "instance" in child and "url" in child:
-            url = reverse(child["url"], args=(child["instance"].id,))
-        elif "url" in child:
-            url = reverse(child["url"], args=())
-        else:
-            raise Exception("Unknown accordion child spec: {}".format(child))
-        return """
-        <div id="{prefix}_{id}_accordionchildcontent" hx-get="{url}" hx-trigger="intersect" hx-select="#top_level_content > *" hx-swap="outerHTML">
-        </div>
-        """.format(
-            prefix=self.prefix,
-            url=url,
-            id=child["instance"].id if "instance" in child else "nonobject{}".format(index)
-        )
-
     def expand_children(self, request):
-        """
-        Interpretations of the "children" argument passed to the constructor:
-
-        1. dictionary with "model" and "url" fields and no "object":
-           
-        """
         retval = []
         if isinstance(self.children, dict):
             if "url" in self.children and "model" in self.children and "instance" not in self.children:
@@ -610,27 +624,19 @@ class AccordionView(View):
                     {
                         "title" : str(obj),
                         "instance" : obj,
-                        "url" : self.children["url"]                        
+                        "url" : self.children["url"],
+                        "model_name" : obj._meta.model_name,
+                        "app_label" : obj._meta.app_label
                     } for obj in get_objects_for_user(
                         request.user,
                         klass=self.children["model"],
-                        perms=["view_{}".format(self.children["model"]._meta.model_name)]
-                    )
+                        perms=["view_{}".format(self.children["model"]._meta.model_name)],
+                    ).order_by("created_at")
                 ]
-                #print(obj_perms, model_perms)
-                #perms = get_perms(request.user, self.children["model"])
-                #print(request.user, self.children["model"], perms)
-                #actions = set([x.split("_")[0] for x in perms])
                 if request.user.id != None and "create_url" in self.children:                
                     retval.append(
                         {
-                            "title" : """
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-circle" viewBox="0 0 16 16">
-  <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-  <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
-</svg>
-                            """,
-                            "url" : self.children["create_url"]
+                            "create_url" : self.children["create_url"]
                         }
                     )
         elif isinstance(self.children, list):
@@ -644,100 +650,74 @@ class AccordionView(View):
         return retval
         
     def render(self, request):
-        self.prefix = "prefix_{}".format(slugify(request.path_info))
-        expanded_children = self.expand_children(request)
-        accordion_content = [
-            """
-            <div class="accordion-item" id="{prefix}_{id}_accordionitem" aria-labelledby="{prefix}_title" model="{model_name}" app="{app_label}" obj_id="{obj_id}">
-              <div class="accordion-header" id="{prefix}_{id}_header">
-                <button class="accordion-button cdh-accordion-button collapsed" data-bs-toggle="collapse" type="button" aria-expanded="false" data-bs-target="#{prefix}_{id}_content" id="{prefix}_{id}_button" aria-controls="{prefix}_{id}_content">
-                  {title}
-                </button>
-              </div>
-              <div class="accordion-collapse collapse w-95 ps-4" id="{prefix}_{id}_content" aria-labelledby="{prefix}_{id}_header" data-bs-parent="#{prefix}_accordion">
-                {content}
-              </div>
-            </div>
-            """.format(
-                prefix=self.prefix,
-                id=child["instance"].id if "instance" in child else "nonobject{}".format(i),
-                obj_id=child["instance"].id if "instance" in child else "",
-                app_label=child["instance"]._meta.app_label if "instance" in child else "",
-                model_name=child["instance"]._meta.model_name if "instance" in child else "",
-                title=child["title"],
-                content=self.render_child(request, child, i),
-                deletion_reactivity="", #self.deletion_reactivity(request, child),
-                update_reactivity="" #self.update_reactivity(request, child)
-            ) for i, child in enumerate(expanded_children)]
-
-        if isinstance(self.children, dict) and "model" in self.children:
-            update_mechanism = """
-            hx-get="{url}" hx-select="#{prefix}_accordion" hx-trigger="deleted{model}, updated{model}, created{model}"
-            """.format(
-                prefix=self.prefix,
-                model=self.model._meta.model_name,
-                url=request.path_info
-            )
-            #update_mechanism = ""
-        else:
-            update_mechanism = ""
-        return mark_safe(
-            """            
-            <div class="accordion" id="{prefix}_accordion" {update_mechanism}>
-              <div {creation_reactivity} id="{prefix}_accordion_itemcreation">
-              </div>
-              {accordion_content}
-            </div>
-            """.format(
-                preamble=self.preamble if self.preamble else "",
-                prefix=self.prefix,
-                accordion_content="\n".join(accordion_content),
-                update_mechanism=update_mechanism,
-                creation_reactivity="" #self.creation_reactivity(request, self.children),
+        content = template_engine.get_template("cdh/snippets/accordion.html").render(
+            Context(
+                {
+                    "items" : self.expand_children(request),
+                    "uid" : self.uid,
+                    "sid" : self.sid,
+                    "accordion_url" : request.path_info
+                }
             )
         )
+        return mark_safe(content)
         
     def get(self, request, *argv, **argd):
-        return render(request, self.template, {"content" : self.render(request), "preamble" : self.preamble})
+        #print(render(request, self.template, self.get_context_data(request)).content)
+        return render(request, self.template, self.get_context_data(request))
 
 
-class CdhSelectView(SingleObjectMixin, View):
+
+class CdhSelectView(IdMixin, SingleObjectMixin, View):
     template_name = "cdh/simple_interface.html"
     model = None
-    child_model = None
+    related_model = None
     relationship = None
     child_name_field = None
-    child_url = None
+    related_url = None
     preamble = None
+    limit = 100
     
     def render(self, request):
-        prefix = "selection_{}".format(slugify(request.path_info))
+        prefix = self.uid #"selection_{}".format(slugify(request.path_info))
         obj = self.get_object()
-        children = self.child_model.objects.filter(**{self.relationship : obj}).select_related()[0:1000]
-        first = children[0]
-        return mark_safe(
-            """
-            <select class="cdh-select">
-            {options}
-            </select>
-            <div id="{prefix}_documentview" hx-get="{url}" hx-trigger="intersect" hx-select="#top_level_content > *" hx-swap="innerHTML">
-            </div>
-            """.format(
-                prefix=prefix,
-                id=obj.id,
-                url=reverse(self.child_url, args=(first.id,)),
-                options="\n".join(
-                    [
-                        """<option id="{prefix}_{index}" hx-get="{url}" hx-target="#{prefix}_documentview" hx-trigger="select" hx-swap="innerHTML" hx-select="#top_level_content" value="{prefix}_{index}">{name}</option>""".format(
-                            url=reverse(self.child_url, args=(c.id,)),
-                            name=str(c),
-                            prefix=prefix,
-                            index=i
-                        ) for i, c in enumerate(children)
-                    ]
-                )
+        related_objects = self.related_model.objects.filter(**{self.relationship : obj}).select_related()[0:self.limit]
+        content = template_engine.get_template("cdh/snippets/select.html").render(
+            Context(
+                {
+                    "options" : related_objects,
+                    "uid" : self.uid,
+                    "sid" : self.sid,
+                    "related_url" : self.related_url,
+                }
             )
         )
+        return mark_safe(content)
+
+        # first = children[0]
+        # return mark_safe(
+        #     """
+        #     <select class="cdh-select">
+        #     {options}
+        #     </select>
+        #     <div id="{prefix}_documentview" hx-get="{url}" hx-trigger="intersect" hx-select="#top_level_content > *" hx-swap="innerHTML">
+        #     </div>
+        #     """.format(
+        #         prefix=prefix,
+        #         id=obj.id,
+        #         url=reverse(self.child_url, args=(first.id,)),
+        #         options="\n".join(
+        #             [
+        #                 """<option id="{prefix}_{index}" hx-get="{url}" hx-target="#{prefix}_documentview" hx-trigger="select" hx-swap="innerHTML" hx-select="#top_level_content" value="{prefix}_{index}">{name}</option>""".format(
+        #                     url=reverse(self.child_url, args=(c.id,)),
+        #                     name=str(c),
+        #                     prefix=prefix,
+        #                     index=i
+        #                 ) for i, c in enumerate(children)
+        #             ]
+        #         )
+        #     )
+        # )
 
     def get(self, request, *argv, **argd):
         return render(request, self.template_name, {"content" : self.render(request), "preamble" : self.preamble})

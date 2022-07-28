@@ -1,0 +1,17 @@
+<select class="cdh-select" id="{{uid}}_select">
+  <option id="{{uid}}_null" value="">Choose an item to view</option>
+  {% for option in options %}
+  <option id="{{uid}}_{{forloop.counter}}"
+	  hx-get="{% url related_url option.id %}"
+	  hx-target="#{{uid}}_view"
+	  hx-trigger="select"
+	  hx-swap="innerHTML"
+	  hx-select="#top_level_content > *"
+	  value="{{uid}}_{{forloop.counter}}">
+    {{option}}
+  </option>
+  {% endfor %}
+</select>
+
+<div id="{{uid}}_view">
+</div>

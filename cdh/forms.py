@@ -10,7 +10,8 @@ from django.db.models import Field
 from guardian.shortcuts import get_perms
 from django.template.response import SimpleTemplateResponse, TemplateResponse
 from django.template import Engine, Template, RequestContext
-from django.forms import FileField
+from django.forms import FileField, ModelForm
+
 
 if settings.USE_LDAP:
     import ldap
@@ -102,5 +103,3 @@ class UserForm(RegistrationFormUniqueEmail):
         # this second save seems necessary to prevent populating the password field in SQL?
         user.save()
         return user
-
-        
