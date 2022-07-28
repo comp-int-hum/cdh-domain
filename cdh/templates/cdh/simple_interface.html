@@ -5,11 +5,11 @@
 <div {% for k, v in reactive_properties.items %}
      {{k}}="{{v}}"
      {% endfor %}
-     id="{{prefix}}-reactive-properties"
+     id="{{uid}}-reactive-properties"
      ></div>
 
 {% if form %}
-<form method="post" action="{{request.path_info}}" id="{{form_id}}"
+<form method="post" action="{{request.path_info}}" id="{{uid}}" class="{{sid}}"
       hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
       {% if form.is_multipart %}
       hx-encoding="multipart/form-data"
@@ -22,48 +22,48 @@
 
 {% if preamble %}
 <div class="container w-75">
-  {{preamble|safe}}
-</div>
-{% endif %}
-
-{% comment %}
-This needs to be fixed:
-<div class="accordion" id="{{prefix}}-preamble-accordion">
-  <div class="accordion-item" id="{{prefix}}-preamble-accordionitem" aria-labeledby="{{prefix}}-preamble-accordion">
-    <div class="accordion-header" id ="{{prefix}}-preamble-accordionheader">
-      <div class="d-grid gap-2">
-      <button id="{{prefix}}-preamble-button"
-	      class="accordion-button cdh-accordion-button collapsed"
-	      type="button"
-	      data-bs-toggle="collapse"
-	      data-bs-target="#{{prefix}}-preamble-accordioncontent"
-	      aria-expanded="false"
-	      aria-controls="{{prefix}}-preamble-accordioncontent"
-	      >
-	{% if preamble_title %}{{preamble_title}}{% else %}More information{% endif %}
-      </button>
+  <div class="accordion" id="{{uid}}_preamble_accordion">
+    <div class="accordion-item" id="{{uid}}_preamble_accordionitem" aria-labeledby="{{uid}}_preamble_accordion">
+      <div class="accordion-header" id ="{{uid}}_preamble_accordionheader">
+	<div class="d-grid gap-2">
+	  <button id="{{uid}}_preamble_button"
+		  class="accordion-button cdh-accordion-button collapsed"
+		  type="button"
+		  data-bs-toggle="collapse"
+		  data-bs-target="#{{uid}}_preamble_accordioncontent"
+		  aria-expanded="false"
+		  aria-controls="{{uid}}_preamble_accordioncontent"
+		  >
+	    {% if preamble_title %}{{preamble_title}}{% else %}?{% endif %}
+	  </button>
+	</div>
+      </div>    
+      <div class="accordion-collapse collapse"
+	   id="{{uid}}_preamble_accordioncontent"
+	   aria-labeledby="{{uid}}_preamble_accordionheader"
+	   data-bs-parent="{{uid}}_preamble_accordion"
+	   >
+	{{preamble|safe}}
       </div>
-    </div>    
-    <div class="accordion-collapse collapse"
-	 id="{{prefix}}-preamble-accordioncontent"
-	 aria-labeledby="{{prefix}}-preamble-accordionheader"
-	 data-bs-parent="{{prefix}}-preamble-accordion"
-	 >
-      {{preamble}}
     </div>
   </div>
 </div>
-{% endcomment %}
+{% endif %}
 
 
-{% if buttons and top_buttons %}
+{% if form and buttons and top_buttons %}
+
+{% if form.is_multipart %}
+<progress id='progress' value='0' max='100'></progress>
+{% endif %}
+
 <div class="btn-group" role="group" aria-label="actions">
   {% for button in buttons %}
   <button class="btn btn-{{button.style}}"
 	  {% if button.hx_post %}hx-post="{{button.hx_post}}"{% endif %}
 	  {% if button.hx_delete %}hx-delete="{{button.hx_delete}}"{% endif %}	    
 	  {% if button.hx_confirm %}hx-confirm='{{button.hx_confirm}}'{% endif %}
-	  {% if button.hx_target %}hx-target='#{{button.hx_target}}'{% endif %}
+	  {% if button.hx_target %}hx-target='{{button.hx_target}}'{% endif %}
 	  {% if button.hx_select %}hx-select='{{button.hx_select}}'{% endif %}
 	  {% if button.hx_swap %}hx-swap='{{button.hx_swap}}'{% endif %}
 	  hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
@@ -77,36 +77,71 @@ This needs to be fixed:
 {{content}}
 {{form}}
 
+{% if form %}
+  
+{% if user_permissions_options or group_permissions_options %}
+
+<p>
+  <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#{{uid}}-permissions" aria-expanded="false" aria-controls="{{uid}}-permissions">
+    Manage permissions
+  </button>
+</p>
+
+<div class="collapse" id="{{uid}}-permissions">
+
+  {% if user_permissions_options %}
+  <h4>User permissions</h4>
+  <div class="row">
+    {% for perm in perms %}
+    <div class="col w-25">
+      <label for="{{uid}}-{{perm}}-user-perm-select">{{perm|title}}</label>
+      <select class="form-select" multiple aria-label="{{perm}}-user-permissions" id="{{uid}}-{{perm}}-user-perm-select" name="user_{{perm}}">
+	{% for u, p in user_permissions_options %}
+	<option value="{{u.id}}" {% if perm in p %}selected{% endif %}>{{u}}</option>
+	{% endfor %}
+      </select>
+    </div>
+    {% endfor %}    
+  </div>
+  {% endif %}
+  
+  {% if group_permissions_options %}
+  <h4>Group permissions</h4>
+  <div class="row">
+    {% for perm in perms %}
+    <div class="col w-25">
+      <label for="{{uid}}-{{perm}}-group-perm-select">{{perm|title}}</label>
+      <select class="form-select" multiple aria-label="{{perm}}-group-permissions" id="{{uid}}-{{perm}}-group-perm-select" name="group_{{perm}}">
+	{% for g, p in group_permissions_options %}
+	<option value="{{g.id}}" {% if perm in p %}selected{% endif %}>{{g}}</option>
+	{% endfor %}
+      </select>
+    </div>
+    {% endfor %}    
+  </div>
+  {% endif %}
+  
+</div>
+
+{% endif %}
+
+{% endif %}
+
+{% if form and buttons and not top_buttons %}
+
 {% if form.is_multipart %}
 <progress id='progress' value='0' max='100'></progress>
 {% endif %}
 
-{% if buttons and top_buttons %}
 <div class="btn-group" role="group" aria-label="actions">
   {% for button in buttons %}
   <button class="btn btn-{{button.style}}"
-	  {% if button.hx_post %}hx-post="{{request.path_info}}"{% endif %}
-	  {% if button.hx_delete %}hx-delete="{{request.path_info}}"{% endif %}	    
+	  {% if button.hx_post %}hx-post="{{button.hx_post}}"{% endif %}
+	  {% if button.hx_delete %}hx-delete="{{button.hx_delete}}"{% endif %}
+{% comment%}	  {% if button.hx_post %}hx-post="{{request.path_info}}"{% endif %}
+	  {% if button.hx_delete %}hx-delete="{{request.path_info}}"{% endif %}	    	  {% endcomment %}
 	  {% if button.hx_confirm %}hx-confirm='{{button.hx_confirm}}'{% endif %}
-	  {% if button.hx_target %}hx-target='#{{form_id}}'{% endif %}
-	  {% if button.hx_select %}hx-select='{{button.hx_select}}'{% endif %}
-	  {% if button.hx_swap %}hx-swap='{{button.hx_swap}}'{% endif %}
-	  hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
-	  >
-    {{button.label}}
-  </button>
-  {% endfor %}
-</div>
-{% endif %}
-
-{% if buttons and not top_buttons %}
-<div class="btn-group" role="group" aria-label="actions">
-  {% for button in buttons %}
-  <button class="btn btn-{{button.style}}"
-	  {% if button.hx_post %}hx-post="{{request.path_info}}"{% endif %}
-	  {% if button.hx_delete %}hx-delete="{{request.path_info}}"{% endif %}	    
-	  {% if button.hx_confirm %}hx-confirm='{{button.hx_confirm}}'{% endif %}
-	  {% if button.hx_target %}hx-target='#{{form_id}}'{% endif %}
+	  {% if button.hx_target %}hx-target='{{button.hx_target}}'{% endif %}
 	  {% if button.hx_select %}hx-select='{{button.hx_select}}'{% endif %}
 	  {% if button.hx_swap %}hx-swap='{{button.hx_swap}}'{% endif %}
 	  hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'

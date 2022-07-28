@@ -113,5 +113,7 @@ class SlidePage(models.Model):
     
 class CdhModel(MetadataMixin, models.Model):
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    created_at = models.DateTimeField(auto_now_add=True)
+    modified_at = models.DateTimeField(auto_now=True)
     class Meta:
         abstract = True

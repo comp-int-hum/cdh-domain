@@ -16,7 +16,6 @@ from gensim.models import LdaModel
 from gensim.corpora import Dictionary
 from .vega import TopicModelWordCloud, TemporalEvolution, SpatialDistribution
 from .models import TopicModel, LabeledCollection, Lexicon, Collection, LabeledDocument, Document, LabeledDocumentSection
-from .forms import CollectionCreateForm, LexiconForm
 from django.utils.safestring import mark_safe
 from django.http import JsonResponse
 from django.core.paginator import Paginator
@@ -28,16 +27,6 @@ from django.views import View
 from cdh.widgets import VegaWidget
 from .vega import TopicModelWordCloud
 from django.utils.text import slugify
-
-
-class CollectionCreateView(TemplateResponseMixin, ProcessFormView, View):
-    form_class = CollectionCreateForm
-    model = Collection
-    template_name = "cdh/simple_interface.html"
-    def __init__(self, *argv, **argd):
-        return super(CollectionCreateView, self).__init__(*argv, **argd)
-    def get(self, request, *argv, **argd):
-        return render(request, self.template_name, {})
 
 
 class WordTableView(SingleObjectMixin, View):
@@ -101,7 +90,7 @@ class LabeledDocumentView(SingleObjectMixin, View):
         <!--<h5 class="card-title">{{title}}</h5>-->
         <div class="container">
         <p>
-        {}
+        {}dasdas
         </p>
         </div>
         </div>

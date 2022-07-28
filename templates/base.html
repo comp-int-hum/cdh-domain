@@ -72,6 +72,9 @@
 		<li>
 		  <a href="/accounts/logout">Log out</a>
 		</li>
+		<li>
+		  <a href="{% url 'manage_account' request.user.id %}">Manage account</a>		  
+		</li>
 		{% else %}
 		<li>
 		  <a href="/accounts/login">Log in</a>

@@ -4,6 +4,7 @@ from cdh.widgets import VegaWidget, MonacoEditorWidget
 
 
 class LexiconForm(ModelForm):
+    
     def __init__(self, *args, **kwargs):
         prefix = "{}-{}-{}".format(
             Lexicon._meta.app_label,
@@ -14,9 +15,7 @@ class LexiconForm(ModelForm):
 
     class Meta:
         model = Lexicon
-
-        fields = ('lexical_sets', 'name')
-
+        fields = ('name', 'lexical_sets')
         widgets = {
             'lexical_sets': MonacoEditorWidget(language="json", content_field="lexical_sets", default_value="""{
   "positive_words": ["happy", "glad"],
@@ -24,17 +23,3 @@ class LexiconForm(ModelForm):
 }
 """)
         }
-
-        
-TopicModelForm = modelform_factory(
-    TopicModel,
-    exclude=["state", "task_id", "message"]
-)
-
-
-class CollectionCreateForm(ModelForm):
-    upload = FileField(label="File")
-    class Meta:
-        model = Collection
-        fields = ("upload", "name")
-        

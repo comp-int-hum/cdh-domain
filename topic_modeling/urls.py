@@ -12,11 +12,12 @@ from django.views.generic import DetailView
 from guardian.shortcuts import get_perms, get_objects_for_user, assign_perm
 from cdh.models import User
 from cdh.views import TabView, AccordionView, VegaView, CdhView, CdhSelectView
+from cdh.widgets import MonacoEditorWidget
 from .models import Collection, Document, Lexicon, LabeledDocument, LabeledCollection, TopicModel
 from .vega import TopicModelWordCloud, SpatialDistribution, TemporalEvolution
 from .tasks import extract_documents, train_model, apply_model
 from .forms import LexiconForm
-from .views import WordTableView, CollectionCreateView, LabeledDocumentView
+from .views import WordTableView, LabeledDocumentView
 
 
 def create_topicmodel(self, request, *argv, **argd):
@@ -155,9 +156,6 @@ urlpatterns = [
     path(
         'lexicon/create/',
         CdhView.as_view(
-            model=Lexicon,
-            form_class=LexiconForm,
-            can_create=True,
             preamble="""
             A lexicon is simply specified as a mapping from meaningful labels (could be topics, sentiments, styles,
             etc) to lists of word-patterns that indicate the label.  The syntax should be clear from the initial example in
@@ -169,7 +167,14 @@ urlpatterns = [
             using them: they can easily become too general and match many unintended words.  Also, the collective matching
             behavior of the different labels should not overlap: if two labels both have word-patterns matching a word, the
             word will only "count" for one of them, chosen at random.
-            """
+            """,
+            model=Lexicon,
+            #form_class=LexiconForm,
+            fields=["name", "lexical_sets"],
+            can_create=True,
+            widgets = {
+                'lexical_sets': MonacoEditorWidget(language="json", content_field="lexical_sets") #, default_value=example_lexicon)
+            }
         ),
         name="lexicon_create"
     ),
@@ -300,9 +305,9 @@ urlpatterns = [
             This dropdown box lets you select specific documents from the collection and inspect how the words were annotated by topic.  At the moment this simply highlights, when the pointer passes over a word with a particular topic, the other words from the same topic.
             """,
             model=LabeledCollection,
-            child_model=LabeledDocument,
+            related_model=LabeledDocument,
             relationship="labeledcollection",
-            child_url="topic_modeling:labeleddocument_detail"
+            related_url="topic_modeling:labeleddocument_detail"
         ),
         name="labeledcollection_labeleddocument_list"
     ),
