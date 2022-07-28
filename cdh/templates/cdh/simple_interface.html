@@ -20,7 +20,7 @@
 {% endif %}
 
 
-{% if preamble %}
+{% if preamble and hide_preamble %}
 <div class="container w-75">
   <div class="accordion" id="{{uid}}_preamble_accordion">
     <div class="accordion-item" id="{{uid}}_preamble_accordionitem" aria-labeledby="{{uid}}_preamble_accordion">
@@ -47,6 +47,10 @@
       </div>
     </div>
   </div>
+</div>
+{% elif preamble %}
+<div class="container w-75">
+  {{preamble|safe}}
 </div>
 {% endif %}
 
