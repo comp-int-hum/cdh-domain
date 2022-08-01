@@ -32,7 +32,6 @@
 
 <div class="container-fluid content mt-2">
   {% if batch_rows %}
-  <h5>Perform Annotations</h5>
   <table class="table table-bordered table-hover">
     <tr class="thead-dark">
       <th>Project</th>
@@ -63,14 +62,13 @@
     {% endfor %}
   </table>
   {% endif %}
-  
-  <h5>Manage Projects and Tasks</h5>
-  {% include "cdh/snippets/accordion.html" with accordion_id="projects" %}  
+
   {% if not user.is_authenticated  %}
   <h6>
-    You may need to <a href="{% url 'login' %}">Login</a> to see available Tasks, or to create your own.
+    You may need to <a href="{% url 'login' %}">Login</a> to see available Tasks.
   </h6>
   {% endif %}
+
 </div>
 
 {% endblock %}

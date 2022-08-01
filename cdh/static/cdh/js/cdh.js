@@ -57,15 +57,17 @@ function collapseAccordion(accordion){
 function refreshAccordionItem(item){
 }
 
-function cdhSetup(root, htmxSwap){
-    console.info("Running CDH setup on ", root);
+function saveState(){
+    var pathName = document.location.pathname;
+    var scrollPosition = $(document).scrollTop();
+    sessionStorage.setItem("scrollPosition_" + pathName, scrollPosition.toString());
+}
 
-    // reactivate accordion items
-    /*
-    var seenAccordionItems = new Map();
+function restoreState(root){
+    //var seenAccordionItems = new Map();
     for(let el of root.getElementsByClassName("cdh-accordion-button")){
 	ct = document.getElementById(el.getAttribute("aria-controls"));
-	seenAccordionItems.set(ct.id, true);
+	//seenAccordionItems.set(ct.id, true);
 	if(checkValue("active_accordion_items", ct.id)){
 	    console.info("showing accordion", el.id);
 	    el.setAttribute("aria-expanded", "true");
@@ -89,19 +91,7 @@ function cdhSetup(root, htmxSwap){
 	});
 	ct.addEventListener("show.bs.collapse", event => { addValue("active_accordion_items", event.target.id) });
     }
-    */
-    // remove unseen accorion items
-    /*
-    for(let aid of getList("active_accordion_items")){
-	if(!seenAccordionItems.has(aid)){
-	    console.info("removing unseen accordion item", aid);
-	    removeValue("active_accordion_items", aid);
-	}
-    }
-    */
-    
-    // reactivate tab items
-    /*
+
     for(let el of root.getElementsByClassName("cdh-tab-button")){
 	ct = document.getElementById(el.getAttribute("aria-controls"));
 	if(checkValue("active_tab_items", el.id)){
@@ -121,9 +111,11 @@ function cdhSetup(root, htmxSwap){
 	el.addEventListener("show.bs.tab", event => { addValue("active_tab_items", event.target.id); });
 	el.addEventListener("hide.bs.tab", event => { removeValue("active_tab_items", event.target.id) });
     }
-    */
-    // make sure exactly one tab is visible for every set of tabs
-    for(let el of root.getElementsByClassName("cdh-nav-tabs")){
+
+}
+
+function ensureTabs(root){
+        for(let el of root.getElementsByClassName("cdh-nav-tabs")){
 	console.info("Processing tabs ", el);
 	var buttons = [];
 	var anySet = false;
@@ -150,6 +142,22 @@ function cdhSetup(root, htmxSwap){
 	    console.info("Exactly one tab was already visible on ", el);
 	}
     }
+}
+
+function cdhSetup(root, htmxSwap){
+    console.info("Running CDH setup on ", root);
+
+    // things that should only happen once, at the top level of the page
+    if(!htmxSwap){
+	// preserve accordion, tab, and scroll states when browsing away from or reloading the page
+	window.onbeforeunload = saveState;
+    }
+
+    // restore any previous state (must happen for htmx-loaded fragments too)
+    restoreState(root);
+    
+    // make sure exactly one tab is visible for every set of tabs
+    ensureTabs(root);
 
     for(let el of root.getElementsByClassName("cdh-select")){
 	el.addEventListener("change", event => {
@@ -164,17 +172,6 @@ function cdhSetup(root, htmxSwap){
 	    htmx.trigger(tgt, "select");
 	});
     }
-    // remember and restore where you were on the page (this probably doesn't work in some situations!)
-    /*
-    var pathName = document.location.pathname;
-    window.onbeforeunload = function () {
-        var scrollPosition = $(document).scrollTop();
-        sessionStorage.setItem("scrollPosition_" + pathName, scrollPosition.toString());
-    }
-    if (sessionStorage["scrollPosition_" + pathName]) {
-        $(document).scrollTop(sessionStorage.getItem("scrollPosition_" + pathName));
-	}
-	*/
 
     // run initialization for Monaco editor widgets
     for(let el of root.getElementsByClassName("cdh-editor")){
@@ -198,7 +195,48 @@ function cdhSetup(root, htmxSwap){
 	}
     }
 
-    // annotated documents
+    // run initialization for Monaco model widgets
+    for(let el of root.getElementsByClassName("cdh-model-interaction")){
+	if(el.getAttribute("processed") != "true"){
+	require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.0-dev.20220625/min/vs' } });	
+	require(['vs/editor/editor.main'], function () {
+	    var listValue = JSON.parse(document.getElementById(el.getAttribute("value_id")).textContent);
+	    var form = el.parentNode;
+	    var editor = monaco.editor.create(el, {	      
+		value: listValue.join('\n'),
+		language: el.getAttribute("language"),
+		automaticLayout: true,
+		tabCompletion: "on",
+		wordWrap: true
+	    });
+	    el.addEventListener("keyup", (event) => {
+		if(event.key == "Tab" && event.shiftKey == true){
+		    var content = editor.getModel().getValue();
+		    var form = event.target.parentElement.parentElement.parentElement.parentElement;
+		    $.ajax(
+			{
+			    headers: JSON.parse(form.getAttribute("hx-headers")),
+			    url: form.action,
+			    method: "POST",
+			    data: {interaction: content},
+			    success: function (data){
+				var model = editor.getModel();
+				var current = model.getValue();				
+				model.setValue(content + data);
+				var pos = model.getPositionAt(model.getValue().length);
+				editor.setPosition(pos);
+			    }
+			}
+		    );
+		}
+	    });
+	});
+	    el.setAttribute("processed", "true");
+	}
+    }
+
+    
+    // initialize annotated documents
     var elms=root.getElementsByClassName("labeled-token");
     for(var i=0;i<elms.length;i++){
 	elms[i].onmousedown = function(event){
@@ -274,21 +312,34 @@ function handleCdhEvent(event){
 	    }
 	}	
     }
-    else if(event_type == "create"){
+    else if(event_type == "create"){	
 	var accItem = event.target.parentElement.parentElement.parentElement.parentElement;
 	var acc = accItem.parentElement;
-	console.error("(not yet) inserting", app_label, model_name, pk, event.target, acc);
-	
-	htmx.ajax("GET", acc.getAttribute("accordion_url"), {target: accItem.id, swap: "beforebegin", handler: function(resp){
-	    for(let el of resp.getElementsByClassName("accordion-item")){
-		console.error(el);
-		if(el.getAttribute("app_label") == app_label && el.getAttribute("model_name") == model_name && el.getAttribute("pk") == pk){
-		    console.error(el);
-		}
-		
+	for(let otherAcc of htmx.findAll()){
+	    console.error(otherAcc);
+	}
+	/*
+	  $.ajax(
+	    {		
+		url: acc.getAttribute("accordion_url"),
+		success: function (data){
+		    var dummy = document.createElement( 'html' );
+		    dummy.innerHTML = data;
+		    console.error(dummy);
+		    for(let el of dummy.getElementsByClassName("accordion-item")){			
+			if(el.getAttribute("app_label") == app_label && el.getAttribute("model_name") == model_name && el.getAttribute("pk") == pk)
+			{
+			    acc.insertBefore(el, accItem);
+			    //cdhSetup(el, true);
+			    //htmx.trigger(el, "htmx:load");
+			    // collapse current, expand new?
+			}			
+		    }		    
+		},
+		dataType: "html"
 	    }
-
-	} });
+	    );
+	    */
     }
     else{
 	console.warn("Unknown CDH event type:", event_type);

@@ -24,7 +24,7 @@ PRIVATE_APPS = {
     "turkle_wrapper" : "Annotation",
     "starcoder_wrapper" : "Deep learning",
     #"ocr" : "OCR",
-    "image_clustering" : "Computer Vision",
+    #"image_clustering" : "Computer Vision",
 }
 PUBLIC_APPS = {
     "wiki" : "Wiki",
@@ -185,6 +185,15 @@ if USE_CELERY:
 
 # CDH NOTE: Edit to match your circumstances (the default will work with
 #           the development process in the README file).
+TORCHSERVE_INFERENCE_ADDRESS = "http://localhost:27080"
+TORCHSERVE_MANAGEMENT_ADDRESS = "http://localhost:27081"
+TORCHSERVE_METRICS_ADDRESS = "http://localhost:27082"
+TORCHSERVE_GRPC_INFERENCE_ADDRESS = "http://localhost:27070"
+TORCHSERVE_GRPC_MANAGEMENT_ADDRESS = "http://localhost:27071"
+
+
+# CDH NOTE: Edit to match your circumstances (the default will work with
+#           the development process in the README file).
 if USE_JENA:
     JENA_HOST = "localhost"
     JENA_PORT = 3030
@@ -297,6 +306,13 @@ if USE_LDAP:
 
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'cache_table',
+    }
+}
 
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases

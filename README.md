@@ -110,13 +110,14 @@ USE_POSTGRES = False
 USE_JENA = False
 ```
 
-These correspond to servers that the framework does, or will, rely on for key functionality that the development setup "fakes" by default.  LDAP provides user and group management/authentication for the entire CDH infrastructure, Celery provides asynchronous execution of long-running computations like training and applying models, PostGRES is a production SQL database, and Jena provides storage and manipulation of RDF datasets.  In each case, it is possible to start a suitable server on your computer, change the option to `True`, and edit the connection information further down in the settings file to connect it to your development site.  Most importantly, you will need to install either [Docker](https://docs.docker.com/get-docker/) or [Podman](https://podman.io/getting-started/installation).  Then, start four containers (replace `podman run` with `docker run`, depending on which you installed*):
+These correspond to servers that the framework does, or will, rely on for key functionality that the development setup "fakes" by default.  LDAP provides user and group management/authentication for the entire CDH infrastructure, Celery provides asynchronous execution of long-running computations like training and applying models, PostGRES is a production SQL database, and Jena provides storage and manipulation of RDF datasets.  In each case, it is possible to start a suitable server on your computer, change the option to `True`, and edit the connection information further down in the settings file to connect it to your development site.  Most importantly, you will need to install either [Docker](https://docs.docker.com/get-docker/) or [Podman](https://podman.io/getting-started/installation).  Then, start five containers (replace `podman run` with `docker run`, depending on which you installed*):
 
 ```
 podman run -d --rm --name jena -p 3030:3030 -e ADMIN_PASSWORD=TEMP_PW docker.io/stain/jena-fuseki
 podman run -d --rm --name redis -p 6379:6379 docker.io/library/redis
 podman run -d --rm --name postgres -p 5432:5432 -e POSTGRES_PASSWORD=TEMP_PW -e POSTGRES_USER=cdh docker.io/library/postgres
 podman run -d --rm --name ldap -p 1389:1389 --env LDAP_ADMIN_USERNAME=admin --env LDAP_ADMIN_PASSWORD=TEMP_PW --env LDAP_ROOT=dc=cdh,dc=jhu,dc=edu docker.io/bitnami/openldap:latest
+podman run -d --rm --name torchserve -p 27080:8080 -p 27081:8081 -p 27082:8082 docker.io/pytorch/torchserve
 ```
 
 LDAP, Jena, and PostGRES should just work immediately, but Celery has an additional requirement: since it will be running processes defined *in the Django code itself*, it needs to have access to the code as it changes during development.  Basically, we want Celery to behave the same way as the development web server, which reloads automatically when we edit the code base.  In a different terminal (or tab), change into the `cdh-domain` directory, and run:

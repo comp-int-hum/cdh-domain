@@ -88,8 +88,15 @@ class IdMixin(object):
     
     def __init__(self, *argv, **argd):
         super(IdMixin, self).__init__(*argv, **argd)
-        self.random_suffix = random_token(argd.get("random_length", 6))
+        self.random_token = random_token(argd.get("random_length", 6))
 
+    def get_context_data(self, *argv, **argd):
+        return {
+            "random_token" : self.random_token,
+            "uid" : self.uid,
+            "sid" : self.sid
+        }
+        
     @property
     def sid(self):
         if getattr(self, "object", None) != None:
@@ -110,7 +117,7 @@ class IdMixin(object):
 
     @property
     def uid(self):
-        return "{}_{}".format(self.sid, self.random_suffix)
+        return "{}_{}".format(self.sid, self.random_token)
     
 
 class CdhView(IdMixin, DeletionMixin, UpdateView):
@@ -182,8 +189,6 @@ class CdhView(IdMixin, DeletionMixin, UpdateView):
         ctx["from_htmx"] = request.headers.get("Hx-Request", False) and True
         ctx["request"] = request
         ctx["object"] = self.object
-        ctx["uid"] = self.uid
-        ctx["sid"] = self.sid
         
         obj_perms = [x.split("_")[0] for x in (get_perms(request.user, self.object) if self.object else [])]
         model_perms = [x.split("_")[0] for x in (get_perms(request.user, self.model) if self.model else [])]
@@ -299,7 +304,7 @@ class CdhView(IdMixin, DeletionMixin, UpdateView):
 
     def update(self, request, ctx, *argv, **argd):
         if self.update_lambda:
-            resp = self.update_lambda(request, *argv, **argd)
+            resp = self.update_lambda(self, request, *argv, **argd)
         else:
             form = self.get_form_class()(request.POST, request.FILES, instance=self.object)
             if not form.is_valid():
@@ -446,11 +451,8 @@ class TabView(IdMixin, SingleObjectMixin, View):
                     {
                         "label" : "Save",
                         "style" : "primary",
-                        #"hx_target" : "#{}".format(self.form_id),
-                        #"hx_swap" : "outerHTML",
                         "hx_swap" : "none",
                         "hx_post" : request.path_info,
-                        #"hx_select" : "#top_level_content",
                     }                    
                 )
             if self.can_delete and "delete" in obj_perms:
@@ -461,26 +463,11 @@ class TabView(IdMixin, SingleObjectMixin, View):
                         "hx_confirm" : "Are you sure you want to delete this object and any others derived from it?",
                         "hx_swap" : "none",
                         "hx_delete" : request.path_info,
-                        #reverse("{}:{}_detail".format(obj._meta.app_label, obj._meta.model_name), args=(obj.id,)),
-                        #"hx_select" : "#top_level_content",
                     }
                 )
             retval["content"] = self.render(request)
             retval["prefix"] = self.uid
             return retval
-        
-    # def render_tab(self, request, tab, obj, index):
-    #     url = reverse(tab["url"], args=(obj.id,))
-    #     return """
-    #     <div id="{prefix}_{index}_tabdescription">{description}</div>
-    #     <div id="{prefix}_{index}_tabcontent" hx-get="{url}" hx-trigger="intersect" hx-select="#top_level_content > *" hx-swap="outerHTML">
-    #     </div>
-    #     """.format(
-    #         prefix=self.uid, #prefix,
-    #         index=index,
-    #         url=url,
-    #         description=tab.get("description", "")
-    #     )
     
     def render(self, request):
         content = template_engine.get_template("cdh/snippets/tabs.html").render(
@@ -494,45 +481,6 @@ class TabView(IdMixin, SingleObjectMixin, View):
             )
         )
         return mark_safe(content)
-
-        # #self.prefix = "prefix_{}".format(slugify(request.path_info))
-        # obj = self.get_object()        
-        # controls = [
-        #     """
-        #     <li class="nav-item" role="presentation">
-        #     <button class="nav-link cdh-tab-button" id="{prefix}_{index}_control" data-bs-toggle="tab" data-bs-target="#{prefix}_{index}_content" type="button" role="tab" aria-controls="{prefix}_{index}_content" aria-selected="false">{title}</button>
-        #     </li>
-        #     """.format(
-        #         prefix=self.uid,
-        #         index=i,
-        #         title=tab["title"]
-        #     ) for i, tab in enumerate(self.tabs)]
-        # contents = [
-        #     """
-        #     <div class="tab-pane fade" id="{prefix}_{index}_content" role="tabpanel" aria-labelledby="{prefix}_{index}_control">
-        #     {content}
-        #     </div>
-        #     """.format(
-        #         prefix=self.uid,
-        #         index=i,
-        #         content=self.render_tab(request, tab, obj, i)
-        #     ) for i, tab in enumerate(self.tabs)]
-        # return mark_safe(
-        #     """
-        #     <div id="{prefix}_tabs">
-        #     <ul class="nav nav-tabs cdh-nav-tabs" id="{prefix}_controls" role="tablist">
-        #     {controls}
-        #     </ul>
-        #     <div class="tab-content" id="{prefix}_contents">
-        #     {contents}
-        #     </div>
-        #     </div>
-        #     """.format(
-        #         prefix=self.uid,
-        #         controls="\n".join(controls),
-        #         contents="\n".join(contents),
-        #     )
-        # )
     
     def get(self, request, *argv, **argd):
         from_htmx = request.headers.get("Hx-Request", False) and True
@@ -554,8 +502,6 @@ class TabView(IdMixin, SingleObjectMixin, View):
         obj_id = obj.id
         obj.delete()
         resp = HttpResponseRedirect(reverse("{}:{}_list".format(obj._meta.app_label, obj._meta.model_name)))
-        #if from_htmx:
-        #    resp = HttpResponse()
         resp.headers["HX-Trigger"] = """{{"cdhEvent" : {{"type" : "delete", "app" : "{app}", "model" : "{model}", "id" : "{id}"}}}}""".format(
             app=self.model._meta.app_label,
             model=self.model._meta.model_name,
@@ -610,8 +556,6 @@ class AccordionView(IdMixin, TemplateResponseMixin, ContextMixin, View):
 
     def get_context_data(self, request, *argv, **argd):
         ctx = super(AccordionView, self).get_context_data(*argv, **argd)
-        ctx["sid"] = self.sid
-        ctx["uid"] = self.uid
         ctx["content"] = self.render(request)
         ctx["preamble"] = self.preamble
         return ctx
@@ -663,9 +607,7 @@ class AccordionView(IdMixin, TemplateResponseMixin, ContextMixin, View):
         return mark_safe(content)
         
     def get(self, request, *argv, **argd):
-        #print(render(request, self.template, self.get_context_data(request)).content)
         return render(request, self.template, self.get_context_data(request))
-
 
 
 class CdhSelectView(IdMixin, SingleObjectMixin, View):
@@ -679,7 +621,6 @@ class CdhSelectView(IdMixin, SingleObjectMixin, View):
     limit = 100
     
     def render(self, request):
-        prefix = self.uid #"selection_{}".format(slugify(request.path_info))
         obj = self.get_object()
         related_objects = self.related_model.objects.filter(**{self.relationship : obj}).select_related()[0:self.limit]
         content = template_engine.get_template("cdh/snippets/select.html").render(
@@ -693,31 +634,6 @@ class CdhSelectView(IdMixin, SingleObjectMixin, View):
             )
         )
         return mark_safe(content)
-
-        # first = children[0]
-        # return mark_safe(
-        #     """
-        #     <select class="cdh-select">
-        #     {options}
-        #     </select>
-        #     <div id="{prefix}_documentview" hx-get="{url}" hx-trigger="intersect" hx-select="#top_level_content > *" hx-swap="innerHTML">
-        #     </div>
-        #     """.format(
-        #         prefix=prefix,
-        #         id=obj.id,
-        #         url=reverse(self.child_url, args=(first.id,)),
-        #         options="\n".join(
-        #             [
-        #                 """<option id="{prefix}_{index}" hx-get="{url}" hx-target="#{prefix}_documentview" hx-trigger="select" hx-swap="innerHTML" hx-select="#top_level_content" value="{prefix}_{index}">{name}</option>""".format(
-        #                     url=reverse(self.child_url, args=(c.id,)),
-        #                     name=str(c),
-        #                     prefix=prefix,
-        #                     index=i
-        #                 ) for i, c in enumerate(children)
-        #             ]
-        #         )
-        #     )
-        # )
 
     def get(self, request, *argv, **argd):
         return render(request, self.template_name, {"content" : self.render(request), "preamble" : self.preamble})
