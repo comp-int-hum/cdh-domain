@@ -41,7 +41,7 @@ class MachineLearningModel(CdhModel):
 
     def delete(self, *argv, **argd):
         model_file = "{}/models/{}".format(settings.DATA_DIR, os.path.basename(self.url))
-        os.remove(model_file)
+        #os.remove(model_file)
         for inf in self.info:            
             resp = requests.delete("{}/models/{}/{}".format(settings.TORCHSERVE_MANAGEMENT_ADDRESS, inf["modelName"], inf["modelVersion"]))
         super(MachineLearningModel, self).delete(*argv, **argd)

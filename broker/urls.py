@@ -99,6 +99,7 @@ urlpatterns = [
     path(
         'machinelearningmodel/<int:pk>/',
         CdhView.as_view(
+            preamble="""This model is similar to, but approximately 1/1000th the size of, the GPT-3 language model and similar.  Enter text below, then press "Shift-Tab" for the model to generate the next token.""",
             model=MachineLearningModel,
             update_lambda=get_output,
             extra_fields={
