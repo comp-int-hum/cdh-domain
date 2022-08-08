@@ -1,6 +1,14 @@
-<div class="accordion" id="{{uid}}_accordion" accordion_url="{{accordion_url}}">
+<div class="accordion cdh-accordion"
+     id="accordion-{{uid}}"
+     {% if model_name %}model_name="{{model_name}}"{% endif %}
+     {% if app_label %}app_label="{{app_label}}"{% endif %}
+     accordion_url="{{accordion_url}}">
   {% for item in items %}
-  {% include "cdh/snippets/accordion_item.html" with title=item.title url=item.url create_url=item.create_url instance=item.instance index=forloop.counter app_label=item.app_label model_name=item.model_name pk=item.instance.id %}
+  {% if item.create_url %}
+  {% include "cdh/snippets/accordion_item.html" with title=item.title url=item.url create_url=item.create_url instance=item.instance index=0 app_label=item.app_label model_name=item.model_name pk=item.instance.id uid=uid %}
+  {% else %}
+  {% include "cdh/snippets/accordion_item.html" with title=item.title url=item.url create_url=item.create_url instance=item.instance index=forloop.counter app_label=item.app_label model_name=item.model_name pk=item.instance.id uid=uid %}
+  {% endif %}
   {% endfor %}
 </div>
 

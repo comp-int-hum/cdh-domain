@@ -2,10 +2,10 @@
 
 - [X] edit account of logged-in user
 - [X] manage permissions of object owned by logged-in user
-- [ ] sort out persistent state for accordions and tabs
+- [V] sort out persistent state for accordions and tabs (newly-created tabs not expanding correctly, new (async?) items screwed up)
 - [ ] make preambles less intrusive (show/hide?)
 - [ ] add model(s) for research artifacts like papers, presentations, etc
-- [ ] document file upload formats
+- [X] document file upload formats
 - [ ] add editor validation
 - [ ] make geographic visualization useful
 - [ ] add word-detail view

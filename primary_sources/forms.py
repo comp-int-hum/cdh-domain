@@ -54,21 +54,10 @@ class PrimarySourceEditorForm(ModelForm):
 
     def __init__(self, *argv, **argd):
         if argd["instance"]:
-            argd["initial"] = argd.get("initial", {})
+            argd["initial"] = {} if argd.get("initial", None) == None else argd["initial"]
             argd["initial"]["schema"] = argd["instance"].schema            
         super(PrimarySourceEditorForm, self).__init__(*argv, **argd)
     
     class Meta:        
         model = PrimarySource
         fields = ('schema',)
-
-
-# class PrimarySourceForm(ModelForm):
-#     schema_file = FileField(label='An OWL file describing the domain', required=False)
-#     data_file = FileField(label='An RDF file of primary sources matching the domain', required=False)
-#     annotation_file = FileField(label='An RDF file of annotations pointing into the primary sources', required=False)
-#     static_file = FileField(label='An RDF file of annotations pointing into the primary sources', required=False)
-    
-#     class Meta:
-#         model = PrimarySource
-#         fields = ('name', )

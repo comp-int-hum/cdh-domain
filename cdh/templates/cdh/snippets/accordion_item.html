@@ -1,21 +1,21 @@
 <div
-  class="accordion-item"
-  id="{{uid}}_{{index}}_accordionitem"
-  aria-labelledby="{{uid}}_title"
+  class="accordion-item cdh-accordion-item"
+  {% if create_url %}create="true"{% endif %}  
+  id="accordionitem-{{uid}}_{{index}}"
   model_name="{{model_name}}"
   app_label="{{app_label}}"
   pk="{{pk}}">
   <div
     class="accordion-header"
-    id="{{uid}}_{{index}}_header">
+    id="header-{{uid}}_{{index}}">
     <button
       class="accordion-button cdh-accordion-button collapsed"
       data-bs-toggle="collapse"
       type="button"
       aria-expanded="false"
-      data-bs-target="#{{uid}}_{{index}}_content"
-      id="{{uid}}_{{index}}_button"
-      aria-controls="{{uid}}_{{index}}_content">
+      data-bs-target="#content-{{uid}}_{{index}}"
+      id="button-{{uid}}_{{index}}"
+      aria-controls="content-{{uid}}_{{index}}">
       {% if create_url %}
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-circle" viewBox="0 0 16 16">
 	<path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
@@ -27,11 +27,17 @@
     </button>
   </div>
   <div
-    class="accordion-collapse collapse w-95 ps-4"
-    id="{{uid}}_{{index}}_content"
-    aria-labelledby="{{uid}}_{{index}}_header"
-    data-bs-parent="#{{uid}}_accordion">
-    <div id="{{uid}}_{{index}}_accordionitemcontent" hx-get="{% if create_url %}{% url create_url %}{% elif url and instance %}{% url url instance.id %}{% elif url %}{% url url %}{% else %}{{content}}{% endif %}" hx-trigger="intersect" hx-select="#top_level_content > *" hx-swap="outerHTML">
+    class="accordion-collapse cdh-accordion-collapse collapse w-95 ps-4"
+    id="content-{{uid}}_{{index}}"
+    aria-labelledby="header-{{uid}}_{{index}}"
+    {% if index == 0 %}hx-get="{% url create_url %}" hx-trigger="refreshForm" hx-select="#top_level_content > *" hx-swap="innerHTML"{% endif %}
+    data-bs-parent="#accordion-{{uid}}">
+    <div id="accordionitemcontent-{{uid}}_{{index}}"
+	 hx-get="{% if create_url %}{% url create_url %}{% elif url and instance %}{% url url instance.id %}{% elif url %}{% url url %}{% else %}{{content}}{% endif %}"
+	 hx-vals='{"uid" : "{{uid}}_{{index}}"}'
+	 hx-trigger="show.bs.collapse from:#content-{{uid}}_{{index}}, intersect"
+	 hx-select="#top_level_content > *"
+	 hx-swap="outerHTML">
     </div>
   </div>
 </div>

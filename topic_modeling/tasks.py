@@ -1,13 +1,16 @@
+import io
 import time
 from cdh import settings
 import zipfile
 import random
 import pickle
 import json
+import csv
 import gzip
 import logging
 import re
 import os
+import tarfile
 import tempfile
 from datetime import datetime
 from django.core.files.base import ContentFile
@@ -18,12 +21,73 @@ from jsonpath import JSONPath
 from spacy.lang import en
 from gensim.models.callbacks import Metric
 
+
 if settings.USE_CELERY:
     from celery import shared_task
 else:
     def shared_task(func):
         return func
 
+    
+def process_zip(fname):
+    with zipfile.ZipFile(fname) as ifd:
+        names = ifd.namelist()
+        c_fnames = [n for n in names if n.endswith("csv")]
+        metadata = {}
+        if len(c_fnames) == 1:            
+            c = csv.DictReader(io.TextIOWrapper(ifd.open(c_fnames[0])), delimiter=",")
+            for row in c:
+                metadata[row["file_name"]] = {k : v for k, v in row.items() if k != "file_name"}
+        for a_fname in names:
+            if a_fname.endswith("txt"):
+                item = metadata.get(a_fname, {})                
+                item["text"] = ifd.open(a_fname).read()
+                item["title"] = item.get("title", a_fname)                
+                yield item
+
+
+def process_tar(fname):
+    with tarfile.open(fname, "r") as ifd:
+        names = ifd.getnames()
+        c_fnames = [n for n in names if n.endswith("csv")]
+        metadata = {}
+        if len(c_fnames) == 1:
+            c = csv.DictReader(io.TextIOWrapper(ifd.extractfile(c_fnames[0])), delimiter=",")
+            for row in c:
+                metadata[row["file_name"]] = {k : v for k, v in row.items() if k != "file_name"}
+        for a_fname in names:
+            if a_fname.endswith("txt"):
+                item = metadata.get(a_fname, {})                
+                item["text"] = ifd.extractfile(a_fname).read()
+                item["title"] = item.get("title", a_fname)
+                yield item
+                
+
+def process_json(fname):
+    with (gzip.open if fname.endswith("gz") else open)(fname, "rt") as ifd:
+        c = None
+        while c not in ["{", "["]:
+            c = ifd.read(1)
+        if c == None:
+            raise Exception("Couldn't find straight or curly bracket")
+        else:
+            stream = c == "{"
+    with (gzip.open if fname.endswith("json.gz") else open)(fname, "rt") as ifd:
+        if stream:
+            for line in ifd:
+                yield json.loads(line)
+        else:
+            for j in json.loads(ifd.read()):
+                yield j
+                
+            
+def process_csv(fname):
+    with (gzip.open if fname.endswith("gz") else open)(fname, "rt") as ifd:
+        c = csv.DictReader(ifd, delimiter=",")
+        for row in c:
+            yield row
+
+    
 # This needs to be modular
 @shared_task
 def extract_documents(
@@ -41,83 +105,43 @@ def extract_documents(
     collection = models.Collection.objects.get(id=collection_id)
     collection.message = "Preparing to extract documents"
     collection.save()
+    handler = process_zip if fname.endswith("zip") else process_csv if fname.endswith("csv") or fname.endswith("csv.gz") else process_json if fname.endswith("json") or fname.endswith("json.gz") else process_tar if fname.endswith("tar") or fname.endswith("tar.gz") else None
     has_temporality = False
     has_spatiality = False
     try:
-        if fname.endswith("zip"):
-            prepended_time = False
-            with zipfile.ZipFile(fname) as zfd:
-                if all([re.match(r"^\d+\_.*$", n) for n in zfd.namelist()]):
-                    prepended_time = True
-                    logging.info("Will extract time from each file name")
-            with zipfile.ZipFile(fname) as zfd:
-                for name in zfd.namelist():                    
-                    with zfd.open(name) as ifd:
-                        text = ifd.read().decode("utf-8")                        
-                        if name.endswith("txt"):
-                            year, title = re.match(r"^(?:(\d+)\_)?(.*)\.+txt", name).groups()
-                            metadata = {}
-                            docobj = models.Document(
-                                title=title,                                
-                                text=text,
-                                collection=collection,
-                                metadata=metadata,
-                            )
-                            if year:
-                                docobj.year = year
-                                has_temporality = True
-                            docobj.longitude = (random.random() * 360.0) - 180.0
-                            docobj.latitude = (random.random() * 180.0) - 90.0
-                            docobj.save()
-                        elif name.endswith("tei"):
-                            pass
-        elif fname.endswith("json"):
-            # assume this is already in the right format
-            with open(fname, "rt") as ifd:
-                for line in ifd:
-                    j = json.loads(line)
-                    docobj = models.Document(
-                        title=j.get("title", "Unknown")[0:1000],
-                        content=doc,
-                        collection=collection,
-                    )
-                    docobj.save()
-                    #ofd.write(json.dumps(j) + "\n")
-        elif fname.endswith("json.gz"):
-            # assume this is already in the right format
-            with gzip.open(fname, "rt") as ifd:
-                for i, line in enumerate(ifd):
-                    j = json.loads(line)
-                    temporal = temporal_field.parse(j)
-                    spatial = spatial_field.parse(j)
-                    if len(temporal) > 0:
-                        temporal = datetime.fromtimestamp(float(temporal[0]) / 1000)
-                    if len(spatial) > 0:
-                        spatial = spatial[0]
-                    if temporal:
-                        has_temporality = True
-                    if spatial:
-                        has_spatiality = True
-                    title = title_field.parse(j)
-                    author = author_field.parse(j)
-                    text = text_field.parse(j)
-                    lang = lang_field.parse(j)
-                    if i % 1000 == 0:
-                        collection.message = "{} document processed".format(i)
-                        collection.save()
-                    docobj = models.Document(
-                        title=title[0] if len(title) > 0 else "",
-                        text=text[0] if len(text) > 0 else "",
-                        language = lang[0][:2] if len(lang) > 0 else "",
-                        temporal=temporal,
-                        spatial=spatial,
-                        author=author[0] if len(author) > 0 else "",
-                        collection=collection,
-                    )                    
-                    docobj.save()                    
+        if handler == None:
+            raise Exception("No handler for file '{}'".format(fname))
         else:
-            raise Exception("Unknown file type for '{}'".format(fname))
-        collection.state = collection.COMPLETE
+            for i, item in enumerate(handler(fname)):
+                temporal = temporal_field.parse(item)
+                spatial = spatial_field.parse(item)
+                if len(temporal) > 0:
+                    temporal = datetime.fromtimestamp(float(temporal[0]) / 1000)
+                if len(spatial) > 0:
+                    spatial = spatial[0]
+                if temporal:
+                    has_temporality = True
+                if spatial:
+                    has_spatiality = True
+                title = title_field.parse(item)
+                author = author_field.parse(item)
+                text = text_field.parse(item)
+                lang = lang_field.parse(item)
+                if i % 1000 == 0:
+                    collection.message = "{} document processed".format(i)
+                    collection.save()
+                docobj = models.Document(
+                    name=title[0] if len(title) > 0 else "",
+                    text=text[0] if len(text) > 0 else "",
+                    language = lang[0][:2] if len(lang) > 0 else "",
+                    spatial=spatial,
+                    author=author[0] if len(author) > 0 else "",
+                    collection=collection,
+                )
+                if temporal:
+                    docobj.temporal = temporal                
+                docobj.save()       
+            collection.state = collection.COMPLETE
     except Exception as e:
         collection.state = collection.ERROR
         collection.message = str(e)        

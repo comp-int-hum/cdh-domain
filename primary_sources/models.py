@@ -30,7 +30,7 @@ WHERE {
 
 
 class PrimarySource(CdhModel):
-    name = models.CharField(max_length=1000)
+    #name = models.CharField(max_length=1000)
 
     def __str__(self):
         return self.name
@@ -118,7 +118,7 @@ class PrimarySource(CdhModel):
 
     
 class Query(CdhModel):
-    name = models.CharField(max_length=1000)
+    #name = models.CharField(max_length=1000)
     sparql = models.TextField()
     dataset = models.ForeignKey(PrimarySource, on_delete=models.CASCADE, null=True)
     def __str__(self):

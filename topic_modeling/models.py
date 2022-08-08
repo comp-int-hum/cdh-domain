@@ -1,6 +1,7 @@
 from django.core.exceptions import ValidationError, NON_FIELD_ERRORS
 from django.contrib.gis.db import models
 from django.urls import reverse
+from django.core.validators import MinValueValidator
 from cdh.models import CdhModel, User, AsyncMixin, MetadataMixin
 from cdh.views import cdh_cache_method
 import pickle
@@ -14,10 +15,8 @@ def default_lexicon():
     }
 
 
-
 class Lexicon(CdhModel):
-    name = models.CharField(max_length=200)
-    lexical_sets = models.TextField(default="""{\n  "positive_words": ["happy", "glad"],\n  "negative_words": ["awful", "sad.*"]\n}""")
+    lexical_sets = models.TextField(default="""{\n  "positive_words": ["happy", "glad"],\n  "negative_words": ["awful", "sad.*"]\n}""", help_text="dsa")
 
     def get_absolute_url(self):
         return reverse("topic_modeling:lexicon_detail", args=(self.id,))
@@ -25,9 +24,24 @@ class Lexicon(CdhModel):
     def __str__(self):
         return self.name
 
+    def clean(self):
+        try:
+            j = json.loads(self.lexical_sets)
+        except:
+            raise ValidationError({"lexical_sets" : "Invalid JSON"})
+        if not isinstance(j, dict):
+            raise ValidationError({"lexical_sets" : "Lexicon must be a JSON dictionary"})
+        if len(j) == 0:
+            raise ValidationError({"lexical_sets" : "Lexicon must have at least one lexical set"})
+        for k, v in j.items():
+            if not isinstance(v, list) or len(v) == 0:
+                raise ValidationError({"lexical_sets" : "Each lexical set must be a non-empty list of strings (word-patterns)"})
+            if not isinstance(k, str) or any([not isinstance(w, str) for w in v]):
+                raise ValidationError({"lexical_sets" : "Word-patterns must be strings"})
+        super(Lexicon, self).clean()
+        
 
 class Collection(AsyncMixin, CdhModel):
-    name = models.CharField(max_length=200)
     has_spatiality = models.BooleanField(default=False)
     has_temporality = models.BooleanField(default=False)
 
@@ -39,7 +53,6 @@ class Collection(AsyncMixin, CdhModel):
 
 
 class Document(CdhModel):
-    title = models.CharField(max_length=10000)
     text = models.TextField()
     collection = models.ForeignKey(Collection, on_delete=models.CASCADE, null=False)
     author = models.CharField(max_length=10000, null=True)
@@ -51,18 +64,17 @@ class Document(CdhModel):
         return reverse("topic_modeling:document_detail", args=(self.id,))
 
     def __str__(self):
-        return self.title
+        return self.name
 
 
 class TopicModel(AsyncMixin, CdhModel):
-    name = models.CharField(max_length=200)
-    topic_count = models.IntegerField(default=10)
-    lowercase = models.BooleanField(default=True)
-    max_context_size = models.IntegerField(default=1000)
+    topic_count = models.IntegerField(default=10, help_text="The number of topics to infer from the data")
+    lowercase = models.BooleanField(default=True, help_text="Whether to convert text to lower-case")
+    max_context_size = models.IntegerField(default=1000, help_text="If a document has more tokens than this, it will be split up into sub-documents")
     chunk_size = models.IntegerField(default=2000)
-    maximum_vocabulary = models.IntegerField(default=5000)
-    minimum_occurrence = models.IntegerField(default=5)
-    maximum_proportion = models.FloatField(default=0.5)
+    maximum_vocabulary = models.IntegerField(default=5000, help_text="Only consider this number of most-frequent words in the data")
+    minimum_occurrence = models.IntegerField(default=5, help_text="Ignore words that occur less than this number of times (often misspellings and other noise)")
+    maximum_proportion = models.FloatField(default=0.5, help_text="Ignore words that occur in more than this proportion of documents (often function words and formatting)")
     passes = models.IntegerField(default=20)
     update_every = models.IntegerField(default=1)
     alpha = models.CharField(default="symmetric", choices=[("symmetric", "Symmetric"), ("asymmetric", "Asymmetric")], max_length=20)
@@ -72,9 +84,9 @@ class TopicModel(AsyncMixin, CdhModel):
     split_pattern = models.CharField(max_length=200, default=r"\s+")
     token_pattern_in = models.CharField(max_length=200, default=r"(\S+)")
     token_pattern_out = models.CharField(max_length=200, default=r"\1")
-    collection = models.ForeignKey(Collection, on_delete=models.CASCADE)
+    collection = models.ForeignKey(Collection, on_delete=models.CASCADE, help_text="The document collection to train on")
     serialized = models.BinaryField(null=True)
-    maximum_documents = models.IntegerField(default=30000)
+    maximum_documents = models.IntegerField(default=30000, help_text="Randomly choose this number of documents to train on (if the collection is larger)")
 
     def get_absolute_url(self):
         return reverse("topic_modeling:topicmodel_detail", args=(self.id,))
@@ -95,12 +107,12 @@ class TopicModel(AsyncMixin, CdhModel):
 
     @property    
     @cdh_cache_method
-    def vega_topic_names(self, num_words=10):
+    def vega_topic_names(self, num_words=20):
         words = self.vega_words
         topic_names = {}
         for topic_id in range(self.topic_count):
             topic_words = [w for w in words if w["topic"] == str(topic_id + 1)]
-            topic_names[topic_id] = ",".join([w["word"] for w in sorted(topic_words, key=lambda x : x["probability"], reverse=True)[:num_words]])
+            topic_names[topic_id + 1] = ", ".join([w["word"] for w in sorted(topic_words, key=lambda x : x["probability"], reverse=True)[:num_words]])
         return topic_names
     
     def __str__(self):
@@ -108,11 +120,10 @@ class TopicModel(AsyncMixin, CdhModel):
 
 
 class LabeledCollection(AsyncMixin, CdhModel):
-    name = models.CharField(max_length=200)
-    collection = models.ForeignKey(Collection, on_delete=models.CASCADE, null=True)
-    model = models.ForeignKey(TopicModel, on_delete=models.CASCADE, null=True, blank=True)
-    lexicon = models.ForeignKey(Lexicon, on_delete=models.CASCADE, null=True, blank=True)    
-    maximum_documents = models.IntegerField(default=30000)
+    collection = models.ForeignKey(Collection, on_delete=models.CASCADE, null=True, help_text="The document collection to label")
+    model = models.ForeignKey(TopicModel, on_delete=models.CASCADE, null=True, blank=True, help_text="The topic model to apply (mutually exclusive with 'lexicon')")
+    lexicon = models.ForeignKey(Lexicon, on_delete=models.CASCADE, null=True, blank=True, help_text="The lexicon to apply (mutually exclusive with 'model')")
+    maximum_documents = models.IntegerField(default=30000, validators=[MinValueValidator(1)], help_text="Randomly choose this number of documents to label (if the collection is larger)")
     
     def get_absolute_url(self):
         return reverse("topic_modeling:labeledcollection_detail", args=(self.id,))
@@ -145,16 +156,19 @@ class LabeledCollection(AsyncMixin, CdhModel):
                 )
         coordinates = [
             {
-                "topic" : x["topic"],
-                "weight" : x["weight"],
-                "content" : x["content"],
-                "bounding_box" : {
-                    "type" : "Point",
-                    "coordinates" : x["bounding_box"]["coordinates"][0][0]
+                "type" : "Point",
+                "coordinates" : x["bounding_box"]["coordinates"][0][0],
+                "properties" : {
+                    "topic" : str(int(x["topic"]) + 1),
+                    "weight" : x["weight"],
+                    "content" : x["content"],
                 }
             } for x in coordinates
         ]
-        return coordinates
+        return {
+            "coordinates" : coordinates,
+            "topic_names" : self.model.vega_topic_names
+        }
     
     @property
     @cdh_cache_method    
@@ -220,7 +234,7 @@ class LabeledDocument(CdhModel):
         return reverse("topic_modeling:labeleddocument_detail", args=(self.id,))
 
     def __str__(self):
-        return self.document.title
+        return self.document.name
 
 
 class LabeledDocumentSection(CdhModel):
@@ -231,5 +245,4 @@ class LabeledDocumentSection(CdhModel):
         return reverse("topic_modeling:labeleddocumentsection_detail", args=(self.id,))
 
     def __str__(self):
-        return "{}-{}".format(self.labeleddocument.document.title, self.id)
-
+        return "{}-{}".format(self.labeleddocument.document.name, self.id)

@@ -1,6 +1,4 @@
 from . import settings
-#from cdh.admin import CDHModelAdmin, site
-#from django.contrib import admin
 from django.urls import path, reverse
 from django.contrib.gis.db import models
 from django.contrib.auth.models import AbstractUser
@@ -10,8 +8,24 @@ from markdownfield.validators import VALIDATOR_STANDARD
 if settings.USE_LDAP:
     import ldap
     from ldap import modlist
-
     
+
+class MetadataMixin(models.Model):
+    metadata = models.JSONField(
+        default=dict
+    )
+    class Meta:
+        abstract = True
+
+
+class CdhModel(MetadataMixin, models.Model):
+    name = models.CharField(max_length=2000, null=False)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
+    created_at = models.DateTimeField(auto_now_add=True)
+    modified_at = models.DateTimeField(auto_now=True)
+    class Meta:
+        abstract = True
+
 
 class AsyncMixin(models.Model):
     PROCESSING = "PR"
@@ -31,30 +45,6 @@ class AsyncMixin(models.Model):
     task_id = models.CharField(max_length=200, null=True)
     class Meta:
         abstract = True
-
-
-class MetadataMixin(models.Model):
-    metadata = models.JSONField(
-        default=dict
-    )
-    class Meta:
-        abstract = True
-
-        
-    #def __init__(self, *argv, **argd):
-    #    self.readonly_fields = ["state"]
-    #    self.list_display = ("state")
-    #    super(AsyncMixin, self).__init__(*argv, **argd)
-    
-    #@admin.display(description="Status")
-    #def state_cell(self, model):
-    #    print(dir(model))
-    #    print(dir(model.state))
-    #    return format_html(
-    #        "<span class='{}'>{}</span>",
-    #        model.state,
-    #        model.get_state_display()
-    #    )
 
 
 class User(AbstractUser):
@@ -88,7 +78,7 @@ class User(AbstractUser):
 class Slide(models.Model):
     class Meta:
         verbose_name_plural = "Slides"
-    title = models.CharField(max_length=200, null=True)        
+    title = models.CharField(max_length=200, null=False, unique=True)
     article = MarkdownField(blank=True, rendered_field="rendered_article", validator=VALIDATOR_STANDARD)
     rendered_article = RenderedMarkdownField(null=True)
     image = models.ImageField(blank=True)
@@ -100,7 +90,7 @@ class Slide(models.Model):
 
 
 class SlidePage(models.Model):
-    name = models.CharField(max_length=200, null=True)
+    name = models.CharField(max_length=200, null=False, unique=True)
     content = MarkdownField(blank=True, rendered_field="rendered_content", validator=VALIDATOR_STANDARD)
     rendered_content = RenderedMarkdownField(null=True)
     additional_link_prompt = models.CharField(max_length=2000, default="", null=True, blank=True)
@@ -110,10 +100,4 @@ class SlidePage(models.Model):
     def get_absolute_url(self):
         return reverse("cdh:slide", args=(self.id,))
 
-    
-class CdhModel(MetadataMixin, models.Model):
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
-    created_at = models.DateTimeField(auto_now_add=True)
-    modified_at = models.DateTimeField(auto_now=True)
-    class Meta:
-        abstract = True
+

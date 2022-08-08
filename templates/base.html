@@ -132,6 +132,7 @@
 		</a>
 	      </li>
 	      {% endfor %}
+	      {% comment %}
 	      {% if is_admin %}
 	      <li>
 		<hr class="dropdown-divider">
@@ -142,6 +143,7 @@
 		</a>
 	      </li>
 	      {% endif %}
+	      {% endcomment %}
 	    </ul>
 	  </li>
 
@@ -206,16 +208,24 @@
       {% render_block "finaljs" %}
 
       <script>
-	cdhSetup(document, false);
-
+	cdhSetup(document.body, false);
+	//window.onbeforeunload = saveState;
+	
 	htmx.on("htmx:load", function(evt) {
-	    //console.error(evt.detail.elt);
-	    //if(evt.detail.elt.tagName == "FORM"){
-		//console.error(evt.detail.elt);
-		cdhSetup(evt.detail.elt, true);
-	    //}
+	    cdhSetup(evt.detail.elt, true);
+	    //evt.target.scrollIntoView(true);
+
 	});
 	document.body.addEventListener("cdhEvent", handleCdhEvent);
+	// window.addEventListener("load", (event) => {
+	//     var pathName = document.location.pathname;
+	//     if (sessionStorage["scrollPosition_" + pathName]) {
+	// 		    console.error("test");
+
+	// 	$(document).scrollTop(sessionStorage.getItem("scrollPosition_" + pathName));
+	//     }
+	// });
+
       </script>
   </body>
 </html>

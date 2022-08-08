@@ -4,9 +4,8 @@ from django.conf import settings
 from django.urls import re_path, include
 from django.views.generic.list import ListView
 from django.views.generic.edit import FormView, CreateView, UpdateView
-from cdh.views import AccordionView, TabView
 from django.http import HttpResponse, HttpResponseRedirect
-from cdh.views import TabView, AccordionView, VegaView, CdhView, CdhSelectView
+from cdh.views import TabsView, AccordionView, VegaView, BaseView, SelectView
 from django.forms import FileField, modelform_factory, CharField
 from .models import PrimarySource
 from .vega import PrimarySourceSchemaGraph
@@ -15,15 +14,17 @@ from .forms import PrimarySourceEditorForm
 
 def create_primarysource(self, request, *argv, **argd):
     form = self.get_form_class()(request.POST, request.FILES)
-    form.is_valid()
-    obj = form.save(commit=False)
-    obj.save(
-        schema_fd=request.FILES.get("schema_file", None),
-        data_fd=request.FILES.get("data_file", None),
-        annotation_fd=request.FILES.get("annotation_file", None),
-        materials_fd=request.FILES.get("materials_file", None),
-    )
-    return (obj, HttpResponseRedirect(obj.get_absolute_url()))
+    if form.is_valid():
+        obj = form.save(commit=False)
+        obj.save(
+            schema_fd=request.FILES.get("schema_file", None),
+            data_fd=request.FILES.get("data_file", None),
+            annotation_fd=request.FILES.get("annotation_file", None),
+            materials_fd=request.FILES.get("materials_file", None),
+        )
+    else:
+        obj = None
+    return (form, obj)
 
 
 app_name = "primary_sources"
@@ -46,7 +47,7 @@ urlpatterns = [
     ),
     path(
         'primarysource/create/',
-        CdhView.as_view(
+        BaseView.as_view(
             preamble="""
             A primary source can be created by specifying a meaningful name and (optionally) files
             containing a domain schema, data, and annotations.  These must all be in RDF .ttl format.
@@ -88,7 +89,7 @@ urlpatterns = [
     ),
     path(
         'primarysource/<int:pk>/',
-        TabView.as_view(
+        TabsView.as_view(
             model=PrimarySource,
             tabs=[
                 {
@@ -105,7 +106,7 @@ urlpatterns = [
     ),
     path(
         'primarysource/editor/<int:pk>/',
-        CdhView.as_view(
+        BaseView.as_view(
             model=PrimarySource,
             form_class=PrimarySourceEditorForm,            
         ),

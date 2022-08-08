@@ -1,10 +1,10 @@
-<div id="{{uid}}_tabs">
-  <ul class="nav nav-tabs cdh-nav-tabs" id="{{uid}}_controls" role="tablist">
+<div id="tabs-{{uid}}">
+  <ul class="nav nav-tabs cdh-nav-tabs" id="controls-{{uid}}" role="tablist">
     {% for tab in tabs %}
     {% include "cdh/snippets/tab_control.html" with title=tab.title index=forloop.counter %}
     {% endfor %}
   </ul>
-  <div class="tab-content" id="{{uid}}_contents">
+  <div class="tab-content" id="contents-{{uid}}">
     {% for tab in tabs %}    
     {% include "cdh/snippets/tab_content.html" with url=tab.url index=forloop.counter instance=instance %}
     {% endfor %}

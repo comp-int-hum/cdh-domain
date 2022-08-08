@@ -23,3 +23,12 @@ class LexiconForm(ModelForm):
 }
 """)
         }
+
+
+class TopicDocumentTableForm(ModelForm):
+    class Meta:
+        model = LabeledCollection
+        fields = []
+
+    def __str__(self, *argv, **argd):
+        return "dsdsadsa"

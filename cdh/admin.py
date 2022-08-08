@@ -10,7 +10,7 @@ from django.contrib.sites.models import Site
 from django.utils.translation import gettext_lazy as _
 from turkle.admin import CustomUserAdmin as TurkleUserAdmin
 from turkle.admin import CustomGroupAdmin as TurkleGroupAdmin
-from wiki.models import Article
+#from wiki.models import Article
 from markdownfield.models import MarkdownField, RenderedMarkdownField
 from markdownfield.widgets import MDEWidget, MDEAdminWidget
 #from wiki.plugins.attachments.models import Attachment
@@ -143,10 +143,12 @@ class SlidePageAdmin(GuardedModelAdmin):
 #     def has_delete_permission(self, request, obj=None):
 #         return obj == None or (request.user.is_authenticated and (request.user.has_perm("delete_flat_page", obj)))
 
-site.register(Slide, SlideAdmin)
-site.register(SlidePage, SlidePageAdmin)
-site.register(User, CustomUserAdmin)
-site.register(Group, CustomGroupAdmin)
+#site.register(Slide, SlideAdmin)
+#site.register(SlidePage, SlidePageAdmin)
+#site.register(User, CustomUserAdmin)
+#site.register(Group, CustomGroupAdmin)
+
+
 #site.register(Site)
 #site.register(Article)
 #site.register(FlatPage)

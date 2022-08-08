@@ -3,7 +3,6 @@
 
 Django settings for the cdh-domain project.
 """
-import django
 from pathlib import Path
 import os
 
@@ -16,18 +15,13 @@ BUILTIN_PAGES = {
     "people" : "People",
     "research" : "Research",
     "calendar" : "Calendar",
-
+    "wiki" : "Wiki",
 }
-PRIVATE_APPS = {
+APPS = {
     "primary_sources" : "Primary sources",
     "topic_modeling" : "Topic modeling",
     "turkle_wrapper" : "Annotation",
-    "starcoder_wrapper" : "Deep learning",
-    #"ocr" : "OCR",
-    #"image_clustering" : "Computer Vision",
-}
-PUBLIC_APPS = {
-    "wiki" : "Wiki",
+    "broker" : "Deep learning",
 }
 
 # CDH NOTE: For development you can follow the README instructions for running the needed backends locally,
@@ -39,6 +33,7 @@ USE_LDAP = False
 USE_CELERY = False
 USE_POSTGRES = False
 USE_JENA = False
+USE_TORCHSERVE = False
 
 # CDH NOTE: These should be fine for development, but for deployment would need to be changed to match
 #           the server the framework runs on.
@@ -57,7 +52,7 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 # EMAIL_HOST = "smtp.gmail.com"
 # EMAIL_PORT = 587
 # EMAIL_HOST_USER = "jhu.digital.humanities"
-# EMAIL_HOST_PASSWORD = "TEMP_PW"
+# EMAIL_HOST_PASSWORD = "CHANGE_ME"
 # EMAIL_USE_TLS = True
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -74,7 +69,7 @@ STATIC_ROOT = DATA_DIR / "static"
 MEDIA_ROOT = DATA_DIR / "media"
 
 # CDH NOTE: We don't impose upload limits, because it's expected that people will upload datasets.
-FILE_UPLOAD_MAX_MEMORY_SIZE = 26214400
+FILE_UPLOAD_MAX_MEMORY_SIZE = 262144000
 DATA_UPLOAD_MAX_MEMORY_SIZE = None
 
 # Quick-start development settings - unsuitable for production
@@ -101,7 +96,7 @@ LOGGING = {
     "loggers" : {
         'django': {
             'handlers': ['console'],
-            'propagate': True,
+            'propagate': False,
         }
     }
 }
@@ -114,13 +109,14 @@ ALLOWED_HOSTS = [HOSTNAME, IP]
 #           deploy the framework/changing the "HOSTNAME" setting.
 proto = "http" if HOSTNAME == "localhost" else "https"
 PROTO = proto
-CSRF_TRUSTED_ORIGINS = ["{}://{}".format(proto, HOSTNAME)] if django.VERSION[0] == 4 else ["{}".format(HOSTNAME)]
+CSRF_TRUSTED_ORIGINS = ["{}://{}".format(proto, HOSTNAME)]
 USE_X_FORWARDED_HOST = HOSTNAME != "localhost"
-DEBUG = HOSTNAME == "localhost"
+DEBUG = False
+INTERNAL_IPS = [
+]
 
 # Application definition
 INSTALLED_APPS = [
-    #'django.contrib.sites.apps.SitesConfig',
     'django.contrib.humanize.apps.HumanizeConfig',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -130,13 +126,10 @@ INSTALLED_APPS = [
     'django.contrib.sites',
     'django.contrib.flatpages',
     'django_nyt.apps.DjangoNytConfig',
-    'django_json_widget',
+    'debug_toolbar',
     'admin_auto_filters',
-    'easy_thumbnails',
-    'filer',
     'mptt',
     'sekizai',
-    'sorl.thumbnail',
     'wiki.apps.WikiConfig',
     'wiki.plugins.macros.apps.MacrosConfig',
 ] + (
@@ -144,15 +137,11 @@ INSTALLED_APPS = [
 ) + [
     'cdh',    
     'django_extensions',
-    'rest_framework',
     'guardian',
     'django_registration',
     'djangobower',
     'schedule',
-    'broker',
-    'turkle',
-    'markdownfield',
-] + [k for k in PRIVATE_APPS.keys()] + [k for k in PUBLIC_APPS.keys() if k not in ["wiki"]]
+] + [k for k in APPS.keys() if k not in ["wiki"]] + ["turkle"]
 
 SITE_ID = 1
 X_FRAME_OPTIONS = "sameorigin"
@@ -198,9 +187,10 @@ if USE_JENA:
     JENA_HOST = "localhost"
     JENA_PORT = 3030
     JENA_USER = "admin"
-    JENA_PASSWORD = "TEMP_PW"
+    JENA_PASSWORD = "CHANGE_ME"
 
 MIDDLEWARE = [
+    'debug_toolbar.middleware.DebugToolbarMiddleware',    
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -209,6 +199,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
 X_FRAME_OPTIONS = "SAMEORIGIN"
 
 ROOT_URLCONF = 'cdh.urls'
@@ -300,19 +291,11 @@ if USE_LDAP:
     AUTH_LDAP_BIND_PASSWORD_FILE = DATA_DIR / "certs" / "ldapscripts.passwd"
     #with open(AUTH_LDAP_BIND_PASSWORD_FILE, "rt") as ifd:    
     #    AUTH_LDAP_BIND_PASSWORD = ifd.read()
-    AUTH_LDAP_BIND_PASSWORD = "TEMP_PW"
+    AUTH_LDAP_BIND_PASSWORD = "CHANGE_ME"
     AUTH_LDAP_USER_ATTR_MAP = {"first_name": "givenName", "last_name": "sn", "email" : "mail"}
-
 
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
-
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
-        'LOCATION': 'cache_table',
-    }
-}
 
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
@@ -325,13 +308,19 @@ DATABASES = {
         'HOST' : 'localhost',
         'NAME': 'cdh',
         'USER': 'cdh',
-        'PASSWORD' : 'TEMP_PW',
+        'PASSWORD' : 'CHANGE_ME',
     } if USE_POSTGRES else {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': DATA_DIR / 'db.sqlite3',
     }
 }
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.db.DatabaseCache',
+        'LOCATION': 'cache_table',
+    }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
@@ -393,5 +382,4 @@ BOWER_INSTALLED_APPS = (
     'jquery.scrollto#1.4.5',
     'modernizr#2.6.2',
     'vega#5.22.1',
-    'codemirror#5.65.5'    
 )

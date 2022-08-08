@@ -1,4 +1,14 @@
 
+function findAll(item, query){
+    var retval = Array.from(htmx.findAll(item, query));
+    for(let el of htmx.findAll(item.parentElement, query)){
+	if(el.id == item.id){
+	    retval.push(item);
+	}
+    }
+    return retval;
+}
+
 function getList(name){
     var retval = sessionStorage.getItem(name);
     if(retval == null){
@@ -7,18 +17,19 @@ function getList(name){
     else{
 	retval = JSON.parse(retval);
     }
-    console.info("Returning value of", name, "as", retval);
+    console.info("Returning value of", name, ":", retval);
     return retval;
 }
 
 function setList(name, value){
+    console.info("Setting value of", name, "to", value);
     sessionStorage.setItem(name, JSON.stringify(value));
 }
 
 function checkValue(name, value){
-    console.info("Checking for value", value, "in", name);
-    var cur = getList(name);
-    return cur.includes(value);
+    var retval = getList(name).includes(value);
+    console.info("Checking if value", value, "is in", name, ":", retval);    
+    return retval
 }
 
 function removeValue(name, value){
@@ -32,134 +43,159 @@ function addValue(name, value){
     if(!(cur.includes(value))){
 	cur.push(value);
     }
-    console.info("Adding value", value, "to", name, "resulting in", cur);
+    console.info("Adding value", value, "to", name);
     setList(name, cur);
 }
 
-function collapseChild(btn){
-    ct = document.getElementById(btn.getAttribute("aria-controls"));
-    btn.setAttribute("aria-expanded", "false");
-    btn.classList.add("collapsed");
-    ct.classList.add("collapse");
-    ct.classList.remove("show");    
+function removeNestedValues(element){
+    console.info("Unsetting all accordions and tabs underneath", element);
+    for(let el of element.getElementsByClassName("cdh-accordion-item")){
+	collapseAccordionItem(el);
+    }
+    for(let el of element.getElementsByClassName("cdh-tab-button")){
+	unsetTab(el);
+    }
+}
+
+function removeAccordionItem(item){
+    console.info("Completely removing accordion item", item);
+    removeValue("active_accordion_items", item.id);
+    item.remove();
 }
 
 function collapseAccordionItem(item){
-    
+    console.info("Collapsing accordion item", item);
+    var button = item.querySelector(".accordion-header > button");
+    var content = document.getElementById(button.getAttribute("aria-controls"));
+    button.setAttribute("aria-expanded", "false");
+    button.classList.add("collapsed");
+    content.classList.add("collapse");
+    content.classList.remove("show");
+    removeValue("active_accordion_items", item.id);
+    removeNestedValues(item);
+}
+
+function setFirstTab(tabs){
+    setTab(htmx.find(tabs, "li > button"));
 }
 
 function expandAccordionItem(item){
+    console.info("Expanding accordion item", item);
+    var button = item.querySelector(".accordion-header > button");
+    var content = document.getElementById(button.getAttribute("aria-controls"));
+    button.setAttribute("aria-expanded", "true");
+    button.classList.remove("collapsed");
+    content.classList.remove("collapse");
+    content.classList.add("show");
+    addValue("active_accordion_items", item.id);
+    for(let tabs of item.getElementsByClassName(".cdh-nav-tabs")){
+	setFirstTab(tabs);
+    }
+    item.scrollIntoView(true);
 }
 
-function collapseAccordion(accordion){
+function setTab(tab){
+    console.info("Setting active tab", tab);
+    var content = document.getElementById(tab.getAttribute("aria-controls"));
+    tab.setAttribute("aria-selected", "true");
+    tab.classList.add("active");
+    content.classList.add("show");
+    content.classList.add("active");   
+    addValue("active_tab_items", tab.id);
+    //tab.scrollIntoView(true);
 }
 
-function refreshAccordionItem(item){
+function unsetTab(tab){
+    console.info("Unsetting active tab", tab);    
+    var content = document.getElementById(tab.getAttribute("aria-controls"));
+    tab.setAttribute("aria-selected", "false");
+    tab.classList.remove("active");
+    content.classList.remove("show");
+    content.classList.remove("active");   
+    removeValue("active_tab_items", tab.id);
+    removeNestedValues(content);
 }
 
+function refreshAccordionItem(item){    
+    console.error("Unimplemented: refreshAccordionItem");
+}
+
+// another reminder of how bad this is!
 function saveState(){
+    console.info("Saving scroll state of page");
     var pathName = document.location.pathname;
     var scrollPosition = $(document).scrollTop();
     sessionStorage.setItem("scrollPosition_" + pathName, scrollPosition.toString());
 }
 
 function restoreState(root){
-    //var seenAccordionItems = new Map();
-    for(let el of root.getElementsByClassName("cdh-accordion-button")){
-	ct = document.getElementById(el.getAttribute("aria-controls"));
-	//seenAccordionItems.set(ct.id, true);
-	if(checkValue("active_accordion_items", ct.id)){
-	    console.info("showing accordion", el.id);
-	    el.setAttribute("aria-expanded", "true");
-	    el.classList.remove("collapsed");
-	    ct.classList.remove("collapse");
-	    ct.classList.add("show");
-	}
-	else{
-	    console.info("hiding accordion", el.id);
-	    el.setAttribute("aria-expanded", "false");
-	    el.classList.add("collapsed");
-	    ct.classList.add("collapse");
-	    ct.classList.remove("show");
-	}
-	ct.addEventListener("hide.bs.collapse", event => {
-	    removeValue("active_accordion_items", event.target.id);
-	    var el = document.getElementById(event.target.id);
-	    for(let btn of el.getElementsByClassName("cdh-accordion-button")){
-		collapseChild(btn);
+    console.info("Restoring page state");
+    for(let acc of findAll(root, ".cdh-accordion")){
+	var activeCount = 0;
+	for(let item of acc.children){
+	    if(checkValue("active_accordion_items", item.id) == true && activeCount == 0){
+		expandAccordionItem(item);		
+		activeCount += 1;
 	    }
+	    else{
+		collapseAccordionItem(item);
+	    }
+	}	
+    }    
+    for(let ct of root.getElementsByClassName("cdh-accordion-collapse")){
+	ct.addEventListener("hide.bs.collapse", event => {
+	    removeValue("active_accordion_items", event.target.parentElement.id);
+	    removeNestedValues(event.target.parentElement);
 	});
-	ct.addEventListener("show.bs.collapse", event => { addValue("active_accordion_items", event.target.id) });
+	ct.addEventListener("show.bs.collapse", event => {
+	    for(let el of event.target.parentElement.parentElement.children){
+		if(el.id != event.target.parentElement.id){
+		    collapseAccordionItem(el);
+		}
+	    }
+	    expandAccordionItem(event.target.parentElement);	    
+	    for(let el of event.target.parentElement.getElementsByClassName("cdh-nav-tabs")){
+		setFirstTab(el);
+	    }
+	});	
     }
-
+    for(let tabs of htmx.findAll(root, ".cdh-nav-tabs")){
+	var activeCount = 0;
+	for(let tab of htmx.findAll(tabs, "li > button")){
+	    if(checkValue("active_tab_items", tab.id) == true && activeCount == 0){
+		setTab(tab);
+		activeCount += 1;
+	    }
+	    else{
+		unsetTab(tab);
+	    }
+	}
+	if(activeCount == 0){
+	    setFirstTab(tabs);
+	}
+    }
     for(let el of root.getElementsByClassName("cdh-tab-button")){
-	ct = document.getElementById(el.getAttribute("aria-controls"));
-	if(checkValue("active_tab_items", el.id)){
-	    console.info("showing tab", el.id);
-	    el.setAttribute("aria-selected", "true");
-	    el.classList.add("active");
-	    ct.classList.add("show");
-	    ct.classList.add("active");
-	}
-	else{
-	    console.info("hiding tab", el.id);	    
-	    el.setAttribute("aria-selected", "false");
-	    el.classList.remove("active");
-	    ct.classList.remove("show");
-	    ct.classList.remove("active");
-	}
-	el.addEventListener("show.bs.tab", event => { addValue("active_tab_items", event.target.id); });
+        el.addEventListener("show.bs.tab", event => { addValue("active_tab_items", event.target.id); });
 	el.addEventListener("hide.bs.tab", event => { removeValue("active_tab_items", event.target.id) });
     }
 
 }
 
-function ensureTabs(root){
-        for(let el of root.getElementsByClassName("cdh-nav-tabs")){
-	console.info("Processing tabs ", el);
-	var buttons = [];
-	var anySet = false;
-	for(let ch of el.children){
-	    var isSet = ch.firstElementChild.classList.contains("active");
-	    if(isSet == true && anySet == true){
-		console.error("More than one tab is active on ", el);
-	    }
-	    else if(anySet == false){
-		anySet = isSet;
-	    }
-	    buttons.push(ch.firstElementChild);
-	}
-	if(!anySet){
-	    var first = buttons[0];
-	    ct = document.getElementById(first.getAttribute("aria-controls"));
-	    console.info("No tab was visible, so showing tab", first.id);
-	    first.setAttribute("aria-selected", "true");
-	    first.classList.add("active");
-	    ct.classList.add("show");
-	    ct.classList.add("active");	    
-	}
-	else{
-	    console.info("Exactly one tab was already visible on ", el);
-	}
-    }
-}
 
 function cdhSetup(root, htmxSwap){
-    console.info("Running CDH setup on ", root);
-
+    console.info("Performing initial setup on", root);
+    
     // things that should only happen once, at the top level of the page
-    if(!htmxSwap){
-	// preserve accordion, tab, and scroll states when browsing away from or reloading the page
-	window.onbeforeunload = saveState;
-    }
+    //if(!htmxSwap){
+    // preserve accordion, tab, and scroll states when browsing away from or reloading the page
+    // this is bad! see just above!
+    
+    //}
 
     // restore any previous state (must happen for htmx-loaded fragments too)
     restoreState(root);
     
-    // make sure exactly one tab is visible for every set of tabs
-    ensureTabs(root);
-
-    for(let el of root.getElementsByClassName("cdh-select")){
+    for(let el of htmx.findAll(root, ".cdh-select")){
 	el.addEventListener("change", event => {
 	    var tgt = document.getElementById(event.target.value);
 	    htmx.trigger(tgt, "select");
@@ -174,7 +210,7 @@ function cdhSetup(root, htmxSwap){
     }
 
     // run initialization for Monaco editor widgets
-    for(let el of root.getElementsByClassName("cdh-editor")){
+    for(let el of htmx.findAll(root, ".cdh-editor")){
 	if(el.getAttribute("processed") != "true"){
 	require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.0-dev.20220625/min/vs' } });	
 	require(['vs/editor/editor.main'], function () {
@@ -196,7 +232,7 @@ function cdhSetup(root, htmxSwap){
     }
 
     // run initialization for Monaco model widgets
-    for(let el of root.getElementsByClassName("cdh-model-interaction")){
+    for(let el of htmx.findAll(root, ".cdh-model-interaction")){ //root.getElementsByClassName("cdh-model-interaction")){
 	if(el.getAttribute("processed") != "true"){
 	require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.0-dev.20220625/min/vs' } });	
 	require(['vs/editor/editor.main'], function () {
@@ -281,6 +317,7 @@ function handleCdhEvent(event){
     var app_label = event.detail.app_label;
     var model_name = event.detail.model_name;
     var pk = event.detail.pk;
+    console.info("Handling event of type", event_type, ", app", app_label, ", model",  model_name, ", instance", pk);
     if(event_type == "delete"){
 	for(let el of document.getElementsByClassName("accordion-item")){
 	    if(
@@ -288,15 +325,18 @@ function handleCdhEvent(event){
 		    model_name == el.getAttribute("model_name") &&
 		    pk == el.getAttribute("pk")
 	    ){
-		
+		/*
 		for(let ch of el.children){
 		    if(ch.classList.contains("accordion-collapse")){
 			// remove id from active
+			removeValue("active_accordion_items", el.id);
 			console.info("(not yet) removing active id", ch.id);
 		    }
-		}
-		console.info("Deleting", el);
-		el.remove();
+		    }
+		    */
+		//console.info("Deleting", el);
+		removeAccordionItem(el);
+		//el.remove();
 	    }
 	}
     }
@@ -307,39 +347,74 @@ function handleCdhEvent(event){
 		    model_name == el.getAttribute("model_name") &&
 		    pk == el.getAttribute("pk")
 	    ){
-		console.error("(not yet) refreshing", el);
+		//console.error("(not yet) refreshing", el);
 		// refresh
 	    }
 	}	
     }
-    else if(event_type == "create"){	
+    else if(event_type == "create"){
 	var accItem = event.target.parentElement.parentElement.parentElement.parentElement;
-	var acc = accItem.parentElement;
-	for(let otherAcc of htmx.findAll()){
-	    console.error(otherAcc);
-	}
-	/*
+var acc = accItem.parentElement;
 	  $.ajax(
 	    {		
 		url: acc.getAttribute("accordion_url"),
 		success: function (data){
 		    var dummy = document.createElement( 'html' );
 		    dummy.innerHTML = data;
-		    console.error(dummy);
 		    for(let el of dummy.getElementsByClassName("accordion-item")){			
 			if(el.getAttribute("app_label") == app_label && el.getAttribute("model_name") == model_name && el.getAttribute("pk") == pk)
 			{
 			    acc.insertBefore(el, accItem);
-			    //cdhSetup(el, true);
-			    //htmx.trigger(el, "htmx:load");
-			    // collapse current, expand new?
+			    htmx.process(el);
+			    cdhSetup(el, true);
+			    dummy.remove();
+			    var rel = document.getElementById(el.id);
+			    for(let ch of accItem.children){
+				htmx.trigger(ch, "refreshForm");
+			    }
+			    collapseAccordionItem(accItem);
+			    for(let ch of el.querySelectorAll("*[hx-trigger='intersect']")){
+				htmx.trigger(ch, "intersect");
+			    }
+			    expandAccordionItem(el);
 			}			
 		    }		    
 		},
 		dataType: "html"
 	    }
-	    );
-	    */
+	  );
+
+
+	/*
+	  Adding new item to other accordions requires some thought w.r.t. identifiers
+	accItem.insertAdjacentElement("beforestart", newItem);
+	
+	for(let otherAcc of htmx.findAll(".cdh-accordion")){
+	    if(otherAcc.getAttribute("id") != acc.getAttribute("id")){
+		if(otherAcc.getAttribute("app_label") == app_label && otherAcc.getAttribute("model_name") == model_name){
+		    var added = false;
+		    for(let item of otherAcc.children){
+			if(item.getAttribute("create") == "true"){
+			    // insert before element and break
+			    item.insertAdjacentElement("beforebegin", accItem);
+			    added = true;
+			    if(isExpanded(item)){
+				collapseAccordionItem(item);			
+				expandAccordionItem(accItem);
+			    }
+			    break;
+			}		    
+		    }
+		    if(added == false){
+			// insert at end of accordion
+			acc.insertAdjacentElement("beforeend", newItem);
+		    }
+
+		    }
+	    }
+	}
+	*/		    
+	
     }
     else{
 	console.warn("Unknown CDH event type:", event_type);

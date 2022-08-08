@@ -2,14 +2,8 @@
 
 {% block content %}
 
-<div {% for k, v in reactive_properties.items %}
-     {{k}}="{{v}}"
-     {% endfor %}
-     id="{{uid}}-reactive-properties"
-     ></div>
-
 {% if form %}
-<form method="post" action="{{request.path_info}}" id="{{uid}}" class="{{sid}}"
+<form method="post" action="{{request.path_info}}" id="form-{{uid}}"
       hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
       {% if form.is_multipart %}
       hx-encoding="multipart/form-data"
@@ -22,26 +16,26 @@
 
 {% if preamble and hide_preamble %}
 <div class="container w-75">
-  <div class="accordion" id="{{uid}}_preamble_accordion">
-    <div class="accordion-item" id="{{uid}}_preamble_accordionitem" aria-labeledby="{{uid}}_preamble_accordion">
-      <div class="accordion-header" id ="{{uid}}_preamble_accordionheader">
+  <div class="accordion" id="preamble_accordion-{{uid}}">
+    <div class="accordion-item" id="preamble_accordionitem-{{uid}}" aria-labeledby="preamble_accordion-{{uid}}">
+      <div class="accordion-header" id ="preamble_accordionheader-{{uid}}">
 	<div class="d-grid gap-2">
-	  <button id="{{uid}}_preamble_button"
+	  <button id="preamble_button-{{uid}}"
 		  class="accordion-button cdh-accordion-button collapsed"
 		  type="button"
 		  data-bs-toggle="collapse"
-		  data-bs-target="#{{uid}}_preamble_accordioncontent"
+		  data-bs-target="#preamble_accordioncontent-{{uid}}"
 		  aria-expanded="false"
-		  aria-controls="{{uid}}_preamble_accordioncontent"
+		  aria-controls="preamble_accordioncontent-{{uid}}"
 		  >
 	    {% if preamble_title %}{{preamble_title}}{% else %}?{% endif %}
 	  </button>
 	</div>
       </div>    
       <div class="accordion-collapse collapse"
-	   id="{{uid}}_preamble_accordioncontent"
-	   aria-labeledby="{{uid}}_preamble_accordionheader"
-	   data-bs-parent="{{uid}}_preamble_accordion"
+	   id="preamble_accordioncontent-{{uid}}"
+	   aria-labeledby="preamble_accordionheader-{{uid}}"
+	   data-bs-parent="preamble_accordion-{{uid}}"
 	   >
 	{{preamble|safe}}
       </div>
@@ -70,6 +64,7 @@
 	  {% if button.hx_target %}hx-target='{{button.hx_target}}'{% endif %}
 	  {% if button.hx_select %}hx-select='{{button.hx_select}}'{% endif %}
 	  {% if button.hx_swap %}hx-swap='{{button.hx_swap}}'{% endif %}
+	  hx-vals='{"uid" : "{{uid}}"}'
 	  hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
 	  >
     {{button.label}}
@@ -85,21 +80,23 @@
   
 {% if user_permissions_options or group_permissions_options %}
 
+{% comment %}
 <p>
-  <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#{{uid}}-permissions" aria-expanded="false" aria-controls="{{uid}}-permissions">
+  <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#permissions-{{uid}}" aria-expanded="false" aria-controls="permissions-{{uid}}">
     Manage permissions
   </button>
 </p>
 
-<div class="collapse" id="{{uid}}-permissions">
-
+<div class="collapse" id="permissions-{{uid}}">
+  {% endcomment %}
+  
   {% if user_permissions_options %}
   <h4>User permissions</h4>
   <div class="row">
     {% for perm in perms %}
     <div class="col w-25">
-      <label for="{{uid}}-{{perm}}-user-perm-select">{{perm|title}}</label>
-      <select class="form-select" multiple aria-label="{{perm}}-user-permissions" id="{{uid}}-{{perm}}-user-perm-select" name="user_{{perm}}">
+      <label for="{{perm}}_user_perm_select-{{uid}}">{{perm|title}}</label>
+      <select class="form-select" multiple aria-label="{{perm}}_user_permissions" id="{{perm}}_user_perm_select-{{uid}}" name="user_{{perm}}">
 	{% for u, p in user_permissions_options %}
 	<option value="{{u.id}}" {% if perm in p %}selected{% endif %}>{{u}}</option>
 	{% endfor %}
@@ -114,18 +111,20 @@
   <div class="row">
     {% for perm in perms %}
     <div class="col w-25">
-      <label for="{{uid}}-{{perm}}-group-perm-select">{{perm|title}}</label>
-      <select class="form-select" multiple aria-label="{{perm}}-group-permissions" id="{{uid}}-{{perm}}-group-perm-select" name="group_{{perm}}">
+      <label for="{{perm}}_group_perm_select-{{uid}}">{{perm|title}}</label>
+      <select class="form-select" multiple aria-label="{{perm}}_group_permissions" id="{{perm}}_group_perm_select" name="group_{{perm}}">
 	{% for g, p in group_permissions_options %}
 	<option value="{{g.id}}" {% if perm in p %}selected{% endif %}>{{g}}</option>
 	{% endfor %}
       </select>
     </div>
-    {% endfor %}    
+    {% endfor %}
   </div>
   {% endif %}
-  
+
+{% comment %}
 </div>
+{% endcomment %}
 
 {% endif %}
 
@@ -142,12 +141,11 @@
   <button class="btn btn-{{button.style}}"
 	  {% if button.hx_post %}hx-post="{{button.hx_post}}"{% endif %}
 	  {% if button.hx_delete %}hx-delete="{{button.hx_delete}}"{% endif %}
-{% comment%}	  {% if button.hx_post %}hx-post="{{request.path_info}}"{% endif %}
-	  {% if button.hx_delete %}hx-delete="{{request.path_info}}"{% endif %}	    	  {% endcomment %}
 	  {% if button.hx_confirm %}hx-confirm='{{button.hx_confirm}}'{% endif %}
 	  {% if button.hx_target %}hx-target='{{button.hx_target}}'{% endif %}
 	  {% if button.hx_select %}hx-select='{{button.hx_select}}'{% endif %}
 	  {% if button.hx_swap %}hx-swap='{{button.hx_swap}}'{% endif %}
+	  hx-vals='{"uid" : "{{uid}}"}'
 	  hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
 	  >
     {{button.label}}
