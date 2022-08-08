@@ -13,36 +13,36 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='collection',
             name='name',
-            field=models.CharField(max_length=2000, unique=True),
+            field=models.CharField(max_length=2000, unique=False),
         ),
         migrations.AlterField(
             model_name='document',
             name='name',
-            field=models.CharField(max_length=2000, unique=True),
+            field=models.CharField(max_length=2000, unique=False),
         ),
         migrations.AlterField(
             model_name='labeledcollection',
             name='name',
-            field=models.CharField(max_length=2000, unique=True),
+            field=models.CharField(max_length=2000, unique=False),
         ),
         migrations.AlterField(
             model_name='labeleddocument',
             name='name',
-            field=models.CharField(max_length=2000, unique=True),
+            field=models.CharField(max_length=2000, unique=False),
         ),
         migrations.AlterField(
             model_name='labeleddocumentsection',
             name='name',
-            field=models.CharField(max_length=2000, unique=True),
+            field=models.CharField(max_length=2000, unique=False),
         ),
         migrations.AlterField(
             model_name='lexicon',
             name='name',
-            field=models.CharField(max_length=2000, unique=True),
+            field=models.CharField(max_length=2000, unique=False),
         ),
         migrations.AlterField(
             model_name='topicmodel',
             name='name',
-            field=models.CharField(max_length=2000, unique=True),
+            field=models.CharField(max_length=2000, unique=False),
         ),
     ]
