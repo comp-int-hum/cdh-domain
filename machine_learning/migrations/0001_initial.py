@@ -37,7 +37,7 @@ class Migration(migrations.Migration):
                 ('modified_at', models.DateTimeField(auto_now=True)),
                 ('version', models.CharField(max_length=200)),
                 ('created_by', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL)),
-                ('model', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='broker.machinelearningmodel')),
+                ('model', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='machine_learning.machinelearningmodel')),
             ],
             options={
                 'abstract': False,

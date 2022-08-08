@@ -69,19 +69,19 @@ def get_output(self, request, *argv, **argd):
     return HttpResponse(model_text.decode("utf-8"))
     #return render(request, "cdh/simple_interface.html", {"content" : model_text.decode("utf-8")})
 
-app_name = "broker"
+app_name = "machine_learning"
 
 urlpatterns = [
     path(
         '',
         AccordionView.as_view(
             preamble="""
-            test
+            Roughly speaking, machine learning models are trained to perform a task when given input of some form.  In some cases, the input/output to/from a model follows a pattern simple enough to generate an interface for dynamically "conversing" with the model.
             """,
             children={
                 "model" : MachineLearningModel,
-                "url" : "broker:machinelearningmodel_detail",
-                "create_url" : "broker:machinelearningmodel_create"
+                "url" : "machine_learning:machinelearningmodel_detail",
+                "create_url" : "machine_learning:machinelearningmodel_create"
             }
         ),
         name="index"
@@ -89,6 +89,9 @@ urlpatterns = [
     path(
         'machinelearningmodel/create/',
         BaseView.as_view(
+            preamble="""
+            Preparing a hosted model is an involved process, even without the complexities of training, but at a high level, this interface accepts .mar files as used in the TorchServe project.
+            """,            
             model=MachineLearningModel,
             can_create=True,
             fields=["name", "url"],
@@ -102,7 +105,6 @@ urlpatterns = [
     path(
         'machinelearningmodel/<int:pk>/',
         BaseView.as_view(
-            preamble="""This model is similar to, but approximately 1/1000th the size of, the GPT-3 language model and similar.  Enter text below, then press "Shift-Tab" for the model to generate the next token.""",
             model=MachineLearningModel,
             update_lambda=get_output,
             extra_fields={

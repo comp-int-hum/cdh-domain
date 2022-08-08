@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('broker', '0003_machinelearningmodel_url'),
+        ('machine_learning', '0003_machinelearningmodel_url'),
     ]
 
     operations = [

@@ -8,12 +8,11 @@ import requests
 
 
 class MachineLearningModel(CdhModel):
-    #name = models.CharField(max_length=200, )
     version = models.CharField(max_length=200, null=True)
     url = models.CharField(max_length=2000, null=True)
     
     def get_absolute_url(self):
-        return reverse("broker:machinelearningmodel_detail", args=(self.id,))
+        return reverse("machine_learning:machinelearningmodel_detail", args=(self.id,))
 
     def __str__(self):
         return self.name
@@ -29,19 +28,14 @@ class MachineLearningModel(CdhModel):
                 
             },
         )
-        print(resp.content)
-        #requests.put(
-        #    "{}/models/{}".format(settings.TORCHSERVE_MANAGEMENT_ADDRESS, self.name),
-        #    params={
-        #        "min_worker" : 1,
-        #        "max_worker" : 1,
-        #    }
-        #)
         super(MachineLearningModel, self).save(*argv, **argd)
 
     def delete(self, *argv, **argd):
         model_file = "{}/models/{}".format(settings.DATA_DIR, os.path.basename(self.url))
-        #os.remove(model_file)
+        try:
+            os.remove(model_file)
+        except:
+            pass
         for inf in self.info:            
             resp = requests.delete("{}/models/{}/{}".format(settings.TORCHSERVE_MANAGEMENT_ADDRESS, inf["modelName"], inf["modelVersion"]))
         super(MachineLearningModel, self).delete(*argv, **argd)
