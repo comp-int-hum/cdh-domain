@@ -62,7 +62,7 @@ def transformers_model_dowloader(args):
             "--version", args.model_version,
             "--serialized-file", "{}/pytorch_model.bin".format(path),
             "--handler", args.handler,
-            "--extra-files", "{}/config.json".format(path),
+            "--extra-files", "{0}/config.json,{0}/special_tokens_map.json,{0}/tokenizer_config.json,{0}/tokenizer.json".format(path),
             "--export-path", path,
         ]
         print("invoking {}".format(shlex.join(cmd)))
@@ -77,8 +77,8 @@ def transformers_model_dowloader(args):
 
 if __name__== "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--original_model_name", default="bigscience/bloom-350m")
-    parser.add_argument("--model_name", default="bloom-350m")
+    parser.add_argument("--original_model_name", default="bigscience/bloom-560m")
+    parser.add_argument("--model_name", default="bloom")
     parser.add_argument("--model_version", default="1.0")
     parser.add_argument("--mode", default="text_generation")
     parser.add_argument("--do_lower_case", default=False, action="store_true")

@@ -56,8 +56,9 @@ class GenerativeHandler(BaseHandler, ABC):
         self.model.eval()
         logger.info("Transformer model from path %s loaded successfully", model_dir)
         self.tokenizer = AutoTokenizer.from_pretrained(
-            "bigscience/bloom-350m",
-            do_lower_case=False #self.setup_config["do_lower_case"],
+            #"bigscience/bloom-350m",
+            model_dir,
+            #do_lower_case=False #self.setup_config["do_lower_case"],
         )
 
         self.initialized = True
