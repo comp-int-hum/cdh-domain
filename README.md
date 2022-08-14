@@ -2,6 +2,39 @@
 
 This repository contains the code base constituting the framework that handles requests to the cdh.jhu.edu domain.
 
+```mermaid
+flowchart LR
+  subgraph Workstations
+    subgraph Wyatt
+    end
+    subgraph Spenser
+    end
+    subgraph Larkin
+    end
+  end
+  subgraph Bishop
+      gpu(GPU)
+      celery(Celery)
+      ldap(LDAP)
+      torchserve(TorchServe)
+  end
+  subgraph Servers
+    subgraph Ludwig
+      celerydev(Celery)
+      torchservedev(TorchServe)
+      postgres(PostGRES)
+      jena(Jena)
+    end
+    subgraph Marcel
+      raid(RAID10)
+      nfs(NFS)
+    end
+    subgraph CDH
+      django(Django)
+    end
+  end
+```
+
 ## Quick start development environment
 
 These instructions assume you have opened a command-line session, e.g. using `Terminal` on OSX, `xterm` on Linux, or `PowerShell` on Windows.  In the latter case, the commands may differ slightly from what's described here, but not in substantial ways.  It might be worthwhile to enable the [Windows Linux Subsystem](https://docs.microsoft.com/en-us/windows/wsl/install) so you can work in `Windows Terminal`, where they should be identical.
