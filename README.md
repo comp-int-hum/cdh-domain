@@ -4,35 +4,35 @@ This repository contains the code base constituting the framework that handles r
 
 ```mermaid
 flowchart LR
-  subgraph Workstations
-    subgraph Wyatt
-    end
-    subgraph Spenser
-    end
-    subgraph Larkin
-    end
+  subgraph Wyatt
+  end
+  subgraph Spenser
+  end
+  subgraph Larkin
   end
   subgraph Bishop
-      gpu(GPU)
-      celery(Celery)
-      ldap(LDAP)
-      torchserve(TorchServe)
+    gpu(GPU)
+    celery(Celery)
+    ldap(LDAP)
+    torchserve(TorchServe)
   end
-  subgraph Servers
-    subgraph Ludwig
-      celerydev(Celery)
-      torchservedev(TorchServe)
-      postgres(PostGRES)
-      jena(Jena)
-    end
-    subgraph Marcel
-      raid(RAID10)
-      nfs(NFS)
-    end
-    subgraph CDH
-      django(Django)
-    end
+  subgraph Ludwig
+    celerydev(Celery)
+    torchservedev(TorchServe)
+    postgres(PostGRES)
+    jena(Jena)
   end
+  subgraph Marcel
+    raid(RAID10)
+    nfs(NFS)
+  end
+  subgraph CDH
+    django(Django)
+  end
+  classDef servers fill:#f96;
+  classDef workstations fill:#096;
+  class Bishop,Ludwig,Marcel,CDH servers;
+  class Larkin,Wyatt,Spenser workstations;
 ```
 
 ## Quick start development environment
