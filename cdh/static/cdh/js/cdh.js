@@ -65,14 +65,17 @@ function removeAccordionItem(item){
 
 function collapseAccordionItem(item){
     console.info("Collapsing accordion item", item);
-    var button = item.querySelector(".accordion-header > button");
-    var content = document.getElementById(button.getAttribute("aria-controls"));
-    button.setAttribute("aria-expanded", "false");
-    button.classList.add("collapsed");
-    content.classList.add("collapse");
-    content.classList.remove("show");
-    removeValue("active_accordion_items", item.id);
-    removeNestedValues(item);
+    var button = item.querySelector(".cdh-accordion-header > button");
+    // This is a problem:
+    if(button != null){
+	var content = document.getElementById(button.getAttribute("aria-controls"));
+	button.setAttribute("aria-expanded", "false");
+	button.classList.add("collapsed");
+	content.classList.add("collapse");
+	content.classList.remove("show");
+	removeValue("active_accordion_items", item.id);
+	removeNestedValues(item);
+    }
 }
 
 function setFirstTab(tabs){
@@ -81,17 +84,20 @@ function setFirstTab(tabs){
 
 function expandAccordionItem(item){
     console.info("Expanding accordion item", item);
-    var button = item.querySelector(".accordion-header > button");
-    var content = document.getElementById(button.getAttribute("aria-controls"));
-    button.setAttribute("aria-expanded", "true");
-    button.classList.remove("collapsed");
-    content.classList.remove("collapse");
-    content.classList.add("show");
-    addValue("active_accordion_items", item.id);
-    for(let tabs of item.getElementsByClassName(".cdh-nav-tabs")){
-	setFirstTab(tabs);
+    var button = item.querySelector(".cdh-accordion-header > button");
+    // This is also a problem:
+    if(button != null){
+	var content = document.getElementById(button.getAttribute("aria-controls"));
+	button.setAttribute("aria-expanded", "true");
+	button.classList.remove("collapsed");
+	content.classList.remove("collapse");
+	content.classList.add("show");
+	addValue("active_accordion_items", item.id);
+	for(let tabs of item.getElementsByClassName(".cdh-nav-tabs")){
+	    setFirstTab(tabs);
+	}
+	item.scrollIntoView(true);
     }
-    item.scrollIntoView(true);
 }
 
 function setTab(tab){
@@ -184,7 +190,26 @@ function restoreState(root){
 
 function cdhSetup(root, htmxSwap){
     console.info("Performing initial setup on", root);
+
+
+    $(document).ready(function(){
+	var options = {
+            html: true,
+            trigger: 'onclick',
+            placement: 'bottom',
+	    content: "test"
+	};    
+	$('[data-toggle="popover"]').popover(options);
+    });
+    $(document).ready(function(){
+	$('[role="dialog"]').modal();
+    });
+    for(let el of root.getElementsByClassName("cdh-tooltip")){
+	new bootstrap.Tooltip(el);
+    }
     
+
+
     // things that should only happen once, at the top level of the page
     //if(!htmxSwap){
     // preserve accordion, tab, and scroll states when browsing away from or reloading the page
@@ -216,11 +241,60 @@ function cdhSetup(root, htmxSwap){
 	require(['vs/editor/editor.main'], function () {
 	    var listValue = JSON.parse(document.getElementById(el.getAttribute("value_id")).textContent);
 	    var form = el.parentNode;
+	    var language = el.getAttribute("language");
 	    var editor = monaco.editor.create(el, {	      
 		value: listValue.join('\n'),
-		language: el.getAttribute("language"),
-		automaticLayout: true
-	    });	    
+		language: language,
+		automaticLayout: true,
+		tabCompletion: "on",
+		wordWrap: true
+	    });
+	    el.addEventListener("keyup", (event) => {
+		if(language == "torchserve_text"){
+		    if(event.key == "Tab" && event.shiftKey == true){
+			var content = editor.getModel().getValue();
+			var form = event.target.parentElement.parentElement.parentElement.parentElement;
+			$.ajax(
+			    {
+				headers: JSON.parse(form.getAttribute("hx-headers")),
+				url: form.action,
+				method: "POST",
+				data: {interaction: content},
+				success: function (data){
+				    var model = editor.getModel();
+				    var current = model.getValue();				
+				    model.setValue(content + data);
+				    var pos = model.getPositionAt(model.getValue().length);
+				    editor.setPosition(pos);
+				}
+			    }
+			);
+		    }
+		}
+		else if(language == "markdown" || language == "sparql"){
+		    if(event.key == "Tab" && event.shiftKey == true){
+			var content = editor.getModel().getValue();
+			var div = event.target.parentElement.parentElement.parentElement;
+			var form = div.parentElement;
+			var pk = form.parentElement.getAttribute("pk");
+			var model_name = form.parentElement.getAttribute("model_name");
+			var app_label = form.parentElement.getAttribute("app_label");
+			var endpoint = div.getAttribute("endpoint_url");
+			var target = document.getElementById(div.getAttribute("output_id"));
+			$.ajax(
+			    {
+				headers: JSON.parse(form.getAttribute("hx-headers")),
+				url: endpoint,
+				method: "POST",
+				data: {interaction: content, pk: pk},
+				success: function (data){
+				    target.innerHTML = data;
+				}
+			    }
+			);
+		    }
+		}
+	    });
 	    editor.getModel().onDidChangeContent((event) => {
 		var content = editor.getModel().getValue();
 		var hid = document.getElementById(el.getAttribute("field_name") + "-hidden");
@@ -230,47 +304,6 @@ function cdhSetup(root, htmxSwap){
 	    el.setAttribute("processed", "true");
 	}
     }
-
-    // run initialization for Monaco model widgets
-    for(let el of htmx.findAll(root, ".cdh-model-interaction")){ //root.getElementsByClassName("cdh-model-interaction")){
-	if(el.getAttribute("processed") != "true"){
-	require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.0-dev.20220625/min/vs' } });	
-	require(['vs/editor/editor.main'], function () {
-	    var listValue = JSON.parse(document.getElementById(el.getAttribute("value_id")).textContent);
-	    var form = el.parentNode;
-	    var editor = monaco.editor.create(el, {	      
-		value: listValue.join('\n'),
-		language: el.getAttribute("language"),
-		automaticLayout: true,
-		tabCompletion: "on",
-		wordWrap: true
-	    });
-	    el.addEventListener("keyup", (event) => {
-		if(event.key == "Tab" && event.shiftKey == true){
-		    var content = editor.getModel().getValue();
-		    var form = event.target.parentElement.parentElement.parentElement.parentElement;
-		    $.ajax(
-			{
-			    headers: JSON.parse(form.getAttribute("hx-headers")),
-			    url: form.action,
-			    method: "POST",
-			    data: {interaction: content},
-			    success: function (data){
-				var model = editor.getModel();
-				var current = model.getValue();				
-				model.setValue(content + data);
-				var pos = model.getPositionAt(model.getValue().length);
-				editor.setPosition(pos);
-			    }
-			}
-		    );
-		}
-	    });
-	});
-	    el.setAttribute("processed", "true");
-	}
-    }
-
     
     // initialize annotated documents
     var elms=root.getElementsByClassName("labeled-token");
@@ -319,7 +352,7 @@ function handleCdhEvent(event){
     var pk = event.detail.pk;
     console.info("Handling event of type", event_type, ", app", app_label, ", model",  model_name, ", instance", pk);
     if(event_type == "delete"){
-	for(let el of document.getElementsByClassName("accordion-item")){
+	for(let el of document.getElementsByClassName("cdh-accordion-item")){
 	    if(
 		app_label == el.getAttribute("app_label") &&
 		    model_name == el.getAttribute("model_name") &&
@@ -341,7 +374,7 @@ function handleCdhEvent(event){
 	}
     }
     else if(event_type == "update"){
-	for(let el of document.getElementsByClassName("accordion-item")){
+	for(let el of document.getElementsByClassName("cdh-accordion-item")){
 	    if(
 		app_label == el.getAttribute("app") &&
 		    model_name == el.getAttribute("model_name") &&
@@ -361,7 +394,7 @@ var acc = accItem.parentElement;
 		success: function (data){
 		    var dummy = document.createElement( 'html' );
 		    dummy.innerHTML = data;
-		    for(let el of dummy.getElementsByClassName("accordion-item")){			
+		    for(let el of dummy.getElementsByClassName("cdh-accordion-item")){			
 			if(el.getAttribute("app_label") == app_label && el.getAttribute("model_name") == model_name && el.getAttribute("pk") == pk)
 			{
 			    acc.insertBefore(el, accItem);

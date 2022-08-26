@@ -5,10 +5,9 @@
      accordion_url="{{accordion_url}}">
   {% for item in items %}
   {% if item.create_url %}
-  {% include "cdh/snippets/accordion_item.html" with title=item.title url=item.url create_url=item.create_url instance=item.instance index=0 app_label=item.app_label model_name=item.model_name pk=item.instance.id uid=uid %}
+  {% include "cdh/snippets/accordion_item.html" with title=item.title url=item.url create_url=item.create_url instance=item.instance index=0 app_label=item.app_label model_name=item.model_name pk=item.instance.id uid=uid relation=item.relation pk=item.pk %}
   {% else %}
   {% include "cdh/snippets/accordion_item.html" with title=item.title url=item.url create_url=item.create_url instance=item.instance index=forloop.counter app_label=item.app_label model_name=item.model_name pk=item.instance.id uid=uid %}
   {% endif %}
   {% endfor %}
 </div>
-

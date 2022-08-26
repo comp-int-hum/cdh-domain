@@ -1,0 +1,21 @@
+
+{% block content %}
+<table class="table">
+  <thead>
+    <tr>
+      {% for var in variables %}
+      <td>{{var}}</td>
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in bindings %}
+    <tr>
+      {% for v in row %}
+      <td>{{v}}</td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

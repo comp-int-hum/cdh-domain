@@ -1,12 +1,4 @@
-#from interact import models
-import datetime
 from cdh.vega import CdhVisualization
-
-dependent_types = [
-    "scalar",
-    "numeric",
-    "categorical"
-]
 
 
 class PrimarySourceSchemaGraph(CdhVisualization):
@@ -42,7 +34,7 @@ class PrimarySourceSchemaGraph(CdhVisualization):
                         "update": "fix || true"
                     },
                     {
-                        "events": "[*:mousedown, window:mouseup] > window:mousemove!",
+                        "events": "[symbol:mousedown, window:mouseup] > window:mousemove!",
                         "update": "xy()",
                         "force": True
                     }
@@ -53,7 +45,7 @@ class PrimarySourceSchemaGraph(CdhVisualization):
                 "name": "node", "value": None,
                 "on": [
                     {
-                        "events": "*:mouseover",
+                        "events": "symbol:mouseover",
                         "update": "fix === true ? group() : node"
                     }
                 ]
@@ -73,28 +65,28 @@ class PrimarySourceSchemaGraph(CdhVisualization):
                     "update": "clamp(zoom * pow(1.0005, -event.deltaY * pow(16, event.deltaMode)), 0.1, 1)"
                 }]
             },
-            {
-                "name": "create_entity",
-                "on": [{
-                    "events": "window:mouseup!",
-                    "update": "warn(xy())",
-                }]
-            },            
-            {
-                "name": "create_relationship_or_property",
-                "on": [
-                    {
-                        "events" : "@entityBackground:mousedown!",
-                        "update" : "warn('entity')",
-                        #"consume" : True
-                    },
-                    {
-                        "events" : "@entityBackground:mouseup!",
-                        "update" : "warn('entity')",
-                        #"consume" : True                        
-                    },                    
-                ]
-            },
+            # {
+            #     "name": "create_entity",
+            #     "on": [{
+            #         "events": "window:mouseup!",
+            #         "update": "warn(xy())",
+            #     }]
+            # },            
+            # {
+            #     "name": "create_relationship_or_property",
+            #     "on": [
+            #         {
+            #             "events" : "@entityBackground:mousedown!",
+            #             "update" : "warn('entity')",
+            #             #"consume" : True
+            #         },
+            #         {
+            #             "events" : "@entityBackground:mouseup!",
+            #             "update" : "warn('entity')",
+            #             #"consume" : True                        
+            #         },                    
+            #     ]
+            # },
         ]
 
     #@property

@@ -20,17 +20,15 @@ if settings.USE_LDAP:
 
 class QueryForm(forms.ModelForm):
     def __init__(self, *args, user=None, **kwargs):
-        #prefix = kwargs["instance"].id if "instance" in kwargs else "unbound"
         super().__init__(*args, **kwargs)
     class Meta:
         model = models.Query
-        exclude = ["dataset"]
+        fields = ["name", "sparql"]
         widgets = {
-            "sparql" : widgets.MonacoEditorWidget(language="sparql", content_field="sparql", default_value="""SELECT DISTINCT ?parent ?child
+            "sparql" : widgets.MonacoEditorWidget(language="sparql", content_field="sparql", default_value="""SELECT ?d ?p ?r
 WHERE {
-  ?child rdfs:subClassOf+ ?parent .
-  FILTER (!isBlank(?parent))
-}
+?d ?p ?r .
+} limit 10
 """
             )
         }

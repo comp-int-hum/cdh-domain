@@ -6,7 +6,7 @@
   app_label="{{app_label}}"
   pk="{{pk}}">
   <div
-    class="accordion-header"
+    class="accordion-header cdh-accordion-header"
     id="header-{{uid}}_{{index}}">
     <button
       class="accordion-button cdh-accordion-button collapsed"
@@ -34,7 +34,7 @@
     data-bs-parent="#accordion-{{uid}}">
     <div id="accordionitemcontent-{{uid}}_{{index}}"
 	 hx-get="{% if create_url %}{% url create_url %}{% elif url and instance %}{% url url instance.id %}{% elif url %}{% url url %}{% else %}{{content}}{% endif %}"
-	 hx-vals='{"uid" : "{{uid}}_{{index}}"}'
+	 hx-vals='{"uid" : "{{uid}}_{{index}}" {% if relation %}, "relation" : "{{relation}}", "pk" : "{{pk}}"{% endif %} }'
 	 hx-trigger="show.bs.collapse from:#content-{{uid}}_{{index}}, intersect"
 	 hx-select="#top_level_content > *"
 	 hx-swap="outerHTML">

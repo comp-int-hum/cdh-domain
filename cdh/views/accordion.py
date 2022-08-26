@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404
 from django.views.generic.base import TemplateView, TemplateResponseMixin, ContextMixin
 from django.views.generic.detail import SingleObjectMixin, SingleObjectTemplateResponseMixin
 from django.views import View
-from guardian.shortcuts import get_perms, get_objects_for_user, assign_perm, get_users_with_perms, get_groups_with_perms, remove_perm
+from guardian.shortcuts import get_perms, get_objects_for_user, assign_perm, get_users_with_perms, get_groups_with_perms, remove_perm, get_anonymous_user
 from django.utils.safestring import mark_safe
 from django.template.engine import Engine
 from django.template import Context
@@ -44,14 +44,19 @@ class AccordionView(NestedMixin, TemplateResponseMixin, ContextMixin, View):
     model = None
     template = "cdh/simple_interface.html"
     preamble = None
+    ordering = "created_at"
 
+    def setup(self, request, *argv, **argd):
+        self.pk = argd.get("pk", None)
+        super(AccordionView, self).setup(request, *argv, **argd)
+    
     def __init__(self, children, *argv, **argd):
         super(AccordionView, self).__init__(*argv, **argd)
         self.children = children
 
     def get_object(self):
         try:
-            return SingleObjectMixin.get_object(self)
+            return self.model.objects.get(id=self.pk) #SingleObjectMixin.get_object(self)
         except:
             return None
 
@@ -72,6 +77,23 @@ class AccordionView(NestedMixin, TemplateResponseMixin, ContextMixin, View):
         retval = []
         if isinstance(self.children, dict):
             if "url" in self.children and "model" in self.children and "instance" not in self.children:
+                qs = self.children["model"].objects
+                print(self.children)
+                if "relation" in self.children:
+                    qs = qs.filter(**{self.children["relation"] : self.get_object().id})
+                if "filter" in self.children:
+                    qs = qs.filter(**self.children["filter"])
+                user_viewable = get_objects_for_user(
+                    request.user,
+                    klass=qs,
+                    perms=["view_{}".format(self.children["model"]._meta.model_name)],
+                )
+                anon_viewable = get_objects_for_user(
+                    get_anonymous_user(),
+                    klass=qs,
+                    perms=["view_{}".format(self.children["model"]._meta.model_name)],
+                )
+                viewable = user_viewable.union(anon_viewable)
                 retval = [
                     {
                         "title" : str(obj),
@@ -79,18 +101,23 @@ class AccordionView(NestedMixin, TemplateResponseMixin, ContextMixin, View):
                         "url" : self.children["url"],
                         "model_name" : obj._meta.model_name,
                         "app_label" : obj._meta.app_label
-                    } for obj in get_objects_for_user(
-                        request.user,
-                        klass=self.children["model"],
-                        perms=["view_{}".format(self.children["model"]._meta.model_name)],
-                    ).order_by("created_at")
+                    } for obj in viewable
                 ]
-                if request.user.id != None and "create_url" in self.children:                
-                    retval.append(
-                        {
-                            "create_url" : self.children["create_url"]
-                        }
-                    )
+                if request.user.id != None and "create_url" in self.children:
+                    if "relation" in self.children:
+                        retval.append(
+                            {
+                                "create_url" : self.children["create_url"],
+                                "pk" : self.pk,
+                                "relation" : self.children["relation"]
+                            }
+                        )
+                    else:
+                        retval.append(
+                            {
+                                "create_url" : self.children["create_url"]
+                            }
+                        )                        
         elif isinstance(self.children, list):
             for child in self.children:
                 retval.append(

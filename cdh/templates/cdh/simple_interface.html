@@ -2,13 +2,18 @@
 
 {% block content %}
 
-{% if form %}
+<div
+  model_name="{{model_name}}"
+  app_label="{{app_label}}"
+  pk="{{pk}}"
+  id="container-{{uid}}">
+
+{% if form or buttons %}
 <form method="post" action="{{request.path_info}}" id="form-{{uid}}"
       hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
       {% if form.is_multipart %}
       hx-encoding="multipart/form-data"
       enctype="multipart/form-data"
-      _="on htmx:xhr:progress(loaded, total) set #progress.value to (loaded/total)*100"
       {% endif %}
       >
 {% endif %}
@@ -49,11 +54,7 @@
 {% endif %}
 
 
-{% if form and buttons and top_buttons %}
-
-{% if form.is_multipart %}
-<progress id='progress' value='0' max='100'></progress>
-{% endif %}
+{% if buttons and top_buttons %}
 
 <div class="btn-group" role="group" aria-label="actions">
   {% for button in buttons %}
@@ -76,65 +77,7 @@
 {{content}}
 {{form}}
 
-{% if form %}
-  
-{% if user_permissions_options or group_permissions_options %}
-
-{% comment %}
-<p>
-  <button class="btn btn-primary" type="button" data-bs-toggle="collapse" data-bs-target="#permissions-{{uid}}" aria-expanded="false" aria-controls="permissions-{{uid}}">
-    Manage permissions
-  </button>
-</p>
-
-<div class="collapse" id="permissions-{{uid}}">
-  {% endcomment %}
-  
-  {% if user_permissions_options %}
-  <h4>User permissions</h4>
-  <div class="row">
-    {% for perm in perms %}
-    <div class="col w-25">
-      <label for="{{perm}}_user_perm_select-{{uid}}">{{perm|title}}</label>
-      <select class="form-select" multiple aria-label="{{perm}}_user_permissions" id="{{perm}}_user_perm_select-{{uid}}" name="user_{{perm}}">
-	{% for u, p in user_permissions_options %}
-	<option value="{{u.id}}" {% if perm in p %}selected{% endif %}>{{u}}</option>
-	{% endfor %}
-      </select>
-    </div>
-    {% endfor %}    
-  </div>
-  {% endif %}
-  
-  {% if group_permissions_options %}
-  <h4>Group permissions</h4>
-  <div class="row">
-    {% for perm in perms %}
-    <div class="col w-25">
-      <label for="{{perm}}_group_perm_select-{{uid}}">{{perm|title}}</label>
-      <select class="form-select" multiple aria-label="{{perm}}_group_permissions" id="{{perm}}_group_perm_select" name="group_{{perm}}">
-	{% for g, p in group_permissions_options %}
-	<option value="{{g.id}}" {% if perm in p %}selected{% endif %}>{{g}}</option>
-	{% endfor %}
-      </select>
-    </div>
-    {% endfor %}
-  </div>
-  {% endif %}
-
-{% comment %}
-</div>
-{% endcomment %}
-
-{% endif %}
-
-{% endif %}
-
-{% if form and buttons and not top_buttons %}
-
-{% if form.is_multipart %}
-<progress id='progress' value='0' max='100'></progress>
-{% endif %}
+{% if buttons and not top_buttons %}
 
 <div class="btn-group" role="group" aria-label="actions">
   {% for button in buttons %}
@@ -154,9 +97,57 @@
 </div>
 {% endif %}
 
-{% if form %}
+{% if form or buttons %}
 </form>
 {% endif %}
+
+{% if can_manage %}
+<button type="button" class="btn btn-primary cdh-modal" data-bs-toggle="modal" data-bs-target="#permissions_modal-{{uid}}">
+  Manage permissions
+</button>
+<div class="modal fade" id="permissions_modal-{{uid}}" tabindex="-1" role="dialog" aria-labelledby="permissions_modal_label-{{uid}}" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="permissions_modal_label-{{uid}}">Modal title</h5>
+        <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <form method="post" action="{% url 'permissions' app_label model_name pk %}" id="permissions-form-{{uid}}"
+	    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+	    >	      
+	<div class="modal-body">
+	  <div
+	    hx-trigger="intersect"
+	    hx-swap="outerHTML"
+	    hx-select="#top_level_content > *"
+	    hx-get="{% url 'permissions' app_label model_name pk %}"
+	    >
+	  </div>
+	</div>
+	<div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button
+	    type="button"
+	    class="btn btn-primary"
+	    data-bs-dismiss="modal"
+	    hx-post="{% url 'permissions' app_label model_name pk %}"
+	    hx-swap="none"
+	    hx-vals='{"uid" : "{{uid}}_{{index}}"}'
+	    hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+	    id="permissions-button-{{uid}}">
+	    Save permissions	  
+	  </button>
+	</div>
+      </form>      
+    </div>
+  </div>
+</div>
+
+{% endif %}
+
+</div>
 
 </div>
 

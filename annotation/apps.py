@@ -5,3 +5,5 @@ class AnnotationConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'annotation'
     
+    def ready(self):
+        from . import signals

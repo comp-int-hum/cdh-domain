@@ -3969,12 +3969,16 @@ select:not([multiple]) {
 .is-active > .accordion-title::before {
     content: "–";
 }
+.cdh-accordion-collapse {
+    /*background-color: #ee0000;*/
+    border: 3px solid #000000;    
+}
 .accordion-content {
     display: none;
     padding: 1rem;
     border: 1px solid #e5e2e0;
     border-bottom: 0;
-    background-color: #fefefe;
+    background-color: #fefefe;    
     color: #0a0a0a;
 }
 :last-child > .accordion-content:last-child {

@@ -7,15 +7,18 @@ from django.views.generic.edit import FormView, CreateView, UpdateView
 from django.http import HttpResponse, HttpResponseRedirect
 from cdh.views import TabsView, AccordionView, VegaView, BaseView, SelectView
 from django.forms import FileField, modelform_factory, CharField
-from .models import PrimarySource
+from django.forms.widgets import HiddenInput
+from .models import PrimarySource, Query
 from .vega import PrimarySourceSchemaGraph
-from .forms import PrimarySourceEditorForm
+from .forms import PrimarySourceEditorForm, QueryForm
 
 
 def create_primarysource(self, request, *argv, **argd):
     form = self.get_form_class()(request.POST, request.FILES)
     if form.is_valid():
         obj = form.save(commit=False)
+        obj.created_by = request.user
+        print(request.FILES)
         obj.save(
             schema_fd=request.FILES.get("schema_file", None),
             data_fd=request.FILES.get("data_file", None),
@@ -43,7 +46,7 @@ urlpatterns = [
                 "create_url": "primary_sources:primarysource_create"
             }
         ),
-        name="index"
+        name="primarysource_list"
     ),
     path(
         'primarysource/create/',
@@ -91,6 +94,8 @@ urlpatterns = [
         'primarysource/<int:pk>/',
         TabsView.as_view(
             model=PrimarySource,
+            can_update=True,
+            can_delete=True,
             tabs=[
                 {
                     "title" : "Graphical",
@@ -99,6 +104,10 @@ urlpatterns = [
                 {
                     "title" : "Editor",
                     "url" : "primary_sources:primarysource_editor"
+                },
+                {
+                    "title" : "Queries",
+                    "url" : "primary_sources:query_list"
                 }
             ]
         ),
@@ -122,5 +131,42 @@ urlpatterns = [
         name="primarysource_graphical"
     ),
     
-    # add Query interface here
+    # Query-related, always nested underneath a particular primary source
+    path(
+        "primarysource/query/create/",
+        BaseView.as_view(
+            model=Query,
+            #form_class=QueryForm,
+            can_create=True,
+            fields=["name", "sparql", "primary_source"],
+            widgets = {
+                "primary_source" : HiddenInput
+            }
+        ),
+        name="query_create"
+    ),
+    path(
+        "query/<int:pk>/",
+        BaseView.as_view(
+            model=Query,
+            can_update=True,
+            can_delete=True,
+            fields=["name", "sparql"],
+        ),
+        name="query_detail"
+    ),
+    path(
+        "primarysource/<int:pk>/query/list/",
+        AccordionView.as_view(
+            model=PrimarySource,
+            preamble="",
+            children={
+                "model" : Query,
+                "relation" : "primary_source",
+                "url" : "primary_sources:query_detail",
+                "create_url" : "primary_sources:query_create",                
+            },
+        ),
+        name="query_list"
+    )
 ]

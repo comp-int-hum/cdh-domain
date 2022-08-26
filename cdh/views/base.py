@@ -1,44 +1,44 @@
-from django.forms import ModelForm
 import logging
-from django.http import HttpResponse
+from django.forms import ModelForm
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404
 from django.views.generic.detail import SingleObjectMixin, SingleObjectTemplateResponseMixin
 from django.views.generic.edit import CreateView, DeleteView, UpdateView, DeletionMixin, ModelFormMixin, ProcessFormView
 from guardian.shortcuts import get_perms, get_objects_for_user, assign_perm, get_users_with_perms, get_groups_with_perms, remove_perm
-from .mixins import PermissionsMixin, NestedMixin
+from cdh.models import User
+from rest_framework.views import APIView
+from .mixins import ButtonsMixin, NestedMixin
 
-class BaseView(PermissionsMixin, NestedMixin, DeletionMixin, UpdateView):
-    """
-    BaseView is intended as the "ground-level" view for a single CDH-related object
-    in a CRUD form.  The as_view() method accepts the following arguments:
 
-      preamble
-      model
-      form_class
-      fields
-      extra_fields
-      initial
-      can_create
-      can_delete
-      can_update
-      create_lambda: returns tuple of (object, response)
-      delete_lambda
-      update_lambda
+logger = logging.getLogger()
 
-    Depending on the (successful) action, its responses will set the following headers:
 
-      "{app}_{model}_{pk}_deleted":
-      "{app}_{model}_":
-      "updated{app}{model}{pk}":
+class BaseView(ButtonsMixin, NestedMixin, DeletionMixin, UpdateView):
+    # """
+    # BaseView is intended as the "ground-level" view for a single CDH-related object
+    # in a CRUD form.  The as_view() method accepts the following arguments:
 
-    Furthermore, if the created object is asynchronous and in a "processing" state, the
-    returned content will be a self-updating HTMX placeholder.  If in an "error" state,
-    a non-updating placeholder will be returned.  In both cases, any message on the
-    object will be displayed as well.
+    #   preamble
+    #   model
+    #   form_class
+    #   fields
+    #   extra_fields
+    #   initial
+    #   can_create
+    #   can_delete
+    #   can_update
+    #   create_lambda: returns tuple of (object, response)
+    #   delete_lambda
+    #   update_lambda
 
-    Created objects will default to allowing public view, with all additional permissions
-    assigned to the creator.
-    """
+    # If the created object is asynchronous and in a "processing" state, the
+    # returned content will be a self-updating HTMX placeholder.  If in an "error" state,
+    # a non-updating placeholder will be returned.  In both cases, any message on the
+    # object will be displayed as well.
+
+    # Created objects will default to allowing public view, with all additional permissions
+    # assigned to the creator.
+    # """
     template_name = "cdh/simple_interface.html"
     extra_fields = {}
     form_class = None
@@ -52,35 +52,46 @@ class BaseView(PermissionsMixin, NestedMixin, DeletionMixin, UpdateView):
     can_delete = False
     can_update = False
     can_create = False
+    can_manage = True
     object = None
     fields = []
     preamble = None
     widgets = None
     
-    def __init__(self, *argv, **argd):        
+    def __init__(self, *argv, **argd):
+        #if "name" not in argd.get("fields", []):
+        #    argd["fields"] = ["name"] + argd.get("fields", [])
         super(BaseView, self).__init__(*argv, **argd)
 
+    def dispatch(self, request, *argv, **argd):
+        self.request = request
+        self.object = self.get_object()
+        return super(BaseView, self).dispatch(request, *argv, **argd)
+        
     def get_object(self):
         try:
             return super(BaseView, self).get_object()
         except:
             return None
         
-    def get_context_data(self, request, *argv, **argd):
-        self.object = self.get_object()
-        self.request = request
-        self.from_htmx = request.headers.get("Hx-Request", False) and True
+    def get_context_data(self, *argv, **argd):
+        #self.object = self.get_object()
+        self.from_htmx = self.request.headers.get("Hx-Request", False) and True
         
         self.user_perms = get_users_with_perms(self.object, with_group_users=False, attach_perms=True) if self.object else {}
         self.group_perms = get_groups_with_perms(self.object, attach_perms=True) if self.object else {}
-        self.obj_perms = [x.split("_")[0] for x in (get_perms(request.user, self.object) if self.object else [])]
-        self.model_perms = [x.split("_")[0] for x in (get_perms(request.user, self.model) if self.model else [])]
+        self.obj_perms = [x.split("_")[0] for x in (get_perms(self.request.user, self.object) if self.object else [])]
+        self.model_perms = [x.split("_")[0] for x in (get_perms(self.request.user, self.model) if self.model else [])]
         
         ctx = super(BaseView, self).get_context_data(*argv, **argd)
-        ctx["from_htmx"] = request.headers.get("Hx-Request", False) and True
-        ctx["request"] = request
+        ctx["from_htmx"] = self.request.headers.get("Hx-Request", False) and True
+        ctx["request"] = self.request
         ctx["object"] = self.object
         ctx["preamble"] = self.preamble
+        ctx["app_label"] = self.object._meta.app_label if self.object else None
+        ctx["model_name"] = self.object._meta.model_name if self.object else None
+        ctx["pk"] = self.object.id if self.object else None
+        ctx["can_manage"] = self.object and "change" in self.obj_perms and self.can_manage
         return ctx
         
     def form_valid(self, form):
@@ -111,15 +122,11 @@ class BaseView(PermissionsMixin, NestedMixin, DeletionMixin, UpdateView):
             return AugmentedForm
     
     def get(self, request, *argv, **argd):
-        ctx = self.get_context_data(request)
+        self.request = request
+        ctx = self.get_context_data()
         self.initial["created_by"] = request.user
-        print(
-            "GET to {} with HX-Trigger={} and HX-Request={}".format(
-                request.path_info,
-                request.headers.get("HX-Trigger"),
-                request.headers.get("HX-Request")
-            )
-        )
+        if "relation" in request.GET:
+            self.initial[request.GET["relation"]] = int(request.GET["pk"])
         ctx["form"] = self.get_form_class()(
             instance=self.object,
             initial=None if self.object else self.initial
@@ -133,7 +140,8 @@ class BaseView(PermissionsMixin, NestedMixin, DeletionMixin, UpdateView):
             return self.render_to_response(ctx)
 
     def create(self, request, *argv, **argd):
-        ctx = self.get_context_data(request)
+        self.request = request
+        ctx = self.get_context_data()
         if self.create_lambda:
             form, obj = self.create_lambda(self, request, *argv, **argd)
         else:
@@ -141,14 +149,18 @@ class BaseView(PermissionsMixin, NestedMixin, DeletionMixin, UpdateView):
             obj = None
         ctx["form"] = self.get_form_class()(initial=self.initial) if form.is_valid() else form
         if obj == None and form.is_valid():
-            obj = form.save()
+            obj = form.save(commit=False)
         resp = self.render_to_response(ctx)
         if obj != None:
-            assign_perm("{}.view_{}".format(self.model._meta.app_label, self.model._meta.model_name), request.user, obj)
-            assign_perm("{}.delete_{}".format(self.model._meta.app_label, self.model._meta.model_name), request.user, obj)
-            assign_perm("{}.change_{}".format(self.model._meta.app_label, self.model._meta.model_name), request.user, obj)
             obj.created_by = request.user
             obj.save()
+            for user in User.objects.all():
+                assign_perm("{}.view_{}".format(self.model._meta.app_label, self.model._meta.model_name), user, obj)
+            assign_perm("{}.delete_{}".format(self.model._meta.app_label, self.model._meta.model_name), request.user, obj)
+            assign_perm("{}.change_{}".format(self.model._meta.app_label, self.model._meta.model_name), request.user, obj)
+            
+            #obj.created_by = request.user
+            #obj.save()
             resp.headers["HX-Trigger"] = """{{"cdhEvent" : {{"event_type" : "create", "app_label" : "{app_label}", "model_name" : "{model_name}", "pk" : "{pk}"}}}}""".format(
                 app_label=self.model._meta.app_label,
                 model_name=self.model._meta.model_name,
@@ -165,16 +177,8 @@ class BaseView(PermissionsMixin, NestedMixin, DeletionMixin, UpdateView):
                 return render(form) ###
             if form.has_changed():
                 self.object = form.save()
-            resp = HttpResponse()
-        for ptype in ["user", "group"]:
-            for option, _ in ctx.get("{}_permissions_options".format(ptype), []):
-                for perm in ctx.get("perms", []):
-                    if str(option.id) in request.POST.getlist("{}_{}".format(ptype, perm), []):
-                        to_add = "{}_{}".format(perm, option._meta.model_name)
-                        assign_perm("{}_{}".format(perm, self.model._meta.model_name), option, self.object)
-                    else:
-                        to_remove = "{}_{}".format(perm, option._meta.model_name)
-                        remove_perm("{}_{}".format(perm, self.model._meta.model_name), option, self.object)
+
+            resp = HttpResponseRedirect(request.path_info)
 
         resp.headers["HX-Trigger"] = """{{"cdhEvent" : {{"event_type" : "update", "app_label" : "{app_label}", "model_name" : "{model_name}", "pk" : "{pk}"}}}}""".format(
             app_label=self.model._meta.app_label,
@@ -184,7 +188,8 @@ class BaseView(PermissionsMixin, NestedMixin, DeletionMixin, UpdateView):
         return resp
         
     def post(self, request, *argv, **argd):
-        ctx = self.get_context_data(request)
+        self.request = request
+        ctx = self.get_context_data()
         if self.object:
             return self.update(request, ctx, *argv, **argd)
         else:
@@ -193,19 +198,11 @@ class BaseView(PermissionsMixin, NestedMixin, DeletionMixin, UpdateView):
     def delete(self, request, *argv, **argd):
         from_htmx = request.headers.get("Hx-Request", False) and True
         self.request = request
-        print(
-            "DELETE to {} with HX-Trigger={} and HX-Request={}".format(
-                request.path_info,
-                request.headers.get("HX-Trigger"),
-                request.headers.get("HX-Request")
-            )
-        )
         obj = self.get_object()
         pk = obj.id
         if self.delete_lambda:
             resp = self.delete_lambda(request, *argv, **argd)
-        else:
-            
+        else:            
             obj.delete()
             resp = HttpResponse()
         resp.headers["HX-Trigger"] = """{{"cdhEvent" : {{"event_type" : "delete", "app_label" : "{app_label}", "model_name" : "{model_name}", "pk" : "{pk}"}}}}""".format(

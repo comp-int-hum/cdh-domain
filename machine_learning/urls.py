@@ -20,13 +20,14 @@ from django.urls import re_path, include
 from django.views.generic.list import ListView
 from django.http import HttpResponse, HttpResponseRedirect
 from django.forms import CharField
-from . import views
 from cdh.views import BaseView, AccordionView
 from cdh.widgets import MonacoEditorWidget
 from .models import MachineLearningModel
 from .widgets import MachineLearningModelInteractionWidget
+
 from django.shortcuts import render
 import requests
+from .tasks import load_model
 # ** potential use for ?customized=true
 #
 
@@ -46,13 +47,16 @@ import requests
 # TORCHSERVE_METRICS_ADDRESS
 # TBD: get /metrics?...
 
-#def create_machinelearningmodel(self, request, *argv, **argd):
-#    form = self.get_form_class()(request.POST, request.FILES)
-#    form.is_valid()
-#    obj = form.save()
-#    print(request.POST, obj)
-#    #train_model.delay(obj.id)
-#    return (obj, HttpResponseRedirect(obj.get_absolute_url()))
+
+def create_machinelearningmodel(self, request, *argv, **argd):
+    form = self.get_form_class()(request.POST, request.FILES)
+    form.is_valid()
+    obj = form.save()
+    task = load_model.delay(
+        obj.id,
+    )
+    return (form, obj)
+
 
 def get_output(self, request, *argv, **argd):
     user_text = request.POST["interaction"]
@@ -60,14 +64,12 @@ def get_output(self, request, *argv, **argd):
         model_text = ""
     else:
         obj = self.get_object()
-        print(user_text)
-        print("{}/v2/models/{}/infer".format(settings.TORCHSERVE_INFERENCE_ADDRESS, obj.name))
         model_text = requests.post(
             "{}/v2/models/{}/infer".format(settings.TORCHSERVE_INFERENCE_ADDRESS, obj.name),
             files={"data" : user_text}
         ).content
     return HttpResponse(model_text.decode("utf-8"))
-    #return render(request, "cdh/simple_interface.html", {"content" : model_text.decode("utf-8")})
+
 
 app_name = "machine_learning"
 
@@ -95,6 +97,7 @@ urlpatterns = [
             model=MachineLearningModel,
             can_create=True,
             fields=["name", "url"],
+            create_lambda=create_machinelearningmodel,
             initial={
                 "url" : "http://localhost:8080/static/cdh/bloom350.mar",
                 "name" : "bloom"
@@ -107,8 +110,10 @@ urlpatterns = [
         BaseView.as_view(
             model=MachineLearningModel,
             update_lambda=get_output,
+            can_delete=True,
+            can_update=True,
             extra_fields={
-                "interaction" : (CharField, {"widget" : MachineLearningModelInteractionWidget})
+                "interaction" : (CharField, {"widget" : MonacoEditorWidget(language="torchserve_text")}),
             }
         ),
         name="machinelearningmodel_detail"

@@ -2,10 +2,11 @@
 
 <div field_name="{{widget.name}}"
      value_id="{{widget.value_id}}"
-     {% if widget.output_id %}
+     {% if widget.attrs.endpoint %}
      output_id="{{widget.output_id}}"
+     endpoint_url="{% url widget.attrs.endpoint %}"
      {% endif %}
-     class="{% if widget.class %}{{widget.class}}{% else %}cdh-editor{% endif %}"
+     class="{% if widget.class %}{{widget.class}}{% else %}cdh-editor{% endif %} container-fluid"
      {% include "django/forms/widgets/attrs.html" %}
      style="width: 800px; height: 200px; border: 1px solid grey">
 </div>
@@ -13,8 +14,8 @@
 {{ widget.list_value|json_script:widget.value_id }}
 <input type="hidden"
        name="{{widget.name}}"
-       {% if widget.output_id %}
-       hx-post=""
+       {% if False and widget.attrs.endpoint %}
+       hx-post="{% url widget.attrs.endpoint %}"
        hx-trigger="space delay:2500ms"
        hx-target="#{{widget.output_id}}"
        hx-swap="innerHTML"
@@ -24,7 +25,7 @@
        value="{{widget.value}}"/>
 {{ widget.hidden.attrs }}
 
-{% if widget.output_id %}
+{% if widget.attrs.endpoint %}
 <div id="{{widget.output_id}}" class="container">
 </div>
 {% endif %}

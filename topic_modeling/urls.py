@@ -29,7 +29,6 @@ def create_topicmodel(self, request, *argv, **argd):
     else:
         obj = None
     return (form, obj)
-#return (obj, HttpResponse()) #Redirect(obj.get_absolute_url()))
 
 
 def create_collection(self, request, *argv, **argd):
@@ -55,8 +54,6 @@ def create_collection(self, request, *argv, **argd):
         obj = None
     return (form, obj)
 
-#return (obj, HttpResponse()) #Redirect(obj.get_absolute_url()))
-
 
 def create_labeledcollection(self, request, *argv, **argd):
     form = self.get_form_class()(request.POST, request.FILES)
@@ -68,7 +65,6 @@ def create_labeledcollection(self, request, *argv, **argd):
     else:
         obj = None
     return (form, obj)
-    #return (obj, HttpResponse()) #Redirect(obj.get_absolute_url()))
 
 
 app_name = "topic_modeling"

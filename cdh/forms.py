@@ -11,6 +11,7 @@ from guardian.shortcuts import get_perms
 from django.template.response import SimpleTemplateResponse, TemplateResponse
 from django.template import Engine, Template, RequestContext
 from django.forms import FileField, ModelForm
+from guardian.shortcuts import assign_perm, get_anonymous_user
 
 
 if settings.USE_LDAP:
@@ -100,6 +101,9 @@ class UserForm(RegistrationFormUniqueEmail):
                 )
 
         user = super().save(*argv, **argd)
+        assign_perm("cdh.view_user", get_anonymous_user(), user)
+        assign_perm("cdh.change_user", user, user)
+        
         # this second save seems necessary to prevent populating the password field in SQL?
         user.save()
         return user

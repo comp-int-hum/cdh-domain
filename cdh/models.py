@@ -1,50 +1,15 @@
+from django.contrib.auth import get_user_model
 from . import settings
 from django.urls import path, reverse
 from django.contrib.gis.db import models
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.base_user import BaseUserManager
-from markdownfield.models import MarkdownField, RenderedMarkdownField
-from markdownfield.validators import VALIDATOR_STANDARD
+from .fields import MarkdownField
+
+
 if settings.USE_LDAP:
     import ldap
     from ldap import modlist
-    
-
-class MetadataMixin(models.Model):
-    metadata = models.JSONField(
-        default=dict
-    )
-    class Meta:
-        abstract = True
-
-
-class CdhModel(MetadataMixin, models.Model):
-    name = models.CharField(max_length=2000, null=False)
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
-    created_at = models.DateTimeField(auto_now_add=True)
-    modified_at = models.DateTimeField(auto_now=True)
-    class Meta:
-        abstract = True
-
-
-class AsyncMixin(models.Model):
-    PROCESSING = "PR"
-    ERROR = "ER"
-    COMPLETE = "CO"
-    STATE_CHOICES = [
-        (PROCESSING, "processing"),
-        (ERROR, "error"),
-        (COMPLETE, "complete")
-    ]
-    state = models.CharField(
-        max_length=2,
-        choices=STATE_CHOICES,
-        default=PROCESSING
-    )
-    message = models.TextField(null=True)
-    task_id = models.CharField(max_length=200, null=True)
-    class Meta:
-        abstract = True
 
 
 class User(AbstractUser):
@@ -73,31 +38,67 @@ class User(AbstractUser):
             super().set_password(raw_password)
     def __str__(self):
         return "{} {}".format(self.first_name, self.last_name) if self.last_name else self.username
+    
+
+class MetadataMixin(models.Model):
+    metadata = models.JSONField(
+        default=dict
+    )
+    class Meta:
+        abstract = True
+
+
+class CdhModel(MetadataMixin, models.Model):
+    name = models.CharField(max_length=2000, null=False)
+    created_by = models.ForeignKey(get_user_model(), null=True, on_delete=models.SET_NULL)
+    created_at = models.DateTimeField(auto_now_add=True)
+    modified_at = models.DateTimeField(auto_now=True)
+    def __str__(self):
+        return self.name    
+    class Meta:
+        abstract = True
+
+
+class AsyncMixin(models.Model):
+    PROCESSING = "PR"
+    ERROR = "ER"
+    COMPLETE = "CO"
+    STATE_CHOICES = [
+        (PROCESSING, "processing"),
+        (ERROR, "error"),
+        (COMPLETE, "complete")
+    ]
+    state = models.CharField(
+        max_length=2,
+        choices=STATE_CHOICES,
+        default=PROCESSING
+    )
+    message = models.TextField(null=True)
+    task_id = models.CharField(max_length=200, null=True)
+    class Meta:
+        abstract = True
 
     
-class Slide(models.Model):
+class Slide(CdhModel):
     class Meta:
         verbose_name_plural = "Slides"
-    title = models.CharField(max_length=200, null=False, unique=True)
-    article = MarkdownField(blank=True, rendered_field="rendered_article", validator=VALIDATOR_STANDARD)
-    rendered_article = RenderedMarkdownField(null=True)
+    article = MarkdownField(blank=True, null=True)
     image = models.ImageField(blank=True)
-    active = models.BooleanField(default=False)
-    def __str__(self):
-        return self.title
     def get_absolute_url(self):
         return reverse("cdh:slide", args=(self.id,))
 
 
-class SlidePage(models.Model):
-    name = models.CharField(max_length=200, null=False, unique=True)
-    content = MarkdownField(blank=True, rendered_field="rendered_content", validator=VALIDATOR_STANDARD)
-    rendered_content = RenderedMarkdownField(null=True)
-    additional_link_prompt = models.CharField(max_length=2000, default="", null=True, blank=True)
-    slides = models.ManyToManyField(Slide)
-    def __str__(self):
-        return self.name
+# class SlidePage(CdhModel):
+#     content = MarkdownField(blank=True)
+#     additional_link_prompt = models.CharField(max_length=2000, default="", null=True, blank=True)
+#     slides = models.ManyToManyField(Slide)
+#     def get_absolute_url(self):
+#         return reverse("cdh:slidepage", args=(self.id,))
+
+
+class ResearchArtifact(CdhModel):
+    authors = models.ManyToManyField(User, related_name="authored_by")
+    author_freetext = models.TextField()
+    description = MarkdownField(blank=True, null=True)
     def get_absolute_url(self):
-        return reverse("cdh:slide", args=(self.id,))
-
-
+        return reverse("cdh:researchartifact", args=(self.id,))    
