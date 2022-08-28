@@ -125,7 +125,7 @@
 
 	  <li class="nav-item dropdown">
 	    <a class="nav-link dropdown-toggle {% if top_level in apps or top_level == 'manage' %}active{% endif %}" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-	      Interaction{% if top_level in apps or top_level == 'manage' %}[{{ name }}]{% endif %}
+	      Interaction{% if top_level in apps or top_level == 'api' %}[{{ interaction_name }}]{% endif %}
 	    </a>
 	    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
 	      {% for k, v in apps.items %}
@@ -135,6 +135,13 @@
 		</a>
 	      </li>
 	      {% endfor %}
+	      {% if request.user.is_authenticated %}
+	      <li>
+		<a class="dropdown-item {% if top_level == 'api' %}active{% endif %}" href="/api/">
+		  API
+		</a>
+	      </li>
+	      {% endif %}
 	      {% comment %}
 	      {% if is_admin %}
 	      <li>

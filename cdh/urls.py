@@ -1,5 +1,9 @@
+from django.apps import apps
 from django.contrib.auth import get_user_model
+from django.contrib.auth.views import PasswordResetView
 from django.contrib import admin
+from django.views.decorators.csrf import csrf_protect
+from django.utils.decorators import method_decorator
 from django.urls import path
 from django.conf import settings
 from django.urls import re_path, include
@@ -7,36 +11,45 @@ from django.views.generic.list import ListView
 from django.views.generic import TemplateView
 from django_registration.backends.activation.views import RegistrationView
 from django.conf.urls.static import static
-from rest_framework import routers, serializers, viewsets
 from rest_framework.schemas import get_schema_view
+from rest_framework.routers import DefaultRouter
+from rest_framework.viewsets import ModelViewSet
+from rest_framework.serializers import ModelSerializer
 from .settings import MEDIA_URL, MEDIA_ROOT, STATIC_URL, STATIC_ROOT, BUILTIN_PAGES, APPS, DEBUG
-from .forms import UserForm
+from .forms import UserForm, PublicUserForm
 from .views import BaseView, PermissionsView, AccordionView, TabsView, SlidesView, MarkdownView, SparqlView, MaterialView
-from .viewsets import BaseViewSet
-from .models import Slide, ResearchArtifact
+from .models import Slide, ResearchArtifact, CdhModel
 
 
 User = get_user_model()
 
 
+class CustomPasswordResetView(PasswordResetView):
+    @method_decorator(csrf_protect)
+    def dispatch(self, *argv, **argd):
+        if self.extra_email_context == None:
+            self.extra_email_context = {"request" : argv[0]}
+        else:
+            self.extra_email_context["request"] = argv[0]
+        return super(CustomPasswordResetView, self).dispatch(*argv, **argd)
 
 
-class SlideSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Slide
-        fields = "__all__"
-
-class SlideViewSet(viewsets.ModelViewSet):
-    queryset = Slide.objects.all()
-    serializer_class = SlideSerializer
-
-router = routers.DefaultRouter()
-router.register("slide", SlideViewSet)
+router = DefaultRouter()
+for k, v in apps.app_configs.items():
+    for model in v.get_models():
+        if issubclass(model, CdhModel):
+            class GeneratedSerializer(ModelSerializer):
+                class Meta:
+                    model = model
+                    fields = "__all__"
+            class GeneratedViewSet(ModelViewSet):
+                queryset = model.objects.all()
+                serializer_class = GeneratedSerializer
+            router.register(model._meta.model_name, GeneratedViewSet)
+    
 
 app_name = "cdh"
 urlpatterns = [
-
-    
     # landing page/slides
     path(
         '',
@@ -127,6 +140,7 @@ urlpatterns = [
             model=User,
             can_manage=False,
             can_update=True,
+            form_class=PublicUserForm,
             fields=["first_name", "last_name", "title", "homepage", "photo", "description"]
         ),
         name="user_detail"
@@ -200,8 +214,7 @@ urlpatterns = [
         ),
         name='django_registration_register',
     ),
-    path('accounts/', include('django_registration.backends.activation.urls')),
-    path('accounts/', include('django.contrib.auth.urls')),
+
 
 
     # research page
@@ -253,15 +266,17 @@ urlpatterns = [
         MaterialView.as_view(),
         name="material"
     ),
-    #path("api/", include(router.urls)),
-    #path('api-auth/', include('rest_framework.urls')),
+    path("api/", include(router.urls)),
     path('openapi/', get_schema_view(
         title="CDH",
         description="API for various aspects of the JHU Center for Digital Humanities",
         version="1.0.0"
     ), name='openapi-schema'),
-    
+    path('accounts/password_reset/', CustomPasswordResetView.as_view()),    
+    path('accounts/', include('django_registration.backends.activation.urls')),
+    path('accounts/', include('django.contrib.auth.urls')),
 ] + [path("{}/".format(k), include("{}.urls".format(k))) for k, v in APPS.items()]
+
 
 
 if DEBUG:

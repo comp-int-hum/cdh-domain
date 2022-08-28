@@ -2,39 +2,6 @@
 
 This repository contains the code base constituting the framework that handles requests to the cdh.jhu.edu domain.
 
-```mermaid
-flowchart LR
-  subgraph Wyatt
-  end
-  subgraph Spenser
-  end
-  subgraph Larkin
-  end
-  subgraph Bishop
-    gpu(GPU)
-    celery(Celery)
-    ldap(LDAP)
-    torchserve(TorchServe)
-  end
-  subgraph Ludwig
-    celerydev(Celery)
-    torchservedev(TorchServe)
-    postgres(PostGRES)
-    jena(Jena)
-  end
-  subgraph Marcel
-    raid(RAID10)
-    nfs(NFS)
-  end
-  subgraph CDH
-    django(Django)
-  end
-  classDef servers fill:#f96;
-  classDef workstations fill:#096;
-  class Bishop,Ludwig,Marcel,CDH servers;
-  class Larkin,Wyatt,Spenser workstations;
-```
-
 ## Quick start development environment
 
 These instructions assume you have opened a command-line session, e.g. using `Terminal` on OSX, `xterm` on Linux, or `PowerShell` on Windows.  In the latter case, the commands may differ slightly from what's described here, but not in substantial ways.  It might be worthwhile to enable the [Windows Linux Subsystem](https://docs.microsoft.com/en-us/windows/wsl/install) so you can work in `Windows Terminal`, where they should be identical.
@@ -46,7 +13,7 @@ The necessary software (beyond what will be installed directly from the command-
 $ npm -h
 ```
 
-Note that the initial `$` sign indicates it is being run on the command-line.
+Note that the initial `$` sign indicates it is being run on the command-line (your "prompt" will look different, e.g. with information about your computer, username, etc).
 
 ### Getting the framework and installing libraries
 
@@ -82,8 +49,6 @@ $ cp cdh/settings.py.example cdh/settings.py
 At this point, you can start using the standard Django management script.  First, initialize the database with the commands:
 
 ```
-$ python manage.py makemigrations cdh primary_sources turkle_wrapper topic_modeling image_clustering
-$ python manage.py makemigrations
 $ python manage.py migrate
 $ python manage.py createcachetable
 ```
@@ -107,11 +72,11 @@ Finally, the following command will start the framework:
 $ python manage.py runserver localhost:8080
 ```
 
-At this point you should be able to browse to http://localhost:8080 and interact with the site.  Note that it will only be accessible on the local computer and this is by design: it is running without encryption, and using infrastructure that won't scale well and doesn't implement some important functionality.  The `populate` script should have created three users (`user1`, `user2`, etc), each with password `user`.  You should also be able to add new users from the login page: note that, rather than sending a link via email, in development mode the framework will print out information on the command-line where the `runserver` command is running.  You'll probably want to log in as one of these users while developing, so you can see and test your changes/new app/etc.
+At this point you should be able to browse to http://localhost:8080 and interact with the site.  Note that it will only be accessible on the local computer and this is by design: it is running without encryption, and using infrastructure that won't scale well and doesn't implement some important functionality.  The `populate` script created three users (`user1`, `user2`, `user3`), with different roles (admin, faculty, student), each with password `user`.  Though not too useful in the development scenario, you should also be able to add new users and change passwords from the login page: note that, rather than sending a link via email, in development mode the framework will print out information on the command-line where the `runserver` command is running.  You can log in/out as the users while developing, so you can see and test your changes/new app/etc.
 
 ### Editing code, templates, and settings
 
-The best reference for how everything is organize is probably the [Django documentation](https://docs.djangoproject.com/en/4.0/): the framework is a fairly complex example, but generally tries to follow best practices in those documents.  When you edit code or templates, in most cases the changes will be immediately reflected in the site.  The exceptions to this are when changes are made to the database schema (i.e. when models are added, removed, or modified in the various `models.py` files).  When such changes *have* been made, the local server should be stopped with `<ctrl>-c`, and commands like the following will compute the database changes, apply them, and restart the server:
+The best reference for how everything is organize is probably the [Django documentation](https://docs.djangoproject.com/en/4.1/): the CDH framework is a fairly complex example, but generally tries to follow best practices in those documents.  When you edit code or templates, in most cases the changes will be immediately reflected in the site.  The exceptions to this are when changes are made to the database schema (i.e. when models are added, removed, or modified in the various `models.py` files).  When such changes *have* been made, the local server should be stopped with `<ctrl>-c`, and commands like the following will compute the database changes, apply them, and restart the server:
 
 ```
 python manage.py makemigrations
@@ -125,14 +90,22 @@ The file `cdh/settings.py` is the canonical configuration source for the entire 
 
 An important common goal is to add a new app (i.e. another item on the top navigation bar of the site for logged in users).  It's actually a simple process to get the basics in place:
 
-1. Choose your app's simple (lower-case, underscores-instead-of-spaces) and human-readable names (say, `my_great_app` and `My great app`, it's good for them to be obviously related)
-2. Copy the dummy project directory to your app's simple name: `cp -prf dummy_app my_great_app`
-3. Edit `my_great_app/apps.py` and change `DummyAppConfig` and `dummy_app` to `MyGreatAppConfig` and `my_great_app`, respectively
-4. Finally, at the top of `cdh/settings.py`, add `"my_great_app" : "My great app",` to the `CDH_APPS` dictionary
+1. Choose a *simple* (lower-case, underscores-instead-of-spaces) name and initialize the app directory.  If you choose *my_great_thing*, you would run: `python manage.py startapp my_great_thing`
+2. In the new directory, create a new file called `urls.py` (e.g. `my_great_thing/urls.py`) and add the following content:
+   ```
+   from django.urls import path
+   from django.views.generic import TemplateView
 
-Now, when you browse to http://localhost:8080 as a logged-in user, you should see your app.  It has no content yet, but now you can focus on developing in the `my_great_app/` directory, which is a straightforward minimal Django app and can be treated as such.
+	app_name = "my_great_thing"
+	urlpatterns = [
+		path("", TemplateView.as_view(template_name="cdh/simple_interface.html", extra_context={"content" : "Nothing here!"}))
+	]
+	```
+3. Finally, choose a more human-friendly title and add an entry to the `APPS` dictionary at the top of `cdh/settings.py`, e.g. `"my_great_app" : "My great app",`.
 
-## More complex development
+Now, when you browse to http://localhost:8080 as a logged-in user, you should see your app under the `Interaction` menu.  It has no content yet, but now you can focus on developing in the `my_great_thing/` directory, which is a straightforward minimal Django app where you can build whatever you'd like, looking to existing apps for examples and code to import.
+
+## Developing complex apps
 
 At the top of the example settings file there are several options set to `False`:
 
@@ -144,16 +117,16 @@ USE_JENA = False
 USE_TORCHSERVE = False
 ```
 
-These correspond to servers that the framework does, or will, rely on for key functionality that the development setup "fakes" by default.  LDAP provides user and group management/authentication for the entire CDH infrastructure, Celery provides asynchronous execution of long-running computations like training and applying models, PostGRES is a production SQL database, and Jena provides storage and manipulation of RDF datasets.  In each case, it is possible to start a suitable server on your computer, change the option to `True`, and edit the connection information further down in the settings file to connect it to your development site.  Most importantly, you will need to install either [Docker](https://docs.docker.com/get-docker/) or [Podman](https://podman.io/getting-started/installation).  Then, start five containers (replace `podman run` with `docker run`, depending on which you installed*):
+These correspond to servers that the framework does, or will, rely on for key functionality that the development setup "fakes" by default.  LDAP provides user and group management/authentication for the entire CDH infrastructure, Celery provides asynchronous execution of long-running computations like training and applying models, PostGRES is a production SQL database, and Jena provides storage and manipulation of RDF datasets.  In each case, it is possible to start a suitable server on your computer, change the option to `True`, and edit the connection information further down in the settings file to connect it to your development site.  Most importantly, you will need to install either [Docker](https://docs.docker.com/get-docker/) or [Podman](https://podman.io/getting-started/installation).
+
+For local development it makes sense to ignore PostGRES and LDAP: they require additional setup and rarely impact development.  So, in `cdh/settings.py` just change `USE_CELERY`, `USE_JENA`, and `USE_TORCHSERVE` to `True`, and run the following commands to start needed containers (replace `podman run` with `docker run`, depending on which you installed):
 
 ```
 podman run -d --rm --name jena -p 3030:3030 -e ADMIN_PASSWORD=CHANGE_ME docker.io/stain/jena-fuseki
 podman run -d --rm --name redis -p 6379:6379 docker.io/library/redis
-podman run -d --rm --name postgres -p 5432:5432 -e POSTGRES_PASSWORD=CHANGE_ME -e POSTGRES_USER=cdh docker.io/library/postgres
-podman run -d --rm --name ldap -p 1389:1389 --env LDAP_ADMIN_USERNAME=admin --env LDAP_ADMIN_PASSWORD=CHANGE_ME --env LDAP_ROOT=dc=cdh,dc=jhu,dc=edu docker.io/bitnami/openldap:latest
 ```
 
-LDAP, Jena, and PostGRES should just work immediately, but Celery has an additional requirement: since it will be running processes defined *in the Django code itself*, it needs to have access to the code as it changes during development.  Basically, we want Celery to behave the same way as the development web server, which reloads automatically when we edit the code base.  In a different terminal (or tab), change into the `cdh-domain` directory, and run:
+Celery and Torchserve each need to have an additional command running alongside Django.  Since Celery will be running functions defined *in the Django code itself*, it needs to have access to that code as it changes during development.  Basically, we want Celery to behave the same way as the development web server, which reloads automatically when we edit the code base.  In a different terminal (or tab), change into the `cdh-domain` directory, and run:
 
 ```
 $ source local/bin/activate
@@ -167,11 +140,44 @@ $ source local/bin/activate
 $ torchserve --model-store cdh_site_data/models/ --foreground --no-config-snapshots --ts-config utils/torchserve.properties
 ```
 
-At this point, with the four containers running (can be verified with `podman ps`), and Celery and TorchServe running in separate terminals, the entire site should work near-identically to production, and you can run the `populate` command mentioned earlier to create dummy users and content.  The only functionality lacking is sending email, which is how we let new users sign up, reset their passwords, etc: this is because there is no way around needing a real email account to send from.  Under this configuration, emails that would normally be sent will instead be printed to the console where the Django server is running.
+At this point, with the two containers running (can be verified with `podman ps`), and Celery and TorchServe running in separate terminals, the entire site should work near-identically to production.  The only functionality lacking is sending email, which is how we let new users sign up, reset their passwords, etc: this is because there is no way around needing a real email account to send from.  Under this configuration, emails that would normally be sent will instead be printed to the console where the Django server is running.
 
 ## Production deployment (not relevant for development)
 
-A goal of this repository is that the process described above for development only needs a handful of changes to deploy to the actual CDH site (test or production).  This section documents how to deploy the site and associated servers, but probably isn't important for developing the site content or functionality.
+A goal of this repository is that the process described above for development only needs a handful of changes to deploy to the actual CDH site (test or production).  This section documents how to deploy the site and associated servers, but probably isn't important for developing the site content or functionality.  The CDH infrastructure looks something like this:
+
+```mermaid
+flowchart LR
+  subgraph Wyatt
+  end
+  subgraph Spenser
+  end
+  subgraph Larkin
+  end
+  subgraph Bishop
+    gpu(GPU)
+    celery(Celery)
+    ldap(LDAP)
+    torchserve(TorchServe)
+  end
+  subgraph Ludwig
+    celerydev(Celery)
+    torchservedev(TorchServe)
+    postgres(PostGRES)
+    jena(Jena)
+  end
+  subgraph Marcel
+    raid(RAID10)
+    nfs(NFS)
+  end
+  subgraph CDH
+    django(Django)
+  end
+  classDef servers fill:#f96;
+  classDef workstations fill:#096;
+  class Bishop,Ludwig,Marcel,CDH servers;
+  class Larkin,Wyatt,Spenser workstations;
+```
 
 ### Preamble
 

@@ -14,14 +14,14 @@ BUILTIN_PAGES = {
     "about" : "About",
     "people" : "People",
     "research" : "Research",
-    "calendar" : "Calendar",
+    #"calendar" : "Calendar",
     "wiki" : "Wiki",
 }
 APPS = {
     "primary_sources" : "Primary sources",
+    "machine_learning" : "Machine learning",
+    "annotation" : "Annotation",
     "topic_modeling" : "Topic modeling",
-    "turkle_wrapper" : "Annotation",
-    "broker" : "Deep learning",
 }
 
 # CDH NOTE: For development you can follow the README instructions for running the needed backends locally,
@@ -67,7 +67,8 @@ STATIC_ROOT = DATA_DIR / "static"
 MEDIA_ROOT = DATA_DIR / "media"
 TEMP_ROOT = DATA_DIR / "temp"
 MATERIALS_ROOT = DATA_DIR / "materials"
-for path in [DATA_DIR, STATIC_ROOT, MEDIA_ROOT, TEMP_ROOT, MATERIALS_ROOT]:
+MODELS_ROOT = DATA_DIR / "models"
+for path in [DATA_DIR, STATIC_ROOT, MEDIA_ROOT, TEMP_ROOT, MATERIALS_ROOT, MODELS_ROOT]:
     if not path.exists():
         path.mkdir()
 
@@ -114,8 +115,9 @@ proto = "http" if HOSTNAME == "localhost" else "https"
 PROTO = proto
 CSRF_TRUSTED_ORIGINS = ["{}://{}".format(proto, HOSTNAME)]
 USE_X_FORWARDED_HOST = HOSTNAME != "localhost"
-DEBUG = False
+DEBUG = True
 INTERNAL_IPS = [
+    "127.0.0.1"
 ]
 
 # Application definition
@@ -138,8 +140,8 @@ INSTALLED_APPS = [
 ] + (
     ['django.contrib.staticfiles'] if HOSTNAME == "localhost" else []
 ) + [
-    'rest_framework',
     'cdh',    
+    'rest_framework',
     'django_extensions',
     'guardian',
     'django_registration',

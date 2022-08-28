@@ -12,5 +12,5 @@ def app_directory(request):
         "builtin_pages" : settings.BUILTIN_PAGES,
         "messages" : [],
         "top_level" : top_level,
-        "name" : settings.APPS.get(top_level, "Manage")
+        "interaction_name" : settings.APPS.get(top_level, "API")
     }

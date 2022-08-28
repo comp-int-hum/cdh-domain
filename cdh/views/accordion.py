@@ -87,13 +87,15 @@ class AccordionView(NestedMixin, TemplateResponseMixin, ContextMixin, View):
                     request.user,
                     klass=qs,
                     perms=["view_{}".format(self.children["model"]._meta.model_name)],
-                )
-                anon_viewable = get_objects_for_user(
+                ).all()
+                user_ids = [u.id for u in user_viewable]
+                anon_viewable = [u for u in get_objects_for_user(
                     get_anonymous_user(),
                     klass=qs,
                     perms=["view_{}".format(self.children["model"]._meta.model_name)],
-                )
-                viewable = user_viewable.union(anon_viewable)
+                ) if u.id not in user_ids]
+                # the following requires postgres?
+                #viewable = user_viewable + anon_viewable #user_viewable.union(anon_viewable)
                 retval = [
                     {
                         "title" : str(obj),
@@ -101,8 +103,17 @@ class AccordionView(NestedMixin, TemplateResponseMixin, ContextMixin, View):
                         "url" : self.children["url"],
                         "model_name" : obj._meta.model_name,
                         "app_label" : obj._meta.app_label
-                    } for obj in viewable
+                    } for obj in anon_viewable
+                ] + [
+                    {
+                        "title" : str(obj),
+                        "instance" : obj,
+                        "url" : self.children["url"],
+                        "model_name" : obj._meta.model_name,
+                        "app_label" : obj._meta.app_label
+                    } for obj in user_viewable
                 ]
+                    
                 if request.user.id != None and "create_url" in self.children:
                     if "relation" in self.children:
                         retval.append(

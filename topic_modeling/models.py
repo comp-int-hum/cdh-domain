@@ -45,6 +45,7 @@ class Lexicon(CdhModel):
 class Collection(AsyncMixin, CdhModel):
     has_spatiality = models.BooleanField(default=False)
     has_temporality = models.BooleanField(default=False)
+    query = models.ForeignKey(Query, on_delete=models.CASCADE, help_text="A primary source query", null=True)
 
     def get_absolute_url(self):
         return reverse("topic_modeling:collection_detail", args=(self.id,))
@@ -86,7 +87,6 @@ class TopicModel(AsyncMixin, CdhModel):
     token_pattern_in = models.CharField(max_length=200, default=r"(\S+)")
     token_pattern_out = models.CharField(max_length=200, default=r"\1")
     collection = models.ForeignKey(Collection, on_delete=models.CASCADE, help_text="The document collection to train on")
-    query = models.ForeignKey(Query, on_delete=models.CASCADE, help_text="A primary source query that picks documents to train on")
     serialized = models.BinaryField(null=True)
     maximum_documents = models.IntegerField(default=30000, help_text="Randomly choose this number of documents to train on (if the collection is larger)")
 

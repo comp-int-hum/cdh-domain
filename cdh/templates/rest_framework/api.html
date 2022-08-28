@@ -39,6 +39,7 @@
           <div class="region"  aria-label="{% trans "request form" %}">
           {% block request_forms %}
 
+	  {% comment %}
           {% if 'GET' in allowed_methods %}
             <form id="get-form" class="pull-right">
               <fieldset>
@@ -62,13 +63,16 @@
                 {% endif %}
               </fieldset>
             </form>
-          {% endif %}
+            {% endif %}
+	    {% endcomment %}
 
+	    {% comment %}
           {% if options_form %}
             <form class="button-form" action="{{ request.get_full_path }}" data-method="OPTIONS">
               <button class="btn btn-primary js-tooltip" title="Make an OPTIONS request on the {{ name }} resource">OPTIONS</button>
             </form>
-          {% endif %}
+            {% endif %}
+	    {% endcomment %}
 
           {% if delete_form %}
             <button class="btn btn-danger button-form js-tooltip" title="Make a DELETE request on the {{ name }} resource" data-toggle="modal" data-target="#deleteModal">DELETE</button>
@@ -117,7 +121,7 @@
 
             <div class="content-main" role="main"  aria-label="{% trans "main content" %}">
               <div class="page-header">
-                <h1>{{ name }}</h1>
+                <h1>API</h1>
               </div>
               <div style="float:left">
                 {% block description %}

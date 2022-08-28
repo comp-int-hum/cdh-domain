@@ -104,8 +104,19 @@ class BaseView(ButtonsMixin, NestedMixin, DeletionMixin, UpdateView):
         return resp
     
     def get_form_class(self):
+        editable = "change" in self.obj_perms
         if self.form_class:
-            return self.form_class
+            class AugmentedForm(self.form_class):
+                def __init__(sself, *argv, **argd):
+                    super(AugmentedForm, sself).__init__(*argv, **argd)
+                    if not editable:
+                        for name, field in sself.fields.items():
+                            field.widget.attrs['readonly'] = 'true'
+                class Meta:
+                    model = self.model
+                    fields = self.fields
+                    widgets = self.widgets if self.widgets else None
+            return AugmentedForm
         else:
             class AugmentedForm(ModelForm):
                 def __init__(sself, *argv, **argd):
@@ -115,6 +126,9 @@ class BaseView(ButtonsMixin, NestedMixin, DeletionMixin, UpdateView):
                             sself.fields[k] = v[0](**v[1])
                         else:
                             sself.fields[k] = v()
+                    if not editable:
+                        for name, field in sself.fields.items():
+                            field.widget.attrs['readonly'] = 'true'
                 class Meta:
                     model = self.model
                     fields = self.fields

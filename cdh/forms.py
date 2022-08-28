@@ -12,7 +12,10 @@ from django.template.response import SimpleTemplateResponse, TemplateResponse
 from django.template import Engine, Template, RequestContext
 from django.forms import FileField, ModelForm
 from guardian.shortcuts import assign_perm, get_anonymous_user
+from django.template.engine import Engine
+from django.template import Context
 
+template_engine = Engine.get_default()
 
 if settings.USE_LDAP:
     import ldap
@@ -21,7 +24,22 @@ if settings.USE_LDAP:
 
 class CdhFileField(FileField):
     pass    
-    
+
+
+class PublicUserForm(forms.ModelForm):
+    def __init__(self, *argv, **argd):
+        return super(PublicUserForm, self).__init__(*argv, **argd)
+    def __str__(self):
+        for name, field in self.fields.items():            
+            if field.widget.attrs.get("readonly", "false") != "true":
+                return super(PublicUserForm, self).__str__()        
+        content = template_engine.get_template("cdh/snippets/person.html").render(
+            Context(
+                {name : getattr(self.instance, name) for name in ["first_name", "last_name", "photo", "description", "title", "homepage"]}
+            )
+        )
+        return mark_safe(content)
+
 
 class AdminUserForm(forms.ModelForm):
     class Meta:
@@ -101,6 +119,7 @@ class UserForm(RegistrationFormUniqueEmail):
                 )
 
         user = super().save(*argv, **argd)
+        user.save()
         assign_perm("cdh.view_user", get_anonymous_user(), user)
         assign_perm("cdh.change_user", user, user)
         

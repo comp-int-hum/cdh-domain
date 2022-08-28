@@ -3971,7 +3971,7 @@ select:not([multiple]) {
 }
 .cdh-accordion-collapse {
     /*background-color: #ee0000;*/
-    border: 3px solid #000000;    
+    /*border: 3px solid #000000;    */
 }
 .accordion-content {
     display: none;

@@ -1,20 +1,21 @@
+import logging
 from django.core.management.base import BaseCommand, CommandError
+from guardian.shortcuts import assign_perm, get_anonymous_user
 from cdh import settings
-from cdh.models import User, Slide, SlidePage
+from cdh.models import User, Slide
 from django.contrib.sites.models import Site
 from django.contrib.auth.models import Group
 from schedule.models.events import Event, Calendar
-from primary_sources.models import Dataset
-#from matchmaking.models import Opportunity, Tag
-import logging
+from primary_sources.models import PrimarySource
+
 
 if settings.USE_LDAP:
     import ldap
     from ldap import modlist
 
+
 logging.basicConfig(level=logging.INFO)
 
-#from sparql_browser.models import Dataset
 
 groups = [
     {
@@ -70,77 +71,63 @@ spec = {
     Slide : [
         {
             "name" : "First example news item",
-            "slug" : "First example news item description",
-            "description" : "## Something A",
-            "active" : True,
+            "article" : "## Something A",
         },
         {
             "name" : "Second example news item",
-            "slug" : "Second example news item description",
-            "description" : "## Something B",
-            "active" : True,                        
+            "article" : "## Something B",
         },
         {
             "name" : "Third example news item",
-            "slug" : "Third example news item description",
-            "description" : "## Something C",
-            "active" : True,                        
+            "article" : "## Something C",
         },
         {
             "name" : "Fourth example news item",
-            "slug" : "Fourth example news item description",
-            "description" : "## Something D",
-            "active" : True,                        
+            "article" : "## Something D",
         },
         {
             "name" : "Fifth example news item",
-            "slug" : "Fifth example news item description",
-            "description" : "## Something E",
-            "active" : True,                        
+            "article" : "## Something E",
         },
         {
             "name" : "First research area",
-            "slug" : "First research area description",
-            "description" : "# Test 1",
-            "active" : True,
+            "article" : "# Test 1",
         },
         {
             "name" : "Second research area",
-            "slug" : "Second research area description",
-            "description" : "# Test 2",
-            "active" : True,                        
+            "article" : "# Test 2",
         },
     ],
-    Calendar : [
-        {
-            "name" : "CDH",
-            "slug" : "CDH",
-        },
-    ],
-    SlidePage : [
-        {
-            "name" : "index",
-            "additional_link_prompt" : "See more news from the CDH",
-            ("slides", Slide) : [
-                {"name" : "First example news item"},
-                {"name" : "Second example news item"},
-                {"name" : "Third example news item"},
-                {"name" : "Fifth example news item"},
+    #Calendar : [
+    #    {
+    #        "name" : "CDH",
+    #        "slug" : "CDH",
+    #    },
+    #],
+#     SlidePage : [
+#         {
+#             "name" : "index",
+#             "additional_link_prompt" : "See more news from the CDH",
+#             ("slides", Slide) : [
+#                 {"name" : "First example news item"},
+#                 {"name" : "Second example news item"},
+#                 {"name" : "Third example news item"},
+#                 {"name" : "Fifth example news item"},
                 
-            ]
-        },
-        {
-            "name" : "research",
-            "content" : """
-### Markdown content can go here
-""",
-            ("slides", Slide) : [
-                {"name" : "First research area"},
-                {"name" : "Second research area"}
-            ],
-        },
+#             ]
+#         },
+#         {
+#             "name" : "research",
+#             "content" : """
+# ### Markdown content can go here
+# """,
+#             ("slides", Slide) : [
+#                 {"name" : "First research area"},
+#                 {"name" : "Second research area"}
+#             ],
+#         },
 
-    ],
+#     ],
     # Organization : [
     #     {
     #         "name" : "Alexander Grass Humanities Institute",
@@ -158,11 +145,11 @@ spec = {
     # Research : [
     #     {
     #         "name" : "An unsupervised neural framework for multi-modal literary and historical scholarship",
-    #         "description" : "",
+    #         "article" : "",
     #     },
     #     {
     #         "name" : "Data-driven AI models for Document Analysis in Medicine, Social Sciences, and the Humanities",
-    #         "description" : "",
+    #         "article" : "",
     #     },
     # ],
     Event : [
@@ -170,11 +157,11 @@ spec = {
     # Software : [
     #     {
     #         "name" : "StarCoder",
-    #         "description" : "A machine learning framework that provides an API between neural architectures and structured, semantically-annotated data.",
+    #         "article" : "A machine learning framework that provides an API between neural architectures and structured, semantically-annotated data.",
     #         "link" : "https://github.com/starcoder/starcoder-python",
     #     },
     # ],
-    Dataset : [
+    PrimarySource : [
     ]
 }
 
@@ -301,13 +288,16 @@ class Command(BaseCommand):
             u.is_superuser = user.get("superuser", False)
             u.is_staff = user.get("superuser", False)
             u.save()
-
+            assign_perm("cdh.view_user", get_anonymous_user(), u)
+            assign_perm("cdh.change_user", u, u)
+        user = User.objects.get(is_superuser=True)
         for et, es in spec.items():
             logging.info("Adding objects of type '%s'", et)
             if options["wipe"]:
                 logging.info("First removing existing objects...")
                 et.objects.all().delete()
             for e in es:
+                e["created_by"] = user
                 obj = et.objects.create(**{k : v[0].objects.filter(**{v[1] : v[2]})[0] if isinstance(v, tuple) else v for k, v in e.items() if k != "password" and not isinstance(v, (set, list))})
                 for (field, otype), filters in [x for x in e.items() if isinstance(x[1], list)]:
                     for filt in filters:
