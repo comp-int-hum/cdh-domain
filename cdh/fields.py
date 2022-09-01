@@ -1,4 +1,4 @@
-from django.contrib.gis.db import models
+from django.db import models
 from django import forms
 from django.core.exceptions import ValidationError
 from django.urls import reverse

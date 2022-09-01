@@ -1,5 +1,5 @@
 from django.core.exceptions import ValidationError, NON_FIELD_ERRORS
-from django.contrib.gis.db import models
+from django.db import models
 from django.urls import reverse
 from django.core.validators import MinValueValidator
 from cdh.models import CdhModel, User, AsyncMixin, MetadataMixin

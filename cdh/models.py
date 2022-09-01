@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from . import settings
 from django.urls import path, reverse
-from django.contrib.gis.db import models
+from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.base_user import BaseUserManager
 from .fields import MarkdownField
