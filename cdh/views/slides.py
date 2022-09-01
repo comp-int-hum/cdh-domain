@@ -10,10 +10,10 @@ from django.views.generic.detail import SingleObjectMixin, SingleObjectTemplateR
 from django.views.generic.edit import CreateView, DeleteView, UpdateView, DeletionMixin, ModelFormMixin, ProcessFormView
 from guardian.shortcuts import get_perms, get_objects_for_user, get_anonymous_user
 from cdh.models import Slide
-from .base import BaseView
+from .atomic import AtomicView
 
 
-class SlidesView(BaseView):
+class SlidesView(AtomicView):
 
     def __init__(self, *argv, **argd):
         super(SlidesView, self).__init__(*argv, **argd)

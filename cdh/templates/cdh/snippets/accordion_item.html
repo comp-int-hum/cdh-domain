@@ -1,43 +1,480 @@
+{% load sekizai_tags static %}
+
 <div
   class="accordion-item cdh-accordion-item"
   {% if create_url %}create="true"{% endif %}  
   id="accordionitem-{{uid}}_{{index}}"
   model_name="{{model_name}}"
   app_label="{{app_label}}"
-  pk="{{pk}}">
+  pk="{{pk}}"
+  >
   <div
-    class="accordion-header cdh-accordion-header"
-    id="header-{{uid}}_{{index}}">
-    <button
-      class="accordion-button cdh-accordion-button collapsed"
-      data-bs-toggle="collapse"
-      type="button"
-      aria-expanded="false"
-      data-bs-target="#content-{{uid}}_{{index}}"
-      id="button-{{uid}}_{{index}}"
-      aria-controls="content-{{uid}}_{{index}}">
-      {% if create_url %}
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-circle" viewBox="0 0 16 16">
-	<path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
-	<path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
-      </svg>
-      {% else %}
-      {{title}}
+    class="accordion-header cdh-accordion-header w-100"
+    id="header-{{uid}}_{{index}}"
+    >
+
+    <!-- start modals -->
+    <div
+      class="btn-group w-100"
+      role="group"
+      aria-label="actions"
+      >
+
+
+      <button
+	class="accordion-button cdh-accordion-button collapsed w-75"
+	data-bs-toggle="collapse"
+	type="button"
+	aria-expanded="false"
+	data-bs-target="#content-{{uid}}_{{index}}"
+	id="button-{{uid}}_{{index}}"
+	aria-controls="content-{{uid}}_{{index}}"
+	>
+	{{title}}     
+      </button>
+      
+      {% if can_create %}
+      {% include "cdh/snippets/modal.html" with mode="creation" uid=uid index=index url=create_url csrf_token=csrf_token %}
       {% endif %}
-    </button>
+
+      {% if can_manage_permission %}
+      {% include "cdh/snippets/modal.html" with mode="permissions" uid=uid index=index csrf_token=csrf_token app_label=app_label model_name=model_name pk=pk %}
+      {% endif %}
+
+      {% if can_delete %}
+      {% include "cdh/snippets/modal.html" with mode="deletion" uid=uid index=index url=detail_url csrf_token=csrf_token app_label=app_label model_name=model_name pk=pk %}
+      {% endif %}
+
+      {% if can_edit %}
+      {% include "cdh/snippets/modal.html" with mode="editing" uid=uid index=index url=edit_url csrf_token=csrf_token app_label=app_label model_name=model_name pk=pk %}
+      {% endif %}
+      
+    {% comment %}
+    <div
+      class="modal fade"
+      id="creation_modal-{{uid}}_{{index}}"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="creation_modal_label-{{uid}}_{{index}}"
+      aria-hidden="true"
+      >
+      <div
+	class="modal-dialog modal-xl"
+	role="document"
+	>
+	<div
+	  class="modal-content"
+	  >
+	  <div
+	    class="modal-header"
+	    >
+            <h5
+	      class="modal-title"
+	      id="creation_modal_label-{{uid}}_{{index}}"
+	      >
+	      Creating a new {{model_name}}
+	    </h5>
+            <button
+	      type="button"
+	      class="close"
+	      data-bs-dismiss="modal"
+	      aria-label="Close"
+	      >
+              <span
+		aria-hidden="true"
+		>
+		&times;
+	      </span>
+            </button>
+	  </div>
+	  <form
+	    method="post"
+	    action="{% url create_url %}"
+	    id="creation_form_{{uid}}_{{index}}"
+	    hx-headers='{"X-CSRFToken": "{{ csrf_token }}", "uid" : "{{uid}}_{{index}}"}'
+	    >
+	    <div
+	      class="modal-body"
+	      >
+	      <div
+		hx-trigger="intersect"
+		hx-swap="outerHTML"
+		hx-select="#top_level_content > *"
+		hx-get="{% url create_url %}"
+		hx-headers='{"uid" : "{{uid}}_{{index}}", "role" : "modal"}'
+		>
+	      </div>
+	    </div>
+	    <div
+	      class="modal-footer"
+	      >
+              <button
+		type="button"
+		class="btn btn-secondary"
+		data-bs-dismiss="modal"
+		>
+		Never mind
+	      </button>
+              <button
+		type="button"
+		class="btn btn-primary"
+		data-bs-dismiss="modal"
+		hx-post="{% url create_url %}"
+		hx-swap="none"
+		hx-headers='{"X-CSRFToken": "{{ csrf_token }}", "uid" : "{{uid}}_{{index}}"}'
+		id="creation-button-{{uid}}_{{index}}"
+		>
+		Create
+	      </button>
+	    </div>
+	  </form>      
+	</div>
+      </div>
+    </div>
+    {% endif %}
+    {% endcomment %}
+
+    {% comment %}
+    {% if can_manage_permissions %}
+    <div
+      class="modal fade"
+      id="permissions_modal-{{uid}}_{{index}}"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="permissions_modal_label-{{uid}}_{{index}}"
+      aria-hidden="true"
+      >
+      <div
+	class="modal-dialog"
+	role="document"
+	>
+	<div
+	  class="modal-content"
+	  >
+	  <div
+	    class="modal-header"
+	    >
+            <h5
+	      class="modal-title"
+	      id="permissions_modal_label-{{uid}}_{{index}}"
+	      >
+	      Setting permissions on {{model_name}} {{object}}
+	    </h5>
+            <button
+	      type="button"
+	      class="close"
+	      data-bs-dismiss="modal"
+	      aria-label="Close"
+	      >
+              <span
+		aria-hidden="true"
+		>
+		&times;
+	      </span>
+            </button>
+	  </div>
+	  <form
+	    method="post"
+	    action="{% url 'permissions' app_label model_name pk %}"
+	    id="permissions-form-{{uid}}_{{index}}"
+	    hx-headers='{"X-CSRFToken": "{{ csrf_token }}", "uid" : "{{uid}}_{{index}}"}'
+	    >	      
+	    <div
+	      class="modal-body"
+	      >
+	      <div
+		hx-trigger="intersect"
+		hx-swap="outerHTML"
+		hx-select="#top_level_content > *"
+		hx-get="{% url 'permissions' app_label model_name pk %}"
+		hx-headers='{"uid" : "{{uid}}_{{index}}", "role" : "modal"}'
+		>
+	      </div>
+	    </div>
+	    <div
+	      class="modal-footer"
+	      >
+              <button
+		type="button"
+		class="btn btn-secondary"
+		data-bs-dismiss="modal"
+		>
+		Never mind
+	      </button>
+	      <button
+		type="button"
+		class="btn btn-primary"
+		data-bs-dismiss="modal"
+		hx-post="{% url 'permissions' app_label model_name pk %}"
+		hx-swap="none"
+		hx-headers='{"X-CSRFToken": "{{ csrf_token }}", "uid" : "{{uid}}_{{index}}"}'
+		id="permissions-button-{{uid}}_{{index}}"
+		>
+		Save permissions	  
+	      </button>
+	    </div>
+	  </form>      
+	</div>
+      </div>
+    </div>
+    {% endif %}
+    {% endcomment %}
+
+    {% comment %}
+    {% if can_delete %}
+    <div
+      class="modal fade"
+      id="deletion_modal-{{uid}}_{{index}}"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="deletion_modal_label-{{uid}}_{{index}}"
+      aria-hidden="true"
+      >
+      <div
+	class="modal-dialog"
+	role="document"
+	>
+	<div
+	  class="modal-content"
+	  >
+	  <div
+	    class="modal-header"
+	    >
+            <h5
+	      class="modal-title"
+	      id="deletion_modal_label-{{uid}}_{{index}}"
+	      >
+	      Are you sure you want to delete {{model_name}} {{object}} (and anything derived from it)?
+	    </h5>
+            <button
+	      type="button"
+	      class="close"
+	      data-bs-dismiss="modal"
+	      aria-label="Close"
+	      >
+              <span
+		aria-hidden="true"
+		>
+		&times;
+	      </span>
+            </button>
+	  </div>
+	  <div class="modal-footer">
+	    <div class="btn-group">
+            <button
+	      type="button"
+	      class="btn btn-primary"
+	      data-bs-dismiss="modal"
+	      hx-delete="{% url url object.id %}"
+	      hx-swap="none"
+	      hx-headers='{"X-CSRFToken": "{{ csrf_token }}", "uid" : "{{uid}}_{{index}}"}'
+	      id="deletion-button-{{uid}}_{{index}}"
+	      >
+	      Confirm
+	    </button>
+	    <button
+	      type="button"
+	      class="btn btn-secondary"
+	      data-bs-dismiss="modal"
+	      >
+	      Never mind
+	    </button>
+	    </div>
+	  </div>
+	</div>
+      </div>
+    </div>
+    {% endif %}
+    {% endcomment %}
+    
+    {% comment %}
+    {% if can_edit %}
+    <div
+      class="modal fade"
+      id="edit_modal-{{uid}}_{{index}}"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="edit_modal_label-{{uid}}_{{index}}"
+      aria-hidden="true"
+      >
+      <div
+	class="modal-dialog modal-xl"
+	role="document"
+	>
+	<div
+	  class="modal-content"
+	  >
+	  <div
+	    class="modal-header"
+	    >
+            <h5
+	      class="modal-title"
+	      id="edit_modal_label-{{uid}}_{{index}}"
+	      >
+	      Editing {{model_name}} {{object}}
+	    </h5>
+            <button
+	      type="button"
+	      class="close"
+	      data-bs-dismiss="modal"
+	      aria-label="Close"
+	      >
+              <span
+		aria-hidden="true"
+		>
+		&times;
+	      </span>
+            </button>
+	  </div>
+
+	  <!--<form
+	    method="post"
+	    action="{% url edit_url object.id %}" id="edit_form_{{uid}}_{{index}}"
+	    hx-swap="innerHTML"
+	    hx-select="#top_level_content > div > form > *"
+	    hx-headers='{"X-CSRFToken": "{{ csrf_token }}", "uid" : "{{uid}}_{{index}}"}'
+	    hx-target="#form_wrapper_{{uid}}_{{index}}"
+	    hx-post="{% url edit_url object.id %}"
+	    id="edit_form_{{uid}}_{{index}}"
+	    >-->
+
+	    <div
+	      class="modal-body"
+	      >
+	      <div
+		hx-trigger="intersect"
+		hx-swap="innerHTML"		
+		id="form_wrapper_{{uid}}_{{index}}"
+		hx-select="#top_level_content > *"
+		hx-get="{% url edit_url object.id %}"
+		hx-headers='{"uid" : "{{uid}}_{{index}}", "role" : "modal"}'
+		>
+	      </div>
+	    </div>
+	    <div
+	      class="modal-footer"
+	      >
+              <button
+		type="button"
+		class="btn btn-secondary"
+		data-bs-dismiss="modal"
+		>
+		Done editing
+	      </button>
+              <button
+		type="button"
+		class="btn btn-primary"
+		form="edit_form_{{uid}}_{{index}}"
+		id="permissions-button-{{uid}}_{{index}}"
+		>
+		Saver
+	      </button>
+	    </div>
+	  <!--</form>-->
+	</div>
+      </div>
+    </div>
+    {% endif %}
+    {% endcomment %}
+
+    {% comment %}
+    <!-- end modals -->
+      {% if can_edit %}
+      <button
+	class="btn cdh-modal"
+	type="button"
+	data-bs-toggle="modal"
+	data-bs-target="#edit_modal-{{uid}}_{{index}}"
+	>
+	<svg
+	  xmlns="http://www.w3.org/2000/svg"
+	  width="16"
+	  height="16"
+	  fill="currentColor"
+	  class="bi bi-pencil-square"
+	  viewBox="0 0 16 16"
+	  >
+	  <path
+	    d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"
+	    />
+	  <path
+	    fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"
+	    />
+	</svg>
+      </button>
+      {% endif %}
+      {% if can_manage_permissions %}
+      <button
+	class="btn cdh-modal"
+	type="button"
+	data-bs-toggle="modal"
+	data-bs-target="#permissions_modal-{{uid}}_{{index}}"
+	>
+	<svg
+	  xmlns="http://www.w3.org/2000/svg"
+	  width="16"
+	  height="16"
+	  fill="currentColor"
+	  class="bi bi-lock"
+	  viewBox="0 0 16 16"
+	  >
+	  <path
+	    d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2zM5 8h6a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"
+	    />
+	</svg>
+      </button>
+      {% endif %}
+      {% comment %}
+      {% if can_delete %}
+
+      <button
+	class="btn cdh-modal"
+	type="button"
+	data-bs-toggle="modal"
+	data-bs-target="#deletion_modal-{{uid}}_{{index}}"
+	>
+	<svg
+	  xmlns="http://www.w3.org/2000/svg"
+	  width="16"
+	  height="16"
+	  fill="currentColor"
+	  class="bi bi-trash3"
+	  viewBox="0 0 16 16"
+	  >
+	  <path
+	    d="M6.5 1h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5ZM11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3A1.5 1.5 0 0 0 5 1.5v1H2.506a.58.58 0 0 0-.01 0H1.5a.5.5 0 0 0 0 1h.538l.853 10.66A2 2 0 0 0 4.885 16h6.23a2 2 0 0 0 1.994-1.84l.853-10.66h.538a.5.5 0 0 0 0-1h-.995a.59.59 0 0 0-.01 0H11Zm1.958 1-.846 10.58a1 1 0 0 1-.997.92h-6.23a1 1 0 0 1-.997-.92L3.042 3.5h9.916Zm-7.487 1a.5.5 0 0 1 .528.47l.5 8.5a.5.5 0 0 1-.998.06L5 5.03a.5.5 0 0 1 .47-.53Zm5.058 0a.5.5 0 0 1 .47.53l-.5 8.5a.5.5 0 1 1-.998-.06l.5-8.5a.5.5 0 0 1 .528-.47ZM8 4.5a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5Z"
+	    />
+	</svg>
+      </button>
+
+      {% endif %}
+      {% endcomment %}
+
+
+
+    </div>
   </div>
   <div
     class="accordion-collapse cdh-accordion-collapse collapse w-95 ps-4"
     id="content-{{uid}}_{{index}}"
     aria-labelledby="header-{{uid}}_{{index}}"
-    {% if index == 0 %}hx-get="{% url create_url %}" hx-trigger="refreshForm" hx-select="#top_level_content > *" hx-swap="innerHTML"{% endif %}
-    data-bs-parent="#accordion-{{uid}}">
-    <div id="accordionitemcontent-{{uid}}_{{index}}"
-	 hx-get="{% if create_url %}{% url create_url %}{% elif url and instance %}{% url url instance.id %}{% elif url %}{% url url %}{% else %}{{content}}{% endif %}"
-	 hx-vals='{"uid" : "{{uid}}_{{index}}" {% if relation %}, "relation" : "{{relation}}", "pk" : "{{pk}}"{% endif %} }'
-	 hx-trigger="show.bs.collapse from:#content-{{uid}}_{{index}}, intersect"
-	 hx-select="#top_level_content > *"
-	 hx-swap="outerHTML">
+    data-bs-parent="#accordion-{{uid}}_{{index}}"
+    >
+    <div
+      id="accordionitemcontent-{{uid}}_{{index}}"
+      hx-get="{% if url and object %}{% url url object.id %}{% elif url %}{% url url %}{% else %}{{content}}{% endif %}"
+      hx-vals='{"uid" : "{{uid}}_{{index}}" {% if relation %}, "relation" : "{{relation}}", "pk" : "{{pk}}"{% endif %} }'
+      hx-headers='{"uid" : "{{uid}}_{{index}}", "style" : "accordion"}'
+      hx-trigger="show.bs.collapse from:#content-{{uid}}_{{index}}, intersect"
+      hx-select="#top_level_content > *"
+      hx-swap="outerHTML"
+      >
     </div>
+
+    
+    
+
+
+
   </div>
 </div>

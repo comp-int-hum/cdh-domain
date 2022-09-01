@@ -9,13 +9,13 @@ from django.utils.safestring import mark_safe
 from django.template.engine import Engine
 from django.template import Context
 from .mixins import NestedMixin, ButtonsMixin
-from .base import BaseView
+from .atomic import AtomicView
 
 
 template_engine = Engine.get_default()
 
 
-class TabsView(BaseView): #PermissionsMixin, NestedMixin, SingleObjectMixin, View):
+class TabsView(AtomicView): #PermissionsMixin, NestedMixin, SingleObjectMixin, View):
     """
     A TabView renders its "tabs" as siblings in a Bootstrap tab component.
     The as_view() method accepts the following arguments:

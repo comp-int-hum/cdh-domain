@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 from django.urls import reverse
 from .widgets import MonacoEditorWidget
 import markdown
+from wiki.editors.base import BaseEditor
 from rdflib.plugins.sparql import prepareQuery
 import json
 
@@ -103,3 +104,26 @@ class XmlFormField(forms.CharField):
             raise ValidationError("Invalid XML")
         return value
     
+
+class WikiMarkdownField(BaseEditor):
+    editor_id = "markitup"
+
+    def get_admin_widget(self, instance=None):
+        return MonacoEditorWidget(language="markdown", endpoint="markdown")
+
+    def get_widget(self, instance=None):
+        return MonacoEditorWidget(language="markdown", endpoint="markdown")
+
+    class AdminMedia:
+        css = {
+        }
+        js = (
+        )
+
+    class Media:
+        css = {
+            "all": (
+            )
+        }
+        js = (
+        )

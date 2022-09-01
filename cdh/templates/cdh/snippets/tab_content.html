@@ -2,6 +2,6 @@
      id="content-{{uid}}_{{index}}"
      role="tabpanel"
      aria-labelledby="control-{{uid}}_{{index}}">
-  <div id="tabcontent-{{uid}}_{{index}}" hx-get="{% if instance %}{% url url instance.id %}{% elif url %}{% url url %}{% else %}{{content}}{% endif %}" hx-trigger="intersect" hx-select="#top_level_content > *" hx-swap="outerHTML" hx-vals='{"uid" : "{{uid}}_{{index}}"}'>
+  <div id="tabcontent-{{uid}}_{{index}}" hx-get="{% if instance %}{% url url instance.id %}{% elif url %}{% url url %}{% else %}{{content}}{% endif %}" hx-trigger="intersect" hx-select="#top_level_content > *" hx-swap="outerHTML" hx-headers='{"uid" : "{{uid}}_{{index}}", "style" : "tab"}'>
   </div>
 </div>

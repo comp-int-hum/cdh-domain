@@ -20,7 +20,7 @@ from django.urls import re_path, include
 from django.views.generic.list import ListView
 from django.http import HttpResponse, HttpResponseRedirect
 from django.forms import CharField
-from cdh.views import BaseView, AccordionView
+from cdh.views import AtomicView, AccordionView
 from cdh.widgets import MonacoEditorWidget
 from .models import MachineLearningModel
 from .widgets import MachineLearningModelInteractionWidget
@@ -78,19 +78,36 @@ urlpatterns = [
         '',
         AccordionView.as_view(
             preamble="""
+            """,
+            children=[
+                {
+                    "title" : "Machine learning models",
+                    "model" : MachineLearningModel,
+                    "url" : "machine_learning:machinelearningmodel_list",
+                    "create_url" : "machine_learning:machinelearningmodel_create"
+                }
+            ]
+        ),
+        name="index"
+    ),
+    path(
+        'machinelearningmodel/list/',
+        AccordionView.as_view(
+            preamble="""
             Roughly speaking, machine learning models are trained to perform a task when given input of some form.  In some cases, the input/output to/from a model follows a pattern simple enough to generate an interface for dynamically "conversing" with the model.
             """,
+            model=MachineLearningModel,
             children={
                 "model" : MachineLearningModel,
                 "url" : "machine_learning:machinelearningmodel_detail",
                 "create_url" : "machine_learning:machinelearningmodel_create"
             }
         ),
-        name="index"
+        name="machinelearningmodel_list"
     ),
     path(
         'machinelearningmodel/create/',
-        BaseView.as_view(
+        AtomicView.as_view(
             preamble="""
             Preparing a hosted model is an involved process, even without the complexities of training, but at a high level, this interface accepts .mar files as used in the TorchServe project.
             """,            
@@ -107,7 +124,7 @@ urlpatterns = [
     ),
     path(
         'machinelearningmodel/<int:pk>/',
-        BaseView.as_view(
+        AtomicView.as_view(
             model=MachineLearningModel,
             update_lambda=get_output,
             can_delete=True,

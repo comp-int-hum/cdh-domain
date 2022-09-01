@@ -48,7 +48,7 @@ function addValue(name, value){
 }
 
 function removeNestedValues(element){
-    console.info("Unsetting all accordions and tabs underneath", element);
+    console.info("Unsetting all accordions and tabs underneath", element.id);
     for(let el of element.getElementsByClassName("cdh-accordion-item")){
 	collapseAccordionItem(el);
     }
@@ -58,13 +58,13 @@ function removeNestedValues(element){
 }
 
 function removeAccordionItem(item){
-    console.info("Completely removing accordion item", item);
+    console.info("Completely removing accordion item", item.id);
     removeValue("active_accordion_items", item.id);
     item.remove();
 }
 
 function collapseAccordionItem(item){
-    console.info("Collapsing accordion item", item);
+    console.info("Collapsing accordion item", item.id);
     var button = item.querySelector(".cdh-accordion-header > button");
     // This is a problem:
     if(button != null){
@@ -83,9 +83,9 @@ function setFirstTab(tabs){
 }
 
 function expandAccordionItem(item){
-    console.info("Expanding accordion item", item);
-    var button = item.querySelector(".cdh-accordion-header > button");
-    // This is also a problem:
+    console.info("Expanding accordion item", item.id);
+    var button = item.querySelector(".cdh-accordion-header > div.btn-group > button.accordion-button");
+    // This is also a problem: (and now that I've forgotten the reason for this comment: why would button ever be null?)
     if(button != null){
 	var content = document.getElementById(button.getAttribute("aria-controls"));
 	button.setAttribute("aria-expanded", "true");
@@ -101,7 +101,7 @@ function expandAccordionItem(item){
 }
 
 function setTab(tab){
-    console.info("Setting active tab", tab);
+    console.info("Activating tab", tab.id);
     var content = document.getElementById(tab.getAttribute("aria-controls"));
     tab.setAttribute("aria-selected", "true");
     tab.classList.add("active");
@@ -112,7 +112,7 @@ function setTab(tab){
 }
 
 function unsetTab(tab){
-    console.info("Unsetting active tab", tab);    
+    console.info("Deactivating tab", tab.id);    
     var content = document.getElementById(tab.getAttribute("aria-controls"));
     tab.setAttribute("aria-selected", "false");
     tab.classList.remove("active");
@@ -135,7 +135,7 @@ function saveState(){
 }
 
 function restoreState(root){
-    console.info("Restoring page state");
+    console.info("Restoring state below", root.id);
     for(let acc of findAll(root, ".cdh-accordion")){
 	var activeCount = 0;
 	for(let item of acc.children){
@@ -189,26 +189,7 @@ function restoreState(root){
 
 
 function cdhSetup(root, htmxSwap){
-    console.info("Performing initial setup on", root);
-
-
-    $(document).ready(function(){
-	var options = {
-            html: true,
-            trigger: 'onclick',
-            placement: 'bottom',
-	    content: "test"
-	};    
-	$('[data-toggle="popover"]').popover(options);
-    });
-    $(document).ready(function(){
-	$('[role="dialog"]').modal();
-    });
-    for(let el of root.getElementsByClassName("cdh-tooltip")){
-	new bootstrap.Tooltip(el);
-    }
-    
-
+    console.info("Performing initial setup on", root.id);
 
     // things that should only happen once, at the top level of the page
     //if(!htmxSwap){
@@ -285,7 +266,7 @@ function cdhSetup(root, htmxSwap){
 			    {
 				headers: JSON.parse(form.getAttribute("hx-headers")),
 				url: endpoint,
-				method: "POST",
+				method: "GET",
 				data: {interaction: content, pk: pk},
 				success: function (data){
 				    target.innerHTML = data;

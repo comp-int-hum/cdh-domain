@@ -1,7 +1,9 @@
 {% load wiki_tags i18n sekizai_tags %}
 {% include "wiki/includes/editormedia.html" %}
-
+{% comment %}
 {% wiki_form form %}
+{% endcomment %}
+{{form}}
 {% addtoblock "js" %}
 <script language="javascript">
   $(document).ready(function() {

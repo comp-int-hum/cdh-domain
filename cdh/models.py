@@ -1,10 +1,13 @@
 from django.contrib.auth import get_user_model
-from . import settings
 from django.urls import path, reverse
 from django.contrib.gis.db import models
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.base_user import BaseUserManager
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
+import markdown
 from .fields import MarkdownField
+from . import settings
 
 
 if settings.USE_LDAP:
@@ -88,17 +91,25 @@ class Slide(CdhModel):
         return reverse("cdh:slide", args=(self.id,))
 
 
-# class SlidePage(CdhModel):
-#     content = MarkdownField(blank=True)
-#     additional_link_prompt = models.CharField(max_length=2000, default="", null=True, blank=True)
-#     slides = models.ManyToManyField(Slide)
-#     def get_absolute_url(self):
-#         return reverse("cdh:slidepage", args=(self.id,))
-
-
 class ResearchArtifact(CdhModel):
-    authors = models.ManyToManyField(User, related_name="authored_by")
+    description = MarkdownField(blank=True, null=True)
     author_freetext = models.TextField()
     description = MarkdownField(blank=True, null=True)
     def get_absolute_url(self):
         return reverse("cdh:researchartifact", args=(self.id,))    
+
+
+class Documentation(CdhModel):
+    value = MarkdownField(blank=True, null=True)
+    view_name = models.CharField(null=True, max_length=200, editable=False)
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, null=True, blank=True, editable=False)
+    object_id = models.PositiveIntegerField(null=True, blank=True, editable=False)
+    content_object = GenericForeignKey('content_type', 'object_id')
+    
+    class Meta:
+        indexes = [
+            models.Index(fields=["content_type", "object_id"]),
+        ]
+
+    def render(self):
+        return markdown.markdown(self.value)

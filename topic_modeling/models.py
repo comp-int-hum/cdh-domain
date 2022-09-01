@@ -4,6 +4,7 @@ from django.urls import reverse
 from django.core.validators import MinValueValidator
 from cdh.models import CdhModel, User, AsyncMixin, MetadataMixin
 from cdh.views import cdh_cache_method
+from cdh.fields import JsonField
 from primary_sources.models import Query
 import pickle
 import json
@@ -17,8 +18,8 @@ def default_lexicon():
 
 
 class Lexicon(CdhModel):
-    lexical_sets = models.TextField(default="""{\n  "positive_words": ["happy", "glad"],\n  "negative_words": ["awful", "sad.*"]\n}""", help_text="dsa")
-
+    #lexical_sets = models.TextField(default="""{\n  "positive_words": ["happy", "glad"],\n  "negative_words": ["awful", "sad.*"]\n}""", help_text="")
+    lexical_sets = JsonField(default="""{\n  "positive_words": ["happy", "glad"],\n  "negative_words": ["awful", "sad.*"]\n}""", help_text="")
     def get_absolute_url(self):
         return reverse("topic_modeling:lexicon_detail", args=(self.id,))
 

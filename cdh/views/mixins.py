@@ -56,5 +56,4 @@ class NestedMixin(object):
 
     def get_context_data(self, *argv, **argd):
         ctx = super(NestedMixin, self).get_context_data(*argv, **argd)
-        ctx["uid"] = self.request.GET.get("uid", self.request.POST.get("uid", "0"))
         return ctx

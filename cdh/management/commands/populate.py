@@ -319,3 +319,21 @@ root = URLPath.create_root(
 )
 
 root.save()
+
+# # set permissions
+# u = User.objects.get(username="user2")
+# router = DefaultRouter()
+# for k, v in apps.app_configs.items():
+#     for model in v.get_models():
+#         if issubclass(model, CdhModel):
+#             class GeneratedSerializer(ModelSerializer):
+#                 class Meta:
+#                     model = model
+#                     fields = "__all__"
+#             class GeneratedViewSet(ModelViewSet):
+#                 queryset = model.objects.all()
+#                 serializer_class = GeneratedSerializer
+#             router.register(model._meta.model_name, GeneratedViewSet)
+#             assign_perm("{}.add_{}".format(model._meta.app_label, model._meta.model_name), u)
+#             for perm in ["change", "delete"]:
+#                 assign_perm("{}.{}_{}".format(model._meta.app_label, perm, model._meta.model_name), u, model.objects.all())

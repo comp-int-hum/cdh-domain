@@ -12,7 +12,7 @@ from django.views.generic.edit import FormView, CreateView, UpdateView
 from django.views.generic import DetailView
 from guardian.shortcuts import get_perms, get_objects_for_user, assign_perm
 from cdh.models import User
-from cdh.views import TabsView, AccordionView, VegaView, BaseView, SelectView
+from cdh.views import TabsView, AccordionView, VegaView, AtomicView, SelectView, generate_default_urls
 from cdh.widgets import MonacoEditorWidget
 from .models import Collection, Document, Lexicon, LabeledDocument, LabeledCollection, TopicModel
 from .vega import WordCloud, SpatialDistribution, TemporalEvolution
@@ -74,26 +74,14 @@ urlpatterns = [
     path(
         '',
         AccordionView.as_view(
-            preamble="""
-            Topic models and manual lexicons are two methods for exploring how text collections differ across dimensions like author, space, and time.  This interface allows scholars to upload collections of documents, train topic models on them and define lexicons, and apply both models and lexicons to the collections to produce labeled collections that surface semantically-coherent information.
-            """,
+            #preamble="""
+            #Topic models and manual lexicons are two methods for exploring how text collections differ across dimensions like author, space, and time.  This interface allows scholars to upload collections of documents, train topic models on them and define lexicons, and apply both models and lexicons to the collections to produce labeled collections that surface semantically-coherent information.
+            #""",
             children=[
-                {
-                    "title" : "Collections",
-                    "url" : "topic_modeling:collection_list"
-                },
-                {
-                    "title" : "Topic Models",
-                    "url" : "topic_modeling:topicmodel_list"
-                },
-                {
-                    "title" : "Lexicons",
-                    "url" : "topic_modeling:lexicon_list"
-                },
-                {
-                    "title" : "Labeled Collections",
-                    "url" : "topic_modeling:labeledcollection_list"
-                }                                
+                Collection,
+                TopicModel,
+                Lexicon,
+                LabeledCollection
             ]
         ),
         name="index"
@@ -102,16 +90,23 @@ urlpatterns = [
     # Collection-related
     path(
         'collection/<int:pk>/',
-        BaseView.as_view(
+        AtomicView.as_view(
             model=Collection,
             fields=["name"],
-            can_delete=True
         ),
         name="collection_detail"
     ),
     path(
+        'collection/<int:pk>/',
+        AtomicView.as_view(
+            model=Collection,
+            fields=["name"],
+        ),
+        name="collection_edit"
+    ),
+    path(
         'collection/create/',
-        BaseView.as_view(
+        AtomicView.as_view(
             preamble="""
             Collections can be created from several data formats coupled with a simple description of how to map its fields.  At a minimum, a text field must be specified.  Optionally, temporal, spatial, language, and authorial fields can also be specified.  The mapping uses <a href="https://goessner.net/articles/JsonPath/">JsonPath</a> syntax to be maximally expressive for that common format, but as can be seen in the default values below, this is usually as simple as writing "$.FIELD_NAME".
             
@@ -152,43 +147,6 @@ urlpatterns = [
         name="collection_create"
     ),
 
-    # Lexicon-related
-    path(
-        'lexicon/<int:pk>/',
-        BaseView.as_view(
-            model=Lexicon,
-            form_class=LexiconForm,
-            can_update=True,
-            can_delete=True
-        ),
-        name="lexicon_detail"
-    ),
-    path(
-        'lexicon/create/',
-        BaseView.as_view(
-            preamble="""
-            A lexicon is simply specified as a mapping from meaningful labels (could be topics, sentiments, styles,
-            etc) to lists of word-patterns that indicate the label.  The syntax should be clear from the initial example in
-            the editor below.  The word-patterns can include "wildcards" such as in "sad.*", which will match "sad", "sadly",
-            "saddened", etc.  Note that it is a period followed by an asterisk, not just an asterisk (this is because
-            you can actually specify arbitrary "regular expressions" as defined in the Python language's core library,
-            for advanced situations).  Bear in mind that, while the word-patterns are applied to each word of the documents,
-            and therefore you needn't worry about wildcards matching across multiple words, you should still be careful in
-            using them: they can easily become too general and match many unintended words.  Also, the collective matching
-            behavior of the different labels should not overlap: if two labels both have word-patterns matching a word, the
-            word will only "count" for one of them, chosen at random.
-            """,
-            model=Lexicon,
-            #form_class=LexiconForm,
-            fields=["name", "lexical_sets"],
-            can_create=True,
-            widgets = {
-                'lexical_sets': MonacoEditorWidget(language="json", content_field="lexical_sets")
-            }
-        ),
-        name="lexicon_create"
-    ),
-
     # TopicModel-related
     path(
         'topicmodel/<int:pk>/',
@@ -210,7 +168,7 @@ urlpatterns = [
     ),
     path(
         'topicmodel/create/',
-        BaseView.as_view(
+        AtomicView.as_view(
             model=TopicModel,
             fields=["name", "collection", "topic_count", "lowercase", "max_context_size", "maximum_documents", "passes"],
             can_create=True,
@@ -300,7 +258,7 @@ urlpatterns = [
     ),
     path(
         'labeledcollection/topicdocumenttable/<int:pk>/',
-        BaseView.as_view(
+        AtomicView.as_view(
             model=LabeledCollection,
             form_class=TopicDocumentTableForm,
         ),
@@ -308,7 +266,7 @@ urlpatterns = [
     ),    
     path(
         'labeledcollection/create/',
-        BaseView.as_view(
+        AtomicView.as_view(
             model=LabeledCollection,
             fields=["name", "collection", "model", "lexicon", "maximum_documents"],
             can_create=True,
@@ -339,7 +297,7 @@ urlpatterns = [
         LabeledDocumentView.as_view(),
         name="labeleddocument_detail"
     ),    
-] + [
+] + [    
         path(
             '{}/list/'.format(model._meta.model_name),
             AccordionView.as_view(
@@ -356,9 +314,9 @@ urlpatterns = [
             (TopicModel, """
             A topic model is a learned representation that tries to explain observed patterns of word-occurrence (i.e. documents) by positing some number of unobserved "topics", each of which consists of a different distribution over the vocabulary.
             """),
-            (Lexicon, """
-            In a lexicon, the scholar specifies topics directly as lists of word(-patterns), using domain knowledge of the relevant semantics to combine various ways of evincing the same phenomena of interest.
-            """),
+            #(Lexicon, """
+            #In a lexicon, the scholar specifies topics directly as lists of word(-patterns), using domain knowledge of the relevant semantics to combine various ways of evincing the same phenomena of interest.
+            #"""),
             (Collection, """
             A collection is a set of text documents with optional additional information about author, location, time, and other arbitrary properties that the scholar deems interesting.
             """),
@@ -366,4 +324,42 @@ urlpatterns = [
             A labeled collection is the result of applying either a lexicon or a topic model to a collection.  In either case, each word in each document is potentially assigned a topic.  This information is aggregated and displayed in several automatic ways: if the original collection had temporal or spatial fields, for instance.  A document-level view allows the scholar to directly inspect how words in specific documents have been labeled.
             """)
         ]
-]
+] + generate_default_urls(
+
+    #(
+        Lexicon,
+        #"""
+        #In a lexicon, the scholar specifies topics directly as lists of word(-patterns), using domain knowledge
+        #of the relevant semantics to combine various ways of evincing the same phenomena of interest.
+        #""",
+        #"""
+        #A lexicon is simply specified as a mapping from meaningful labels (could be topics, sentiments, styles,
+        #etc) to lists of word-patterns that indicate the label.  The syntax should be clear from the initial example in
+        #the editor below.  The word-patterns can include "wildcards" such as in "sad.*", which will match "sad", "sadly",
+        #"saddened", etc.  Note that it is a period followed by an asterisk, not just an asterisk (this is because
+        #you can actually specify arbitrary "regular expressions" as defined in the Python language's core library,
+        #for advanced situations).  Bear in mind that, while the word-patterns are applied to each word of the documents,
+        #and therefore you needn't worry about wildcards matching across multiple words, you should still be careful in
+        #using them: they can easily become too general and match many unintended words.  Also, the collective matching
+        #behavior of the different labels should not overlap: if two labels both have word-patterns matching a word, the
+        #word will only "count" for one of them, chosen at random.
+        #"""
+        #),
+
+    #(
+        LabeledCollection,
+    #    """
+    #    A labeled collection is the result of applying either a lexicon or a topic model to a collection.  In either case,
+    #    each word in each document is potentially assigned a topic.  This information is aggregated and displayed in several
+    #    automatic ways: if the original collection had temporal or spatial fields, for instance.  A document-level view
+    #    allows the scholar to directly inspect how words in specific documents have been labeled.
+    #    """,
+    #    """
+    #    To create a labeled collection, choose a meaningful name, and then select the collection to be labeled, and either
+    #    a topic model or a lexicon to use.  After creation, it will take a while for the process to complete: until then, the
+    #    new entry will display a progress indicator, or a red error message if something goes wrong.
+    #    """
+    #),
+
+    
+)

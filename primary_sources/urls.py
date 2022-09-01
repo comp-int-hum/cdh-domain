@@ -5,7 +5,7 @@ from django.urls import re_path, include
 from django.views.generic.list import ListView
 from django.views.generic.edit import FormView, CreateView, UpdateView
 from django.http import HttpResponse, HttpResponseRedirect
-from cdh.views import TabsView, AccordionView, VegaView, BaseView, SelectView
+from cdh.views import TabsView, AccordionView, VegaView, AtomicView, SelectView
 from django.forms import FileField, modelform_factory, CharField
 from django.forms.widgets import HiddenInput
 from .models import PrimarySource, Query
@@ -50,7 +50,7 @@ urlpatterns = [
     ),
     path(
         'primarysource/create/',
-        BaseView.as_view(
+        AtomicView.as_view(
             preamble="""
             A primary source can be created by specifying a meaningful name and (optionally) files
             containing a domain schema, data, and annotations.  These must all be in RDF .ttl format.
@@ -115,7 +115,7 @@ urlpatterns = [
     ),
     path(
         'primarysource/editor/<int:pk>/',
-        BaseView.as_view(
+        AtomicView.as_view(
             model=PrimarySource,
             form_class=PrimarySourceEditorForm,            
         ),
@@ -134,7 +134,7 @@ urlpatterns = [
     # Query-related, always nested underneath a particular primary source
     path(
         "primarysource/query/create/",
-        BaseView.as_view(
+        AtomicView.as_view(
             model=Query,
             #form_class=QueryForm,
             can_create=True,
@@ -147,7 +147,7 @@ urlpatterns = [
     ),
     path(
         "query/<int:pk>/",
-        BaseView.as_view(
+        AtomicView.as_view(
             model=Query,
             can_update=True,
             can_delete=True,

@@ -11,10 +11,10 @@ import requests
 
 
 class SparqlView(View):
-    def post(self, request, *argv, **argd):
-        query_id = int(request.POST["pk"])
+    def get(self, request, *argv, **argd):
+        query_id = int(request.GET["pk"])
         primary_source_id = Query.objects.get(id=query_id).primary_source.id
-        query_text = request.POST["interaction"]
+        query_text = request.GET["interaction"]
         if not re.match(r".*limit\s+\d+\s*$", query_text, re.I):
             query_text = query_text + " limit 100"
         try:

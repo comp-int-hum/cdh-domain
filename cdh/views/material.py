@@ -12,7 +12,6 @@ from pairtree import PairtreeStorageFactory
 class MaterialView(View):
     
     def dispatch(self, request, *argv, prefix=None, name=None, **argd):
-        print(name, argd)
         self.prefix = prefix
         self.name = name
         return super(MaterialView, self).dispatch(request, *argv, **argd)

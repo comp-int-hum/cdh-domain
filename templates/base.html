@@ -162,6 +162,12 @@
       </header>
 
 
+      {% block modals %}
+      {{ block.super }}
+      {% endblock %}
+      {% render_block "modals" %}
+
+      
       <div class="container mt-4">
 	<div class="grid-with-gutters">
 	  <div class="row">

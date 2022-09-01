@@ -11,11 +11,11 @@ class LexiconForm(ModelForm):
             Lexicon._meta.model_name,
             kwargs["instance"].id if kwargs.get("instance", False) else "unbound"
         )
-        super().__init__(*args, prefix=prefix, **{k : v for k, v in kwargs.items() if k != "prefix"})
-
+        super(LexiconForm, self).__init__(*args, prefix=prefix, **{k : v for k, v in kwargs.items() if k != "prefix"})
+        
     class Meta:
         model = Lexicon
-        fields = ('name', 'lexical_sets')
+        fields = ['name', 'lexical_sets']
         widgets = {
             'lexical_sets': MonacoEditorWidget(language="json", content_field="lexical_sets", default_value="""{
   "positive_words": ["happy", "glad"],

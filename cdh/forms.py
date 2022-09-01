@@ -41,6 +41,21 @@ class PublicUserForm(forms.ModelForm):
         return mark_safe(content)
 
 
+class PublicResearchForm(forms.ModelForm):
+    def __init__(self, *argv, **argd):
+        return super(PublicResearchForm, self).__init__(*argv, **argd)
+    def __str__(self):
+        for name, field in self.fields.items():            
+            if field.widget.attrs.get("readonly", "false") != "true":
+                return super(PublicResearchForm, self).__str__()        
+        content = template_engine.get_template("cdh/snippets/research.html").render(
+            Context(
+                {"instance" : self.instance}
+            )
+        )
+        return mark_safe(content)
+    
+
 class AdminUserForm(forms.ModelForm):
     class Meta:
         model = models.User

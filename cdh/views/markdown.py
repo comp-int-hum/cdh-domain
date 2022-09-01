@@ -5,6 +5,6 @@ import markdown
 
 
 class MarkdownView(View):
-    def post(self, request, *argv, **argd):
-        return HttpResponse(markdown.markdown(request.POST["interaction"]))
+    def get(self, request, *argv, **argd):
+        return HttpResponse(markdown.markdown(request.GET["interaction"]))
     

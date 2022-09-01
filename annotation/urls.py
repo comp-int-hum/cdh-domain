@@ -19,7 +19,7 @@ from django.conf import settings
 from django.urls import re_path, include
 from django.views.generic.list import ListView
 from django.shortcuts import redirect, render
-from cdh.views import AccordionView, BaseView
+from cdh.views import AccordionView, AtomicView
 from turkle.models import Batch, Project
 import turkle.urls
 from .forms import ProjectForm, BatchForm
@@ -101,7 +101,7 @@ urlpatterns = [
 
     path(
         'project/create/',
-        BaseView.as_view(
+        AtomicView.as_view(
             model=Project,
             form_class=ProjectForm,
             #fields=["name"],
@@ -113,7 +113,7 @@ urlpatterns = [
     
     path(
         'project/<int:pk>/',
-        BaseView.as_view(
+        AtomicView.as_view(
             model=Project,
             form_class=ProjectForm,
             #fields=["name"],
@@ -124,7 +124,7 @@ urlpatterns = [
 
     path(
         'batch/create/',
-        BaseView.as_view(
+        AtomicView.as_view(
             model=Batch,
             form_class=BatchForm,
             #fields=["name"],
@@ -136,7 +136,7 @@ urlpatterns = [
 
     path(
         'batch/<int:pk>/',
-        BaseView.as_view(
+        AtomicView.as_view(
             model=Batch,
             form_class=BatchForm,
             #fields=["name"],

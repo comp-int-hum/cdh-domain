@@ -1,5 +1,6 @@
 from django.apps import apps
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Permission
 from django.contrib.auth.views import PasswordResetView
 from django.contrib import admin
 from django.views.decorators.csrf import csrf_protect
@@ -15,10 +16,11 @@ from rest_framework.schemas import get_schema_view
 from rest_framework.routers import DefaultRouter
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.serializers import ModelSerializer
+from guardian.shortcuts import assign_perm, get_anonymous_user
 from .settings import MEDIA_URL, MEDIA_ROOT, STATIC_URL, STATIC_ROOT, BUILTIN_PAGES, APPS, DEBUG
-from .forms import UserForm, PublicUserForm
-from .views import BaseView, PermissionsView, AccordionView, TabsView, SlidesView, MarkdownView, SparqlView, MaterialView
-from .models import Slide, ResearchArtifact, CdhModel
+from .forms import UserForm, PublicUserForm, PublicResearchForm
+from .views import AtomicView, PermissionsView, AccordionView, TabsView, SlidesView, MarkdownView, SparqlView, MaterialView, generate_default_urls
+from .models import Slide, ResearchArtifact, CdhModel, Documentation
 
 
 User = get_user_model()
@@ -46,7 +48,7 @@ for k, v in apps.app_configs.items():
                 queryset = model.objects.all()
                 serializer_class = GeneratedSerializer
             router.register(model._meta.model_name, GeneratedViewSet)
-    
+                
 
 app_name = "cdh"
 urlpatterns = [
@@ -56,39 +58,39 @@ urlpatterns = [
         SlidesView.as_view(model=Slide),
         name="index"
     ),
-    path(
-        'slide/list/',
-        AccordionView.as_view(
-            model=Slide,
-            preamble="""
-            """,
-            children={
-                "model" : Slide,
-                "url" : "slide_detail",
-                "create_url": "slide_create"
-            }
-        ),
-        name="slide_list"        
-    ),
-    path(
-        'slide/<int:pk>/',
-        BaseView.as_view(
-            model=Slide,
-            fields=["image", "article"],
-            can_update=True,
-            can_delete=True
-        ),
-        name="slide_detail"
-    ),    
-    path(
-        'slide/create/',
-        BaseView.as_view(
-            model=Slide,
-            fields=["article", "image"],
-            can_create=True
-        ),
-        name="slide_create"
-    ),    
+    # path(
+    #     'slide/list/',
+    #     AccordionView.as_view(
+    #         model=Slide,
+    #         preamble="""
+    #         """,
+    #         children={
+    #             "model" : Slide,
+    #             "url" : "slide_detail",
+    #             "create_url": "slide_create"
+    #         }
+    #     ),
+    #     name="slide_list"        
+    # ),
+    # path(
+    #     'slide/<int:pk>/',
+    #     AtomicView.as_view(
+    #         model=Slide,
+    #         fields=["image", "article"],
+    #         can_update=True,
+    #         can_delete=True
+    #     ),
+    #     name="slide_detail"
+    # ),    
+    # path(
+    #     'slide/create/',
+    #     AtomicView.as_view(
+    #         model=Slide,
+    #         fields=["article", "image"],
+    #         can_create=True
+    #     ),
+    #     name="slide_create"
+    # ),    
 
     
     # static 'about' page
@@ -136,7 +138,7 @@ urlpatterns = [
     ),
     path(
         "user/<int:pk>/",
-        BaseView.as_view(
+        AtomicView.as_view(
             model=User,
             can_manage=False,
             can_update=True,
@@ -234,17 +236,18 @@ urlpatterns = [
     ),
     path(
         'researchartifact/<int:pk>/',
-        BaseView.as_view(
+        AtomicView.as_view(
             model=ResearchArtifact,
             can_delete=True,
             can_update=True,
+            form_class=PublicResearchForm,
             fields=["name", "authors", "author_freetext", "description"]
         ),
         name="researchartifact_detail"
     ),    
     path(
         'researchartifact/create/',
-        BaseView.as_view(
+        AtomicView.as_view(
             model=ResearchArtifact,
             can_create=True,
             fields=["name", "authors", "author_freetext", "description"]
@@ -275,7 +278,12 @@ urlpatterns = [
     path('accounts/password_reset/', CustomPasswordResetView.as_view()),    
     path('accounts/', include('django_registration.backends.activation.urls')),
     path('accounts/', include('django.contrib.auth.urls')),
-] + [path("{}/".format(k), include("{}.urls".format(k))) for k, v in APPS.items()]
+] + [
+    path("{}/".format(k), include("{}.urls".format(k))) for k, v in APPS.items()
+] + generate_default_urls(
+    Slide,
+    Documentation
+)
 
 
 
