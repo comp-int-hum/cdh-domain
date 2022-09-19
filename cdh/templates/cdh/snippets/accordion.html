@@ -2,44 +2,20 @@
 
 {% block content %}
 
-{% if preamble %}
-<div class="container w-75">
-  {{preamble.render|safe}}
-  {% if can_edit_preamble %}
-  {% comment %}
-  <button
-    class="btn cdh-modal"
-    type="button"
-    data-bs-toggle="modal"
-    data-bs-target="#edit_documentation_modal-{{uid}}"
-    >
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="16"
-      height="16"
-      fill="currentColor"
-      class="bi bi-pencil-square"
-      viewBox="0 0 16 16"
-      >
-      <path
-	d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"
-	/>
-      <path
-	fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"
-	/>
-    </svg>
-  </button>
-  {% endcomment %}
-  {% include "cdh/snippets/modal.html" with mode="documentation" uid=uid title="Editing documentation" url="documentation_edit" object=preamble csrf_token=csrf_token %}
 
-  {% endif %}
+
+{% if can_create and "add" in model_perms %}
+<div class="container w-75">
+  {% include "cdh/snippets/modal.html" with mode="creation" uid=uid url=model.create_url csrf_token=csrf_token title="Creating new object" %}
 </div>
 {% endif %}
+
 
 <div class="accordion cdh-accordion"
      id="accordion-{{uid}}"
      {% if model_name %}model_name="{{model_name}}"{% endif %}
      {% if app_label %}app_label="{{app_label}}"{% endif %}
+     {% if pk %}pk="{{pk}}"{% endif %}     
      accordion_url="{{accordion_url}}">
   {% if items|length == 0 %}
   <div class="w-75">
@@ -48,8 +24,10 @@
     </p>
   </div>
   {% else %}
+
+
   {% for item in items %}
-  {% include "cdh/snippets/accordion_item.html" with title=item.title url=item.url detail_url=item.detail_url edit_url=item.edit_url create_url=item.create_url object=item.object index=forloop.counter app_label=item.app_label model_name=item.model_name pk=item.object.id uid=uid can_create=item.can_create can_delete=item.can_delete can_edit=item.can_edit can_manage_permissions=item.can_manage_permissions %}
+  {% include "cdh/snippets/accordion_item.html" with title=item.title url=item.url detail_url=item.detail_url edit_url=item.edit_url create_url=item.create_url object=item.object index=forloop.counter app_label=item.app_label model_name=item.model_name pk=item.object.id uid=uid can_create=item.can_create can_delete=item.can_delete can_edit=item.can_edit can_manage_permissions=item.can_manage_permissions model=item.model %}
   {% endfor %}
   {% endif %}
 </div>

@@ -12,6 +12,9 @@ from .mixins import NestedMixin, ButtonsMixin
 from .atomic import AtomicView
 
 
+logger = logging.getLogger(__name__)
+
+
 template_engine = Engine.get_default()
 
 
@@ -35,7 +38,7 @@ class TabsView(AtomicView): #PermissionsMixin, NestedMixin, SingleObjectMixin, V
     """
     tabs = None
     model = None
-    template = "cdh/simple_interface.html"
+    template_name = "cdh/snippets/tabs.html"
     can_delete = False
     can_update = False
     can_create = False
@@ -63,11 +66,11 @@ class TabsView(AtomicView): #PermissionsMixin, NestedMixin, SingleObjectMixin, V
         ctx["instance"] = self.object
         return ctx
     
-    def render(self, ctx):
-        content = template_engine.get_template("cdh/snippets/tabs.html").render(
-            Context(ctx)
-        )
-        return mark_safe(content)
+    #def render(self, ctx):
+    #    content = template_engine.get_template("cdh/snippets/tabs.html").render(
+    #        Context(ctx)
+    #    )
+    #    return mark_safe(content)
     
     def get(self, request, *argv, **argd):
         obj = self.get_object()
@@ -75,23 +78,23 @@ class TabsView(AtomicView): #PermissionsMixin, NestedMixin, SingleObjectMixin, V
         ctx = self.get_context_data(request)
         ctx["path"] = request.path_info
         ctx["object"] = obj
-        ctx["content"] = self.render(ctx)
+        #ctx["content"] = self.render(ctx)
         state = getattr(obj, "state", None)
         if state == "PR":
             return render(request, "cdh/async_processing.html", ctx)
         elif state == "ER":
             return render(request, "cdh/async_error.html", ctx)
-        return render(request, self.template, ctx)
+        return self.render_to_response(ctx) #(request, self.template, ctx)
 
-    def delete(self, request, *argv, **argd):
-        from_htmx = request.headers.get("Hx-Request", False) and True
-        obj = self.get_object()
-        obj_id = obj.id
-        obj.delete()
-        resp = HttpResponseRedirect(reverse("{}:{}_list".format(obj._meta.app_label, obj._meta.model_name)))
-        resp.headers["HX-Trigger"] = """{{"cdhEvent" : {{"type" : "delete", "app" : "{app}", "model" : "{model}", "id" : "{id}"}}}}""".format(
-            app=self.model._meta.app_label,
-            model=self.model._meta.model_name,
-            id=obj_id
-        )
-        return resp
+    # def delete(self, request, *argv, **argd):
+    #     from_htmx = request.headers.get("Hx-Request", False) and True
+    #     obj = self.get_object()
+    #     obj_id = obj.id
+    #     obj.delete()
+    #     resp = HttpResponseRedirect(reverse("{}:{}_list".format(obj._meta.app_label, obj._meta.model_name)))
+    #     resp.headers["HX-Trigger"] = """{{"cdhEvent" : {{"type" : "delete", "app" : "{app}", "model" : "{model}", "id" : "{id}"}}}}""".format(
+    #         app=self.model._meta.app_label,
+    #         model=self.model._meta.model_name,
+    #         id=obj_id
+    #     )
+    #     return resp

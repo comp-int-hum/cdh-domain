@@ -8,7 +8,7 @@ template_engine = Engine.get_default()
 from .mixins import NestedMixin
 
 class SelectView(NestedMixin, SingleObjectMixin, View):
-    template_name = "cdh/simple_interface.html"
+    template_name = "cdh/atomic.html"
     model = None
     related_model = None
     relationship = None

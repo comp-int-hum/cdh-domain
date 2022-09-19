@@ -11,9 +11,9 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterField(
-            model_name='query',
-            name='sparql',
-            field=cdh.fields.SparqlField(),
-        ),
+        #migrations.AlterField(
+        #    model_name='query',
+        #    name='sparql',
+        #    field=cdh.fields.SparqlField(),
+        #),
     ]

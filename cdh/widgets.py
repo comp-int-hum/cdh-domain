@@ -4,6 +4,15 @@ from sekizai.context import SekizaiContext
 from secrets import token_hex as random_token
 
 
+class TableWidget(Widget):
+    def __init__(self, *argv, **argd):
+        super(TableWidget, self).__init__(*argv, **argd)
+
+    def get_context(self, name, value, attrs):
+        context = super(TableWidget, self).get_context(name, value, attrs)
+        return context
+
+
 class VegaWidget(Widget):
     template_name = "cdh/vega.html"
     preamble = None
@@ -14,35 +23,48 @@ class VegaWidget(Widget):
         self.preamble = preamble
         
     def get_context(self, name, value, attrs):
-        ctx = super(VegaWidget, self).get_context(name, value, attrs)
-        self.prefix = "prefix_{}".format(random_token(8))
-        ctx["vega_spec"] = self.vega_class(value, prefix=self.prefix).json
-        ctx["spec_identifier"] = "s_{}".format(self.prefix)
-        ctx["div_identifier"] = "d_{}".format(self.prefix)
-        if self.preamble:
-            ctx["preamble_identifier"] = "p_{}".format(self.prefix)
-            ctx["preamble"] = self.preamble.format(prefix=self.prefix)
-        return ctx
+        context = super(VegaWidget, self).get_context(name, value, attrs)
+
+        context["widget"]["attrs"]["id"] = "prefix_{}".format(random_token(8))
+        self.prefix = context["widget"]["attrs"]["id"]
+        context["widget"]["spec_id"] = "spec_{}".format(context["widget"]["attrs"]["id"])
+        context["widget"]["div_id"] = "div_{}".format(context["widget"]["attrs"]["id"])
+        context["widget"]["element_id"] = "element_{}".format(context["widget"]["attrs"]["id"])
+
+        context["vega_spec"] = self.vega_class(value, prefix=self.prefix).json
+        context["spec_identifier"] = "spec_{}".format(context["widget"]["attrs"]["id"]) #"s_{}".format(self.prefix)
+        context["div_identifier"] = "div_{}".format(context["widget"]["attrs"]["id"]) #"d_{}".format(self.prefix)
+        context["element_identifier"] = "element_{}".format(context["widget"]["attrs"]["id"]) #"d_{}".format(self.prefix)
+        return context
 
 
-class MonacoEditorWidget(Textarea):    
+class MonacoEditorWidget(Textarea):
     template_name = "cdh/editor.html"
+    id = None #"prefix".format(random_token(8))
+    #value_id = None #"value_prefix_{}".format(id)
     
     def __init__(self, *args, **kwargs):
         self.language = kwargs.get("language", "javascript")
         self.default_value = kwargs.get("default_value", "")
+        #self.id = "prefix_{}".format(random_token(8))
+        #self.value_id = "value_{}".format(self.id)
+        #self.output_id = "output_{}".format(self.id)
+        
         default_attrs = {
             "language" : kwargs.get("language", "javascript"),
             "field_name" : kwargs.get("name", "content"),
-            "endpoint" : kwargs.get("endpoint", None)
+            "endpoint" : kwargs.get("endpoint", None),
+
         }
         default_attrs.update(kwargs.get("attrs", {}))
         super(MonacoEditorWidget, self).__init__(default_attrs)
 
     def get_context(self, name, value, attrs):
         context = super(MonacoEditorWidget, self).get_context(name, value, attrs)
+
         context["css"] = self.media._css["all"]
         context["js"] = self.media._js
+        context["widget"]["attrs"]["id"] = "prefix_{}".format(random_token(8))
         context["widget"]["value_id"] = "value_{}".format(context["widget"]["attrs"]["id"])
         context["widget"]["output_id"] = "output_{}".format(context["widget"]["attrs"]["id"])
         context["widget"]["value"] = context["widget"]["value"] if context["widget"].get("value", None) else self.default_value
@@ -60,7 +82,6 @@ class MonacoEditorWidget(Textarea):
                     "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.0-dev.20220627/min/vs/editor/editor.main.min.css",
                 ),
             },
-
             js = (
                 "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.0-dev.20220625/min/vs/loader.min.js",
             )

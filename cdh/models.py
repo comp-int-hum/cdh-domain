@@ -1,13 +1,15 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.urls import path, reverse
-from django.contrib.gis.db import models
+try:
+    from django.contrib.gis.db.models import Model, FileField, CharField, ImageField, TextField, EmailField, URLField, ForeignKey, DateTimeField, PositiveIntegerField, JSONField, CASCADE, SET_NULL, Index
+except:
+    from django.db.models import Model, FileField, CharField, ImageField, TextField, EmailField, URLField, ForeignKey, DateTimeField, PositiveIntegerField, JSONField, CASCADE, SET_NULL, Index
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 import markdown
-from .fields import MarkdownField
-from . import settings
 
 
 if settings.USE_LDAP:
@@ -15,15 +17,29 @@ if settings.USE_LDAP:
     from ldap import modlist
 
 
+class MetadataMixin(Model):
+    metadata = JSONField(
+        default=dict,
+        editable=False
+    )
+
+    class Meta:
+        abstract = True
+
+
 class User(AbstractUser):
-    homepage = models.URLField(blank=True)
-    photo = models.ImageField(blank=True, upload_to="user_photos")
-    title = models.CharField(blank=True, max_length=300)
-    description = models.TextField(blank=True, max_length=1000)
-    username = models.CharField(unique=True, null=True, max_length=40)
-    email = models.EmailField(unique=True)
+    homepage = URLField(blank=True)
+    photo = ImageField(blank=True, upload_to="user_photos")
+    title = CharField(blank=True, max_length=300)
+    description = TextField(blank=True, max_length=1000)
+    username = CharField(unique=True, null=True, max_length=40)
+    email = EmailField(unique=True)    
+    created_at = DateTimeField(auto_now_add=True, editable=False)
+    modified_at = DateTimeField(auto_now=True, editable=False)
+    created_by = ForeignKey("self", null=True, on_delete=SET_NULL, editable=False)
     USERNAME_FIELD = "username"
     REQUIRED_FIELDS = ["first_name", "last_name", "email"]
+    
     def set_password(self, raw_password):
         if settings.USE_LDAP:
             ld = ldap.initialize(settings.AUTH_LDAP_SERVER_URI)
@@ -39,30 +55,117 @@ class User(AbstractUser):
             ld.passwd_s(dn, None, raw_password)
         else:
             super().set_password(raw_password)
+
     def __str__(self):
         return "{} {}".format(self.first_name, self.last_name) if self.last_name else self.username
-    
 
-class MetadataMixin(models.Model):
-    metadata = models.JSONField(
-        default=dict
-    )
+    @classmethod
+    def model_title_name(cls):
+        return cls._meta.verbose_name.title().replace(" ", "")
+
+    def get_absolute_url(self):
+        return reverse("api:{}-detail".format(self._meta.model_name), args=(self.id,))
+
+    def get_permissions_url(self):
+        return reverse("permissions", args=(self._meta.app_label, self._meta.model_name, self.id))
+
+    @classmethod
+    def get_list_url(self):
+        return reverse("api:{}-list".format(self._meta.model_name))
+
+    @classmethod
+    def get_add_perm(self):
+        return "add_{}".format(self._meta.model_name)
+
+    @classmethod
+    def get_delete_perm(self):
+        return "delete_{}".format(self._meta.model_name)
+
+    @classmethod
+    def get_change_perm(self):
+        return "change_{}".format(self._meta.model_name)    
+
+    @classmethod
+    def get_view_perm(self):
+        return "view_{}".format(self._meta.model_name)    
+
+    @classmethod
+    def model_title(self):
+        return self._meta.verbose_name_plural.title()
+
+    @classmethod
+    def model_class(self):
+        return "{}-{}".format(self._meta.app_label, self._meta.model_name)
+
+    @property
+    def object_class(self):
+        return "{}-{}-{}".format(self._meta.app_label, self._meta.model_name, self.id)
+
+        
+class CdhModel(MetadataMixin, Model):
+    name = CharField(max_length=2000, null=False)
+    created_by = ForeignKey(User, null=True, on_delete=SET_NULL, editable=False)
+    created_at = DateTimeField(auto_now_add=True, editable=False)
+    modified_at = DateTimeField(auto_now=True, editable=False)
+
     class Meta:
         abstract = True
 
+    @property
+    def is_object(self):
+        return isinstance(self.id, int)
 
-class CdhModel(MetadataMixin, models.Model):
-    name = models.CharField(max_length=2000, null=False)
-    created_by = models.ForeignKey(get_user_model(), null=True, on_delete=models.SET_NULL)
-    created_at = models.DateTimeField(auto_now_add=True)
-    modified_at = models.DateTimeField(auto_now=True)
+    @classmethod
+    def is_model(self):
+        return True
+    
     def __str__(self):
         return self.name    
-    class Meta:
-        abstract = True
 
+    @classmethod
+    def model_title_name(cls):
+        return cls._meta.verbose_name.title().replace(" ", "")
 
-class AsyncMixin(models.Model):
+    def get_absolute_url(self):
+        return reverse("api:{}-detail".format(self._meta.model_name), args=(self.id,))
+
+    def get_permissions_url(self):
+        return reverse("permissions", args=(self._meta.app_label, self._meta.model_name, self.id))
+
+    @classmethod
+    def get_list_url(self):
+        return reverse("api:{}-list".format(self._meta.model_name))
+
+    @classmethod
+    def get_add_perm(self):
+        return "add_{}".format(self._meta.model_name)
+
+    @classmethod
+    def get_delete_perm(self):
+        return "delete_{}".format(self._meta.model_name)
+
+    @classmethod
+    def get_change_perm(self):
+        return "change_{}".format(self._meta.model_name)    
+
+    @classmethod
+    def get_view_perm(self):
+        return "view_{}".format(self._meta.model_name)    
+
+    @classmethod
+    def model_title(self):
+        return self._meta.verbose_name_plural.title()
+
+    @classmethod
+    def model_class(self):
+        return "{}-{}".format(self._meta.app_label, self._meta.model_name)
+
+    @property
+    def object_class(self):
+        return "{}-{}-{}".format(self._meta.app_label, self._meta.model_name, self.id)
+
+    
+class AsyncMixin(Model):
     PROCESSING = "PR"
     ERROR = "ER"
     COMPLETE = "CO"
@@ -71,45 +174,100 @@ class AsyncMixin(models.Model):
         (ERROR, "error"),
         (COMPLETE, "complete")
     ]
-    state = models.CharField(
+    state = CharField(
         max_length=2,
         choices=STATE_CHOICES,
-        default=PROCESSING
+        default=PROCESSING,
+        editable=False
     )
-    message = models.TextField(null=True)
-    task_id = models.CharField(max_length=200, null=True)
+    message = TextField(null=True, editable=False)
+    task_id = CharField(max_length=200, null=True, editable=False)
+    
     class Meta:
         abstract = True
 
     
 class Slide(CdhModel):
+    article = TextField(blank=True, null=True)
+    image = ImageField(blank=True, upload_to="slides")
+    
     class Meta:
         verbose_name_plural = "Slides"
-    article = MarkdownField(blank=True, null=True)
-    image = models.ImageField(blank=True)
-    def get_absolute_url(self):
-        return reverse("cdh:slide", args=(self.id,))
 
 
 class ResearchArtifact(CdhModel):
-    description = MarkdownField(blank=True, null=True)
-    author_freetext = models.TextField()
-    description = MarkdownField(blank=True, null=True)
-    def get_absolute_url(self):
-        return reverse("cdh:researchartifact", args=(self.id,))    
+    ARTICLE = "article"
+    BOOK = "book"
+    BOOKLET = "booklet"
+    CONFERENCE = "conference"
+    INBOOK = "inbook"
+    INCOLLECTION = "incollection"
+    INPROCEEDINGS = "inproceedings"
+    MANUAL = "manual"
+    MASTERSTHESIS = "mastersthesis"
+    MISC = "misc"
+    PHDTHESIS = "phdthesis"
+    PROCEEDINGS = "proceedings"
+    TECHREPORT = "techreport"
+    UNPUBLISHED = "unpublished"    
+    TYPE_CHOICES = [
+        (ARTICLE, "Article"),
+        (BOOK, "Book"),
+        (BOOKLET, "Booklet"),
+        (CONFERENCE, "Conference"),
+        (INBOOK, "Contribution to book"),
+        (INCOLLECTION, "Contribution to collection"),
+        (INPROCEEDINGS, "Contribution to conference or workshop"),
+        (MANUAL, "Technical documentation"),
+        (MASTERSTHESIS, "Masters thesis"),
+        (MISC, "Miscellaneous"),
+        (PHDTHESIS, "PhD thesis"),
+        (PROCEEDINGS, "Conference or workshop proceedings"),
+        (TECHREPORT, "Technical report"),
+        (UNPUBLISHED, "Unpublished")
+    ]    
+    type = CharField(max_length=100, choices=TYPE_CHOICES, default=ARTICLE)
+    title = CharField(max_length=1000, null=True)
+    author = TextField(null=True)
+    year = PositiveIntegerField(null=True)
+    doi = CharField(max_length=1000, null=True)
+    pages = CharField(max_length=1000, null=True)
+    howpublished = CharField(max_length=1000, null=True)
+    chapter = CharField(max_length=1000, null=True)
+    organization = CharField(max_length=1000, null=True)
+    booktitle = CharField(max_length=1000, null=True)
+    school = CharField(max_length=1000, null=True)
+    institution = CharField(max_length=1000, null=True)
+    publisher = CharField(max_length=1000, null=True)
+    address = CharField(max_length=1000, null=True)
+    journal = CharField(max_length=1000, null=True)
+    volume = CharField(max_length=1000, null=True)
+    number = CharField(max_length=1000, null=True)
+    series = CharField(max_length=1000, null=True)
+    month = CharField(max_length=1000, null=True)
+    note = CharField(max_length=1000, null=True)
+    key = CharField(max_length=1000, null=True)
+    editor = CharField(max_length=1000, null=True)
+    edition = CharField(max_length=1000, null=True)
+    url = URLField(max_length=1000, null=True)
+    slides = FileField(upload_to="research/slides", null=True)
+    document = FileField(upload_to="research/documents", null=True)
+    appendix = FileField(upload_to="research/appendices", null=True)
+    image = ImageField(upload_to="research/images", null=True)
+    description = TextField(blank=True, null=True)
 
 
 class Documentation(CdhModel):
-    value = MarkdownField(blank=True, null=True)
-    view_name = models.CharField(null=True, max_length=200, editable=False)
-    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, null=True, blank=True, editable=False)
-    object_id = models.PositiveIntegerField(null=True, blank=True, editable=False)
+    content = TextField(blank=True, null=True)
+    view_name = CharField(null=True, max_length=200, editable=False)
+    content_type = ForeignKey(ContentType, on_delete=CASCADE, null=True, blank=True, editable=False)
+    object_id = PositiveIntegerField(null=True, blank=True, editable=False)
     content_object = GenericForeignKey('content_type', 'object_id')
     
     class Meta:
         indexes = [
-            models.Index(fields=["content_type", "object_id"]),
+            Index(fields=["content_type", "object_id"]),
         ]
 
     def render(self):
-        return markdown.markdown(self.value)
+        return markdown.markdown(self.content)

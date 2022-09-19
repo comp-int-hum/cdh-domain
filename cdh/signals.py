@@ -10,12 +10,10 @@ from .models import CdhModel
 logger = logging.getLogger()
 
 
-User = get_user_model()
-anon = get_anonymous_user()
-
-
 @receiver(post_save)
 def post_save_callback(sender, instance, created, raw, using, update_fields, *argv, **argd):
+    User = get_user_model()
+    anon = get_anonymous_user()
     if created and isinstance(instance, (CdhModel, get_user_model())):
         assign_perm(
             "{}.{}_{}".format(

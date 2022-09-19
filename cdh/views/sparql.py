@@ -10,16 +10,19 @@ from rdflib.plugins.sparql import prepareQuery
 import requests
 
 
+logger = logging.getLogger("cdh")
+
+
 class SparqlView(View):
     def get(self, request, *argv, **argd):
-        query_id = int(request.GET["pk"])
-        primary_source_id = Query.objects.get(id=query_id).primary_source.id
-        query_text = request.GET["interaction"]
-        if not re.match(r".*limit\s+\d+\s*$", query_text, re.I):
-            query_text = query_text + " limit 100"
+        query_text = request.GET["query_text"]
+        primary_source_id = int(request.GET["primary_source_pk"])
+        if not re.match(r".*limit\s+\d+\s*$", query_text, re.I|re.S):
+            query_text = query_text.strip() + " limit 10"
         try:
             query = prepareQuery(query_text)
-        except:
+        except Exception as e:
+            logger.error(e)
             return HttpResponse("Invalid SPARQL query")
         resp = requests.get(
             "http://{}:{}/{}_{}/query".format(settings.JENA_HOST, settings.JENA_PORT, primary_source_id, "data"),
@@ -33,7 +36,7 @@ class SparqlView(View):
         # bnode literal uri
         ctx = {
             "variables" : variables,
-            "bindings" : [[r.get(v, {}).get("value", "").split("/")[-1].split("#")[-1] for v in variables] for r in j.get("results", {}).get("bindings", [])]
+            "bindings" : [[(v, r.get(v, {}).get("value", "").replace("cdh.jhu.edu", "{}:{}".format(settings.HOSTNAME, settings.PORT)) if v == "url" else r.get(v, {}).get("value", "").split("/")[-1].split("#")[-1]) for v in variables] for r in j.get("results", {}).get("bindings", [])]
         }
         return render(request, "cdh/sparql_results.html", ctx)
 

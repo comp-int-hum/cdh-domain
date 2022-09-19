@@ -1,5 +1,5 @@
 import logging
-from django.forms import ModelForm
+from django.forms import ModelForm, Field
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, get_object_or_404
 from django.views.generic.detail import SingleObjectMixin, SingleObjectTemplateResponseMixin
@@ -37,14 +37,25 @@ class AtomicView(NestedMixin, DeletionMixin, UpdateView, BaseView):
     def __init__(self, *argv, **argd):
         super(AtomicView, self).__init__(*argv, **argd)
 
-    def dispatch(self, request, *argv, **argd):
-        return super(AtomicView, self).dispatch(request, *argv, **argd)
+    def setup(self, request, *argv, **argd):
+        super(AtomicView, self).setup(request, *argv, **argd)
+        self.pk = argd.get("pk", None)
+        self.object = self.get_object()
+        self.user_perms = get_users_with_perms(self.object, with_group_users=False, attach_perms=True) if self.object else {}
+        self.group_perms = get_groups_with_perms(self.object, attach_perms=True) if self.object else {}
+        self.obj_perms = [x.split("_")[0] for x in (get_perms(self.request.user, self.object) if self.object else [])]
+        self.model_perms = [x.split("_")[0] for x in (get_perms(self.request.user, self.model) if self.model else [])]
         
     def get_object(self):
         try:
-            return super(AtomicView, self).get_object()
+            return self.model.objects.get(id=self.pk)
         except:
             return None
+
+    def get_context_data(self, *argv, **argd):
+        ctx = super(AtomicView, self).get_context_data(*argv, **argd)
+        ctx["editable"] = self.editable
+        return ctx
         
     def get_form_class(self, create=False):
         editable = self.editable and ("change" in self.obj_perms or self.object == None)
@@ -55,6 +66,9 @@ class AtomicView(NestedMixin, DeletionMixin, UpdateView, BaseView):
                     if not editable:
                         for name, field in sself.fields.items():
                             field.widget.attrs['readonly'] = 'true'
+                            if name == "name":
+                                field.widget.hidden = True                                
+                                field.widget.attrs['hidden'] = 'true';
                 class Meta:
                     model = self.model
                     fields = self.fields
@@ -69,10 +83,16 @@ class AtomicView(NestedMixin, DeletionMixin, UpdateView, BaseView):
                         if isinstance(v, tuple):
                             sself.fields[k] = v[0](**v[1])
                         else:
-                            sself.fields[k] = v()
+                            if isinstance(v, Field):
+                                sself.fields[k] = v
+                            else:
+                                sself.fields[k] = v()
                     if not editable:
                         for name, field in sself.fields.items():
                             field.widget.attrs['readonly'] = 'true'
+                            if name == "name":
+                                field.widget.hidden = True
+                                field.widget.attrs['hidden'] = 'true';
                 class Meta:
                     model = self.model
                     fields = self.fields

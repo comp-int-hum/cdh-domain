@@ -1,4 +1,7 @@
 <div class="tab-pane fade"
+  {% if model_name %}model_name="{{model_name}}"{% endif %}
+  {% if app_label %}app_label="{{app_label}}"{% endif %}
+  {% if pk %}pk="{{pk}}"{% endif %}          
      id="content-{{uid}}_{{index}}"
      role="tabpanel"
      aria-labelledby="control-{{uid}}_{{index}}">

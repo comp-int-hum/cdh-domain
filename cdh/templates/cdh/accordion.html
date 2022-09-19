@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% load cdh %}
+
+
+{% block content %}
+
+{% comment %}
+<div
+  class="cdh-alternatives"
+  >
+  <div
+    class="container w-75 cdh-edit"
+    style="display: none;"
+    >
+
+    <form
+      hx-swap="none"
+      {% if documentation_object %}
+      hx-patch="{{documentation_object.get_absolute_url}}"
+      {% else %}
+      hx-post="{{documentation_model.get_list_url}}"
+      {% endif %}
+      hx-headers='{"X-CSRFToken" : "{{csrf_token}}"}'>
+      >
+      {% csrf_token %}
+      {% cdh_render_form documentation_serializer %}
+      {% if documentation_serializer %}
+      <button class="btn btn-primary" type="submit">Save</button>
+      {% endif %}
+    </form>
+  </div>
+  <div
+    class="container w-75 cdh-view"
+    >
+    {% if documentation_serializer %}
+    {{documentation_object.render|safe}}
+    {% endif %}
+  </div>
+</div>
+{% endcomment %}
+
+<div class="container w-75">  
+  {% if "add" in model_perms and create_serializer %}
+  {% include "cdh/modal.html" with mode="creation" uid=uid item=model create_serializer=create_serializer csrf_token=csrf_token model=model %}
+  {% endif %}  
+</div>
+
+
+<div class="accordion cdh-accordion {{model.model_class}}"
+     id="accordion-{{uid}}"
+     {% if model_name %}model_name="{{model_name}}"{% endif %}
+     {% if app_label %}app_label="{{app_label}}"{% endif %}
+     {% if pk %}pk="{{pk}}"{% endif %}     
+     accordion_url="{{accordion_url}}"
+     >
+  
+  {% if items|length == 0 %}
+
+  {% else %}
+
+
+  {% for item in items %}
+  {% if item.is_object == True %}
+  {% include "cdh/accordion_object_item.html" with item=item index=forloop.counter uid=uid %}
+  {% elif item.is_model == True %}
+  {% include "cdh/accordion_model_item.html" with item=item index=forloop.counter uid=uid %}
+  {% else %}
+  {% include "cdh/accordion_misc_item.html" with item=item index=forloop.counter uid=uid %}
+  {% endif %}
+  {% endfor %}
+  {% endif %}
+</div>
+
+{% endblock %}

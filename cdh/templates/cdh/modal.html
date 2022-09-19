@@ -1,0 +1,233 @@
+{% load cdh %}
+
+<button
+  class="btn cdh-modal cdh-interactive"
+  type="button"
+  data-bs-toggle="modal"
+  data-bs-target="#{{mode}}_modal-{{uid}}_{{index}}"
+  style="display: none;"
+  >
+  {% if mode == "documentation" %}
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    fill="currentColor"
+    class="bi bi-file-text"
+    viewBox="0 0 16 16"
+    >
+    <path
+      d="M5 4a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1H5zm-.5 2.5A.5.5 0 0 1 5 6h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5zM5 8a.5.5 0 0 0 0 1h6a.5.5 0 0 0 0-1H5zm0 2a.5.5 0 0 0 0 1h3a.5.5 0 0 0 0-1H5z"
+      />
+    <path
+      d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2zm10-1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1z"
+      />
+  </svg>
+  {% elif mode == "deletion" %}
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    fill="currentColor"
+    class="bi bi-trash3"
+    viewBox="0 0 16 16"
+    >
+    <path
+      d="M6.5 1h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5ZM11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3A1.5 1.5 0 0 0 5 1.5v1H2.506a.58.58 0 0 0-.01 0H1.5a.5.5 0 0 0 0 1h.538l.853 10.66A2 2 0 0 0 4.885 16h6.23a2 2 0 0 0 1.994-1.84l.853-10.66h.538a.5.5 0 0 0 0-1h-.995a.59.59 0 0 0-.01 0H11Zm1.958 1-.846 10.58a1 1 0 0 1-.997.92h-6.23a1 1 0 0 1-.997-.92L3.042 3.5h9.916Zm-7.487 1a.5.5 0 0 1 .528.47l.5 8.5a.5.5 0 0 1-.998.06L5 5.03a.5.5 0 0 1 .47-.53Zm5.058 0a.5.5 0 0 1 .47.53l-.5 8.5a.5.5 0 1 1-.998-.06l.5-8.5a.5.5 0 0 1 .528-.47ZM8 4.5a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5Z"
+      />
+  </svg>  
+  {% elif mode == "creation" %}
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    fill="currentColor"
+    class="bi bi-plus-square"
+    viewBox="0 0 16 16"
+    >
+    <path
+      d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h12zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"
+      />
+    <path
+      d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"
+      />
+  </svg>
+  {% elif mode == "editing" %}
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    fill="currentColor"
+    class="bi bi-pencil-square"
+    viewBox="0 0 16 16"
+    >
+    <path
+      d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"
+      />
+    <path
+      fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"
+      />
+  </svg>  
+  {% elif mode == "permissions" %}
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    fill="currentColor"
+    class="bi bi-lock"
+    viewBox="0 0 16 16"
+    >
+    <path
+      d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2zM5 8h6a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"
+      />
+  </svg>  
+  {% else %}
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    fill="currentColor"
+    class="bi bi-question-diamond"
+    viewBox="0 0 16 16"
+    >
+    <path
+      d="M6.95.435c.58-.58 1.52-.58 2.1 0l6.515 6.516c.58.58.58 1.519 0 2.098L9.05 15.565c-.58.58-1.519.58-2.098 0L.435 9.05a1.482 1.482 0 0 1 0-2.098L6.95.435zm1.4.7a.495.495 0 0 0-.7 0L1.134 7.65a.495.495 0 0 0 0 .7l6.516 6.516a.495.495 0 0 0 .7 0l6.516-6.516a.495.495 0 0 0 0-.7L8.35 1.134z"
+      />
+    <path
+      d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286zm1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94z"
+      />
+  </svg>
+  {% endif %}
+</button>
+
+
+<div
+  class="modal fade"
+  id="{{mode}}_modal-{{uid}}_{{index}}"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="{{mode}}_modal_label-{{uid}}"
+  aria-hidden="true"
+  >
+  <div
+    class="modal-dialog modal-xl"
+    role="document"
+    >
+    <div
+      class="modal-content"
+      >
+      <div
+	class="modal-header"
+	>
+        <h5
+	  class="modal-title"
+	  id="{{mode}}_modal_label-{{uid}}"
+	  >
+	  {% if mode == "creation" %}
+	  Creating a new {{model_name}}
+	  {% elif mode == "deletion" %}
+	  Deleting {{item}}
+	  {% elif mode == "editing" %}
+	  Editing {{model_name}} {{object}}
+	  {% elif mode == "documentation" %}
+	  Editing documentation for {{model_name_plural}}
+	  {% elif mode == "permissions" %}
+	  Modifying permissions of {{item}}
+	  {% else %}
+	  {{title}}
+	  {% endif %}
+	</h5>
+        <button
+	  type="button"
+	  class="close"
+	  data-bs-dismiss="modal"
+	  aria-label="Close"
+	  >
+          <span
+	    aria-hidden="true"
+	    >
+	    &times;
+	  </span>
+        </button>
+      </div>
+      {% if mode == "deletion" %}
+      <div
+	class="modal-body"
+	>
+	Are you sure?
+      </div>
+      {% elif mode == "creation" %}
+      <div	
+	>
+	<form
+	  id="form-{{mode}}_{{uid}}"
+	  hx-post="{{item.get_list_url}}"
+	  hx-encoding="multipart/form-data"
+	  hx-headers='{"uid" : "{{mode}}_{{uid}}", "style" : "modal", "X-CSRFToken" : "{{csrf_token}}", "include" : true}'>
+	  {% csrf_token %}
+	  {% cdh_render_form create_serializer template_pack="cdh/template_pack" %}
+	</form>
+      </div>
+      {% elif mode == "permissions" %}
+      <form
+	id="form-{{mode}}_{{uid}}"
+	hx-post="{{item.get_permissions_url}}"
+	hx-encoding="multipart/form-data"
+	hx-headers='{"uid" : "{{mode}}_{{uid}}", "style" : "modal", "X-CSRFToken" : "{{csrf_token}}", "include" : true}'
+	>
+      <div
+	class="modal-body"
+	hx-trigger="intersect"
+	hx-swap="innerHTML"
+	hx-select="#top_level_content > *"
+	hx-get="{{item.get_permissions_url}}"
+	hx-headers='{"uid" : "{{mode}}_{{uid}}", "style" : "modal", "X-CSRFToken" : "{{csrf_token}}"}'
+	>
+      </div>
+      </form>
+      {% else %}
+      <div
+	class="modal-body"
+	hx-trigger="intersect"
+	hx-swap="innerHTML"
+	hx-select="#top_level_content > *"
+	hx-get="{{item.get_absolute_url}}"
+	hx-headers='{"uid" : "{{mode}}_{{uid}}", "style" : "modal", "X-CSRFToken" : "{{csrf_token}}"}'
+	>
+      </div>
+      {% endif %}
+	<div
+	  class="modal-footer"
+	  >
+          <button
+	    type="button"
+	    class="btn btn-secondary"
+	    data-bs-dismiss="modal"
+	    >
+	    Never mind
+	  </button>
+	  {% if mode == "deletion" %}
+	  <button
+	    class="btn btn-danger"
+	    hx-delete="{{item.get_absolute_url}}"
+	    id="{{mode}}_button-{{uid}}"
+	    data-bs-dismiss="modal"
+	    hx-headers='{"uid" : "{{mode}}_{{uid}}", "style" : "modal", "X-CSRFToken" : "{{csrf_token}}", "include" : true}'
+	    >
+	    Delete
+	  </button>
+	  {% else %}
+          <button
+	    type="submit"
+	    class="btn btn-primary"
+	    form="form-{{mode}}_{{uid}}"
+	    id="{{mode}}_button-{{uid}}"
+	    data-bs-dismiss="modal"	    
+	    >
+	    Save
+	  </button>
+	  {% endif %}
+	</div>
+    </div>
+  </div>
+</div>

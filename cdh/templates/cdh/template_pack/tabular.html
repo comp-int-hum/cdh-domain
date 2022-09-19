@@ -1,0 +1,20 @@
+<table class="table">
+  <thead>
+    <tr>
+    {% for col_name in field.value.column_names %}
+    <th scope="col">{{col_name}}</th>
+    {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in field.value.rows %}
+    <a href="">
+      <tr>
+	{% for col_val in row %}
+	<td>{{col_val}}</td>
+	{% endfor %}
+      </tr>
+    </a>
+  {% endfor %}
+  </tbody>
+</table>

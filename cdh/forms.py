@@ -1,4 +1,5 @@
 from . import settings
+from django.contrib.auth import get_user_model
 from django import forms
 from django.core.exceptions import ValidationError
 from django_registration.forms import RegistrationFormUniqueEmail
@@ -14,6 +15,9 @@ from django.forms import FileField, ModelForm
 from guardian.shortcuts import assign_perm, get_anonymous_user
 from django.template.engine import Engine
 from django.template import Context
+from .models import ResearchArtifact
+
+User = get_user_model()
 
 template_engine = Engine.get_default()
 
@@ -26,35 +30,37 @@ class CdhFileField(FileField):
     pass    
 
 
-class PublicUserForm(forms.ModelForm):
+class UserViewForm(forms.ModelForm):
     def __init__(self, *argv, **argd):
-        return super(PublicUserForm, self).__init__(*argv, **argd)
+        return super(UserViewForm, self).__init__(*argv, **argd)
     def __str__(self):
-        for name, field in self.fields.items():            
-            if field.widget.attrs.get("readonly", "false") != "true":
-                return super(PublicUserForm, self).__str__()        
         content = template_engine.get_template("cdh/snippets/person.html").render(
             Context(
                 {name : getattr(self.instance, name) for name in ["first_name", "last_name", "photo", "description", "title", "homepage"]}
             )
         )
         return mark_safe(content)
+    class Meta:
+        model = User
+        fields = ["photo", "title", "first_name", "last_name", "description", "homepage"]
 
-
-class PublicResearchForm(forms.ModelForm):
+        
+class ResearchArtifactViewForm(forms.ModelForm):
     def __init__(self, *argv, **argd):
-        return super(PublicResearchForm, self).__init__(*argv, **argd)
+        return super(ResearchArtifactViewForm, self).__init__(*argv, **argd)
     def __str__(self):
-        for name, field in self.fields.items():            
-            if field.widget.attrs.get("readonly", "false") != "true":
-                return super(PublicResearchForm, self).__str__()        
+        #for name, field in self.fields.items():            
+        #    if field.widget.attrs.get("readonly", "false") != "true":
+        #        return super(ResearchArtifactViewForm, self).__str__()        
         content = template_engine.get_template("cdh/snippets/research.html").render(
             Context(
                 {"instance" : self.instance}
             )
         )
         return mark_safe(content)
-    
+    class Meta:
+        model = ResearchArtifact
+        exclude = []
 
 class AdminUserForm(forms.ModelForm):
     class Meta:
@@ -66,7 +72,7 @@ class AdminUserForm(forms.ModelForm):
         }
 
         
-class ModifyUserForm(forms.ModelForm):
+class UserEditForm(forms.ModelForm):
     class Meta:
         model = models.User
         fields = ["first_name", "last_name", "title", "homepage", "photo", "description"]
@@ -74,7 +80,7 @@ class ModifyUserForm(forms.ModelForm):
             "first_name" : forms.TextInput(attrs={}) #area(attrs={"cols" : 30, "rows" : 1})
         }
         
-class UserForm(RegistrationFormUniqueEmail):
+class UserCreateForm(RegistrationFormUniqueEmail):
     def clean_email(self):
         data = self.cleaned_data["email"].lower()
         if not any([data.endswith(s) for s in ["jh.edu", "jhu.edu", "jhmi.edu"]]):

@@ -11,10 +11,13 @@ from guardian.shortcuts import get_perms, get_objects_for_user, assign_perm, get
 from cdh.models import User
 from .mixins import ButtonsMixin, NestedMixin
 from .atomic import AtomicView
+from .base import BaseView
 
-
-class PermissionsView(AtomicView):
-
+class PermissionsView(SingleObjectTemplateResponseMixin, View): #AtomicView):
+    template_name = "cdh/permissions.html"
+    model_name = None
+    app_label = None
+    
     def __init__(self, *argv, **argd):
         super(PermissionsView, self).__init__(*argv, **argd)
     
@@ -23,10 +26,14 @@ class PermissionsView(AtomicView):
         self.app = apps.get_app_config(app_label)
         self.model = self.app.get_model(model)
         self.object = self.model.objects.get(id=pk)
+        self.user_perms = get_users_with_perms(self.object, with_group_users=False, attach_perms=True) if self.object else {}
+        self.group_perms = get_groups_with_perms(self.object, attach_perms=True) if self.object else {}
+        self.obj_perms = [x.split("_")[0] for x in (get_perms(self.request.user, self.object) if self.object else [])]
+        self.model_perms = [x.split("_")[0] for x in (get_perms(self.request.user, self.model) if self.model else [])]
         return super(PermissionsView, self).dispatch(request, *argv, **argd)
 
     def get_context_data(self, *argv, **argd):
-        ctx = super(PermissionsView, self).get_context_data(*argv, **argd)
+        ctx = {} #super(PermissionsView, self).get_context_data(*argv, **argd)
         ctx["user_permissions_options"] = [(u, [p.split("_")[0] for p in self.user_perms.get(u, [])]) for u in User.objects.all()]
         ctx["group_permissions_options"] = [(g, [p.split("_")[0] for p in self.group_perms.get(g, [])]) for g in Group.objects.all()]
         ctx["perms"] = ["delete", "view", "change"]
@@ -34,7 +41,7 @@ class PermissionsView(AtomicView):
         
     def get(self, request, *argv, **argd):
         ctx = self.get_context_data()
-        return render(request, "cdh/snippets/permissions.html", ctx)
+        return self.render_to_response(ctx)
 
     def post(self, request, *argv, **argd):
         ctx = self.get_context_data()
@@ -47,4 +54,4 @@ class PermissionsView(AtomicView):
                     else:
                         to_remove = "{}_{}".format(perm, option._meta.model_name)
                         remove_perm("{}_{}".format(perm, self.model._meta.model_name), option, self.object)
-        return HttpResponseRedirect(request.path_info)
+        return HttpResponse() #Redirect(request.path_info)

@@ -1,0 +1,14 @@
+<div
+  id="tabs-{{uid}}"
+  >
+  <ul class="nav nav-tabs cdh-nav-tabs" id="controls-{{uid}}" role="tablist">
+    {% for tab in tabs %}
+    {% include "cdh/tab_control.html" with index=forloop.counter title=tab.title %}
+    {% endfor %}
+  </ul>
+  <div class="tab-content" id="contents-{{uid}}">
+    {% for tab in tabs %}    
+    {% include "cdh/tab_content.html" with index=forloop.counter content=tab.content %}
+    {% endfor %}
+  </div>
+</div>

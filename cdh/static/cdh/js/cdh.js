@@ -26,6 +26,16 @@ function setList(name, value){
     sessionStorage.setItem(name, JSON.stringify(value));
 }
 
+function setValue(name, value){
+    console.info("Setting value of", name, "to", value);
+    sessionStorage.setItem(name, JSON.stringify(value));    
+}
+
+function getValue(name){
+    console.info("Getting value of", name);
+    return JSON.parse(sessionStorage.getItem(name));
+}
+
 function checkValue(name, value){
     var retval = getList(name).includes(value);
     console.info("Checking if value", value, "is in", name, ":", retval);    
@@ -65,17 +75,14 @@ function removeAccordionItem(item){
 
 function collapseAccordionItem(item){
     console.info("Collapsing accordion item", item.id);
-    var button = item.querySelector(".cdh-accordion-header > button");
-    // This is a problem:
-    if(button != null){
-	var content = document.getElementById(button.getAttribute("aria-controls"));
-	button.setAttribute("aria-expanded", "false");
-	button.classList.add("collapsed");
-	content.classList.add("collapse");
-	content.classList.remove("show");
-	removeValue("active_accordion_items", item.id);
-	removeNestedValues(item);
-    }
+    var button = item.querySelector(".cdh-accordion-header > .btn-group > .cdh-accordion-button");
+    var content = document.getElementById(button.getAttribute("aria-controls"));
+    button.setAttribute("aria-expanded", "false");
+    button.classList.add("collapsed");
+    content.classList.add("collapse");
+    content.classList.remove("show");
+    removeValue("active_accordion_items", item.id);
+    removeNestedValues(item);
 }
 
 function setFirstTab(tabs){
@@ -143,7 +150,7 @@ function restoreState(root){
 		expandAccordionItem(item);		
 		activeCount += 1;
 	    }
-	    else{
+	    else if(item.classList.contains("cdh-accordion-item")){
 		collapseAccordionItem(item);
 	    }
 	}	
@@ -188,9 +195,75 @@ function restoreState(root){
 }
 
 
+function restoreEditingState(){
+    var editing = getValue("editing");
+    var node = document.getElementById("editing_toggle");
+    if(!node){
+	return;
+    }
+    var svg = node.children[0];    
+
+    if(editing == true){
+	// activate editing
+	if(!node.classList.contains("editing")){
+	    node.classList.toggle("editing"); 
+	}
+	svg.children[0].setAttribute("fill", "red");
+	node.setAttribute("title", "Deactivate editing mode");
+	for(let alternative of document.getElementsByClassName("cdh-alternatives")){
+	    for(let child of alternative.children){
+		if(child.classList.contains("cdh-view")){
+		    child.setAttribute("style", "display: none;");
+		}
+		else if(child.classList.contains("cdh-edit")){
+		    child.setAttribute("style", "display: block;");		    
+		}
+	    }
+	    //console.error(alternative);
+	}
+	for(let interactive of document.getElementsByClassName("cdh-interactive")){
+	    interactive.setAttribute("style", "display: block;");
+	}
+    }
+    else{
+	// deactivate editing
+	if(node.classList.contains("editing")){
+	    node.classList.toggle("editing"); 
+	}	
+	svg.children[0].setAttribute("fill", "white");
+	node.setAttribute("title", "Activate editing mode");
+	for(let alternative of document.getElementsByClassName("cdh-alternatives")){
+	    for(let child of alternative.children){
+		if(child.classList.contains("cdh-view")){
+		    child.setAttribute("style", "display: block;");
+		}
+		else if(child.classList.contains("cdh-edit")){
+		    child.setAttribute("style", "display: none;");		    
+		}
+	    }
+	}
+	for(let interactive of document.getElementsByClassName("cdh-interactive")){
+	    interactive.setAttribute("style", "display: none;");
+	}	
+    }
+    
+}
+
+
+function toggleEditingMode(event){
+    var node = document.getElementById("editing_toggle");
+    node.classList.toggle("editing");
+    var editing = node.classList.contains("editing");
+    setValue("editing", editing);
+    restoreEditingState();
+}
+
+
 function cdhSetup(root, htmxSwap){
     console.info("Performing initial setup on", root.id);
 
+
+    
     // things that should only happen once, at the top level of the page
     //if(!htmxSwap){
     // preserve accordion, tab, and scroll states when browsing away from or reloading the page
@@ -200,6 +273,9 @@ function cdhSetup(root, htmxSwap){
 
     // restore any previous state (must happen for htmx-loaded fragments too)
     restoreState(root);
+
+    //const tooltipTriggerList = root.querySelectorAll('[data-bs-toggle="tooltip"]')
+    //const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl))
     
     for(let el of htmx.findAll(root, ".cdh-select")){
 	el.addEventListener("change", event => {
@@ -219,28 +295,39 @@ function cdhSetup(root, htmxSwap){
     for(let el of htmx.findAll(root, ".cdh-editor")){
 	if(el.getAttribute("processed") != "true"){
 	require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.0-dev.20220625/min/vs' } });	
-	require(['vs/editor/editor.main'], function () {
-	    var listValue = JSON.parse(document.getElementById(el.getAttribute("value_id")).textContent);
+	    require(['vs/editor/editor.main'], function () {
+		var value = JSON.parse(document.getElementById(el.getAttribute("value_id")).textContent);
+		
+		//var listValue = JSON.parse(document.getElementById(el.getAttribute("value_id")).textContent);
 	    var form = el.parentNode;
 	    var language = el.getAttribute("language");
+	    var readOnly = el.getAttribute("readonly") == "true";
 	    var editor = monaco.editor.create(el, {	      
-		value: listValue.join('\n'),
+		value: value, //listValue.join('\n'),
 		language: language,
 		automaticLayout: true,
 		tabCompletion: "on",
-		wordWrap: true
+		wordWrap: true,
+		codeLens: false,
+		readOnly: readOnly,
+		domReadOnly: readOnly
 	    });
 	    el.addEventListener("keyup", (event) => {
 		if(language == "torchserve_text"){
 		    if(event.key == "Tab" && event.shiftKey == true){
 			var content = editor.getModel().getValue();
-			var form = event.target.parentElement.parentElement.parentElement.parentElement;
+			var info = event.target.parentElement.parentElement.parentElement;
+			//var csrf = JSON.parse(info.getAttribute("hx-headers"));
 			$.ajax(
 			    {
-				headers: JSON.parse(form.getAttribute("hx-headers")),
-				url: form.action,
-				method: "POST",
-				data: {interaction: content},
+				//headers: csrf,
+				headers: {
+				    Accept : "application/json",
+				    "Content-Type" : "application/json"
+				},
+				url: info.getAttribute("endpoint_url"),
+				method: "GET",
+				data: {data: content},
 				success: function (data){
 				    var model = editor.getModel();
 				    var current = model.getValue();				
@@ -252,22 +339,21 @@ function cdhSetup(root, htmxSwap){
 			);
 		    }
 		}
-		else if(language == "markdown" || language == "sparql"){
+		else if(language == "sparql"){
 		    if(event.key == "Tab" && event.shiftKey == true){
 			var content = editor.getModel().getValue();
 			var div = event.target.parentElement.parentElement.parentElement;
-			var form = div.parentElement;
-			var pk = form.parentElement.getAttribute("pk");
-			var model_name = form.parentElement.getAttribute("model_name");
-			var app_label = form.parentElement.getAttribute("app_label");
 			var endpoint = div.getAttribute("endpoint_url");
+			var parentId = div.getAttribute("parent_id");
 			var target = document.getElementById(div.getAttribute("output_id"));
 			$.ajax(
 			    {
-				headers: JSON.parse(form.getAttribute("hx-headers")),
 				url: endpoint,
 				method: "GET",
-				data: {interaction: content, pk: pk},
+				data: {
+				    query_text: content,
+				    primary_source_pk: parentId
+				},
 				success: function (data){
 				    target.innerHTML = data;
 				}
@@ -275,10 +361,45 @@ function cdhSetup(root, htmxSwap){
 			);
 		    }
 		}
+		else if(language == "markdown"){
+		    if(event.key == "Tab" && event.shiftKey == true){
+			
+			// var content = editor.getModel().getValue();
+			// var div = event.target.parentElement.parentElement.parentElement;
+			// var form = div.parentElement;
+			
+			// var endpoint = div.getAttribute("endpoint_url");
+			// var parentId = div.getAttribute("parent_id");
+			// var target = document.getElementById(div.getAttribute("output_id"));
+
+			var content = editor.getModel().getValue();
+			var div = event.target.parentElement.parentElement.parentElement;
+			var endpoint = div.getAttribute("endpoint_url");
+			var parentId = div.getAttribute("parent_id");
+			var target = document.getElementById(div.getAttribute("output_id"));
+
+
+			$.ajax(
+			    {
+				headers: JSON.parse(form.getAttribute("hx-headers")),
+				url: endpoint,
+				method: "GET",
+				data: {
+				    content: content,
+				},
+				success: function (data){
+				    target.innerHTML = data;
+				}
+			    }
+			);
+		    }
+		}
+
+
 	    });
 	    editor.getModel().onDidChangeContent((event) => {
 		var content = editor.getModel().getValue();
-		var hid = document.getElementById(el.getAttribute("field_name") + "-hidden");
+		var hid = document.getElementById(el.getAttribute("value_id") + "-hidden");
 		hid.setAttribute("value", content);
 	    });
 	});
@@ -323,35 +444,19 @@ function cdhSetup(root, htmxSwap){
             }
 	}
     }
+    restoreEditingState();
 }
 
 
 function handleCdhEvent(event){
     var event_type = event.detail.event_type;
-    var app_label = event.detail.app_label;
-    var model_name = event.detail.model_name;
-    var pk = event.detail.pk;
-    console.info("Handling event of type", event_type, ", app", app_label, ", model",  model_name, ", instance", pk);
+    var object_class = event.detail.object_class;
+    var model_class = event.detail.model_class;
+    console.info("Handling event of type", event_type, ", object class", object_class, ", model class", model_class);
     if(event_type == "delete"){
-	for(let el of document.getElementsByClassName("cdh-accordion-item")){
-	    if(
-		app_label == el.getAttribute("app_label") &&
-		    model_name == el.getAttribute("model_name") &&
-		    pk == el.getAttribute("pk")
-	    ){
-		/*
-		for(let ch of el.children){
-		    if(ch.classList.contains("accordion-collapse")){
-			// remove id from active
-			removeValue("active_accordion_items", el.id);
-			console.info("(not yet) removing active id", ch.id);
-		    }
-		    }
-		    */
-		//console.info("Deleting", el);
-		removeAccordionItem(el);
-		//el.remove();
-	    }
+
+	for(let el of document.getElementsByClassName(object_class)){
+	    removeAccordionItem(el);
 	}
     }
     else if(event_type == "update"){
@@ -367,8 +472,46 @@ function handleCdhEvent(event){
 	}	
     }
     else if(event_type == "create"){
-	var accItem = event.target.parentElement.parentElement.parentElement.parentElement;
-var acc = accItem.parentElement;
+	var model_url = event.detail.model_url;
+	//var accItem = event.target.parentElement.parentElement.parentElement.parentElement;
+	$.ajax(
+	    {		
+		url: model_url,
+		headers: {"include" : true},
+		success: function (data){
+		    var dummy = document.createElement( 'html' );
+		    dummy.innerHTML = data;
+		    for(let el of dummy.getElementsByClassName(object_class)){
+			for(let tgt of document.getElementsByClassName(model_class)){
+			    console.error(el, tgt);
+			    //var accItem = htmx.closest(tgt, ".accordion-item");
+			    tgt.insertAdjacentElement("beforeend", el);
+			    cdhSetup(el, true);
+			    //dummy.remove();
+			    //var rel = document.getElementById(el.id);
+			    //for(let ch of accItem.children){
+			    //htmx.trigger(ch, "refreshForm");
+			    //}
+			    //collapseAccordionItem(accItem);
+			    for(let ch of el.querySelectorAll("*[hx-trigger='intersect']")){
+				htmx.trigger(ch, "intersect");
+			    }
+			    //expandAccordionItem(accItem);
+			    expandAccordionItem(el);
+			    //htmx.trigger(el, 
+			    restoreEditingState();
+			    
+			}
+		    }		    
+		},
+		dataType: "html"
+	    }
+	);
+
+
+	//console.error(model_url);
+	/*var accItem = event.target.parentElement.parentElement.parentElement.parentElement;
+	var acc = accItem.parentElement;
 	  $.ajax(
 	    {		
 		url: acc.getAttribute("accordion_url"),
@@ -397,7 +540,7 @@ var acc = accItem.parentElement;
 		dataType: "html"
 	    }
 	  );
-
+	  */
 
 	/*
 	  Adding new item to other accordions requires some thought w.r.t. identifiers

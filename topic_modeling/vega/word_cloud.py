@@ -1,5 +1,10 @@
+import logging
 from cdh import settings
 from cdh.vega import CdhVisualization
+
+
+logger = logging.getLogger(__name__)
+
 
 class WordCloud(CdhVisualization):
     def __init__(self, words, prefix=None):

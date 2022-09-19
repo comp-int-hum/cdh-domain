@@ -22,12 +22,35 @@ class MaterialView(View):
         obj = store.get_object(self.name, create_if_doesnt_exist=False)
         fnames = obj.list_parts()
         metadata = {}
+        files = {}
         for fname in fnames:
             if fname == "metadata":
-                metadata = json.loads(obj.get_bytestream(fname, streamable=True).read())
+                files["cdh_metadata"] = fname
+                #metadata = json.loads(obj.get_bytestream(fname, streamable=True).read())
             elif fname == "data":
-                with obj.get_bytestream(fname, streamable=True) as ifd:
-                    content = ifd.read()
+                files["cdh_data"] = fname
+                #with obj.get_bytestream(fname, streamable=True) as ifd:
+                #    content = ifd.read()
+            elif fname.endswith(".mets.xml"):
+                files["hathitrust_metadata"] = fname
+            elif fname.endswith(".zip"):
+                files["hathitrust_zip"] = fname
             else:
                 raise Exception("Unrecognized stream name: {}".format(fname))
+        if "cdh_metadata" in files and "cdh_data" in files:
+            metadata = json.loads(obj.get_bytestream(files["cdh_metadata"], streamable=True).read())
+            with obj.get_bytestream(files["cdh_data"], streamable=True) as ifd:
+                content = ifd.read()
+        elif "hathitrust_metadata" in files and "hathitrust_data" in files:
+            metadata = {
+                "content_type" : "text/plain"
+            }
+            zf = o.get_bytestream(os.path.join(part, files["hathitrust_data"]), streamable=True)
+            document_pages = []
+            with zipfile.ZipFile(zf, "r") as zifd:
+                for page in zifd.namelist():
+                    document_pages.append(zifd.read(page).decode("utf-8"))                            
+            content = "\n".join(document_pages)
+        else:
+            raise Exception()
         return HttpResponse(content, content_type=metadata.get("content_type", "unknown"))

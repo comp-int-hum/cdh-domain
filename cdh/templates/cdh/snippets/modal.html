@@ -1,8 +1,9 @@
 <button
-  class="btn cdh-modal"
+  class="btn cdh-modal cdh-interactive"
   type="button"
   data-bs-toggle="modal"
-  data-bs-target="#{{prefix}}_modal-{{uid}}_{{index}}"
+  data-bs-target="#{{mode}}_modal-{{uid}}_{{index}}"
+  style="display: none;"
   >
   {% if mode == "documentation" %}
   <svg
@@ -100,10 +101,10 @@
 
 <div
   class="modal fade"
-  id="{{prefix}}_modal-{{uid}}_{{index}}"
+  id="{{mode}}_modal-{{uid}}_{{index}}"
   tabindex="-1"
   role="dialog"
-  aria-labelledby="{{prefix}}_modal_label-{{uid}}"
+  aria-labelledby="{{mode}}_modal_label-{{uid}}"
   aria-hidden="true"
   >
   <div
@@ -118,9 +119,19 @@
 	>
         <h5
 	  class="modal-title"
-	  id="{{prefix}}_modal_label-{{uid}}"
+	  id="{{mode}}_modal_label-{{uid}}"
 	  >
+	  {% if mode == "creation" %}
+	  Creating a new {{model_name}}
+	  {% elif mode == "deletion" %}
+	  Deleting {{model_name}} {{object}}
+	  {% elif mode == "editing" %}
+	  Editing {{model_name}} {{object}}
+	  {% elif mode == "documentation" %}
+	  Editing documentation for {{model_name}}
+	  {% else %}
 	  {{title}}
+	  {% endif %}
 	</h5>
         <button
 	  type="button"
@@ -136,14 +147,19 @@
         </button>
       </div>
       {% if mode == "deletion" %}
+      <div
+	class="modal-body"
+	>
+	Are you sure?
+      </div>	      
       {% else %}
       <div
 	class="modal-body"
 	hx-trigger="intersect"
 	hx-swap="innerHTML"
 	hx-select="#top_level_content > *"
-	hx-get="{% if mode == "editing" %}{% url url object.id %}{% elif mode == "creation" %}{% url url %}{% elif mode == "permissions" %}{% url "permissions" app_label model_name pk %}{% endif %}"
-	hx-headers='{"uid" : "{{prefix}}_{{uid}}", "style" : "modal", "X-CSRFToken" : "{{csrf_token}}"}'
+	hx-get="{{url}}"
+	hx-headers='{"uid" : "{{mode}}_{{uid}}", "style" : "modal", "X-CSRFToken" : "{{csrf_token}}"}'
 	>
       </div>
       {% endif %}
@@ -155,17 +171,30 @@
 	    class="btn btn-secondary"
 	    data-bs-dismiss="modal"
 	    >
-	    Done
+	    Never mind
 	  </button>
+	  {% if mode == "deletion" %}
+	  <button
+	    class="btn btn-danger"
+	    hx-delete="{{url}}"
+	    id="{{mode}}_button-{{uid}}"
+	    data-bs-dismiss="modal"
+	    hx-headers='{"uid" : "{{mode}}_{{uid}}", "style" : "modal", "X-CSRFToken" : "{{csrf_token}}"}'
+	    >
+	    Delete
+	  </button>
+	  {% else %}
           <button
 	    type="submit"
 	    class="btn btn-primary"
-	    form="form-{{prefix}}_{{uid}}"
-	    id="{{prefix}}_button-{{uid}}"
-	    hx-headers='{"uid" : "{{prefix}}_{{uid}}", "style" : "modal", "X-CSRFToken" : "{{csrf_token}}"}'
+	    form="form-{{mode}}_{{uid}}"
+	    id="{{mode}}_button-{{uid}}"
+	    data-bs-dismiss="modal"
+	    hx-headers='{"uid" : "{{mode}}_{{uid}}", "style" : "modal", "X-CSRFToken" : "{{csrf_token}}"}'
 	    >
 	    Save
 	  </button>
+	  {% endif %}
 	</div>
     </div>
   </div>

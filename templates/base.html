@@ -69,22 +69,97 @@
 	  <div class="row align-justify">
 	    <div class="roof-header-top-links">
 	      <ul class="menu simple roof-menu align-right">
+		<li>
+		  {% if request.user.is_authenticated %}
+		  <a
+		    href="/accounts/logout"
+		    title="Log out as {{request.user.first_name}} {{request.user.last_name}}"
+		    >
+		    <svg
+		      xmlns="http://www.w3.org/2000/svg"
+		      width="32"
+		      height="32"
+		      fill="white"
+		      class="bi bi-door-open"
+		      viewBox="0 0 16 16"
+		      >
+		      <path
+			d="M8.5 10c-.276 0-.5-.448-.5-1s.224-1 .5-1 .5.448.5 1-.224 1-.5 1z"
+			/>
+		      <path
+			d="M10.828.122A.5.5 0 0 1 11 .5V1h.5A1.5 1.5 0 0 1 13 2.5V15h1.5a.5.5 0 0 1 0 1h-13a.5.5 0 0 1 0-1H3V1.5a.5.5 0 0 1 .43-.495l7-1a.5.5 0 0 1 .398.117zM11.5 2H11v13h1V2.5a.5.5 0 0 0-.5-.5zM4 1.934V15h6V1.077l-6 .857z"
+			/>
+		    </svg>
+		  </a>
+		  {% else %}
+		  <a
+		    href="/accounts/login"
+		    title="Log in or create an account"
+		    >
+		    <svg
+		      xmlns="http://www.w3.org/2000/svg"
+		      width="32"
+		      height="32"
+		      fill="white"
+		      class="bi bi-door-closed"
+		      viewBox="0 0 16 16"
+		      >
+		      <path
+			d="M3 2a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v13h1.5a.5.5 0 0 1 0 1h-13a.5.5 0 0 1 0-1H3V2zm1 13h8V2H4v13z"
+			/>
+		      <path
+			d="M9 9a1 1 0 1 0 2 0 1 1 0 0 0-2 0z"
+			/>
+		    </svg>
+		  </a>
+		  {% endif %}
+		</li>
 		{% if request.user.is_authenticated %}
 		<li>
-		  <a href="/accounts/logout">Log out {{request.user.first_name}} {{request.user.last_name}}</a>
-		</li>
-		{% comment %}
-		<li>
-		  <a href="{% url 'manage_account' request.user.id %}">Manage account</a>		  
-		</li>
-		{% endcomment %}
-		{% else %}
-		<li>
-		  <a href="/accounts/login">Log in</a>
+		  <a
+		    id="editing_toggle"
+		    {% if request.user.is_authenticated %}
+		    onclick="toggleEditingMode(event)"		    
+		    title="Activate editing mode"
+		    {% else %}
+		    title="To edit, first log in"
+		    {% endif %}
+		    >
+		    <svg
+		      xmlns="http://www.w3.org/2000/svg"
+		      width="32"
+		      height="32"
+		      class="bi bi-pen-fill"
+		      viewBox="0 0 16 16"
+		      >
+		      <path
+			d="m13.498.795.149-.149a1.207 1.207 0 1 1 1.707 1.708l-.149.148a1.5 1.5 0 0 1-.059 2.059L4.854 14.854a.5.5 0 0 1-.233.131l-4 1a.5.5 0 0 1-.606-.606l1-4a.5.5 0 0 1 .131-.232l9.642-9.642a.5.5 0 0 0-.642.056L6.854 4.854a.5.5 0 1 1-.708-.708L9.44.854A1.5 1.5 0 0 1 11.5.796a1.5 1.5 0 0 1 1.998-.001z"
+			/>
+		    </svg>
+		  </a>		  
 		</li>
 		{% endif %}
 		<li>
-		  <a href="/wiki/help">Help</a>
+		  <a
+		    href="/wiki/help"
+		    title="Help and documentation"
+		    >
+		    <svg
+		      xmlns="http://www.w3.org/2000/svg"
+		      width="32"
+		      height="32"
+		      fill="white"
+		      class="bi bi-question-circle"
+		      viewBox="0 0 16 16"
+		      >
+		      <path
+			d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"
+			/>
+		      <path
+			d="M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286zm1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94z"
+			/>
+		    </svg>
+		  </a>
 		</li>
 	      </ul>
 	    </div>
@@ -196,8 +271,42 @@
 	      <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
 	      {% endfor %}
 	    </ul>
-	    {% endif %}
+	    {% endif %}	    
 	    <div id="top_level_content" class="container">
+	      {% if documentation %}
+	      <div
+		id="documentation-{{uid}}"
+		hx-get="{{documentation.detail_url}}"
+		hx-swap="innerHTML"
+		hx-trigger="intersect"
+		hx-select="#top_level_content > *"
+		>		
+	      </div>
+	      {% comment %}
+	      <div
+		class="cdh-alternatives"
+		>		
+	      <div
+		class="container w-75 cdh-view"
+		>
+		{{documentation.render|safe}}
+	      </div>
+	      <div
+		class="container w-75 cdh-edit"
+		hx-get="{{documentation.detail_url}}"
+		hx-trigger="intersect"
+		hx-swap="innerHTML"
+		hx-headers='{"uid" : "documentation_{{uid}}"}'
+		hx-select="#top_level_content > *"
+		style="display: none;"
+		>
+	      </div>
+	      {% endcomment %}
+	      {% endif %}
+	      
+
+	      
+	      
 	      {% block content %}{% endblock %}
 	      {% block body %}{% endblock %}
 	    </div>
@@ -205,16 +314,14 @@
 	</div>
       </div>
 
+      <div id="to-preserve" hx-preserve="1">
       {% block js %}{{block.super}}{% endblock %}
+      
       {% addtoblock "js" %}
       <script type='text/javascript' src="{% static 'cdh/js/jquery.breakpoints.js' %}" id='theme-breakpoints-js'></script>
       <script type='text/javascript' src="{% static 'bootstrap/dist/js/bootstrap.bundle.min.js' %}" id='theme-bootstrap-js'></script>
-      {% comment %}
-      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.0-dev.20220625/min/vs/loader.min.js"></script>            {% endcomment %}
       <script type='text/javascript' src="{% static 'monaco/min/vs/loader.js' %}" id='monaco-js'></script>
-
       <script type='text/javascript' src="{% static 'cdh/js/cdh.js' %}" id='cdh-js'></script>
-
       {% endaddtoblock %}
       
       {% render_block "js" %}
@@ -244,5 +351,6 @@
 	// });
 
       </script>
+      </div>
   </body>
 </html>

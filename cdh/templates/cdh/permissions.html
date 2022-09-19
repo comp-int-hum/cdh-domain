@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+  {% if user_permissions_options %}
+  <h4>User permissions</h4>
+  <div class="row">
+    {% for perm in perms %}
+    <div class="col w-25">
+      <label for="{{perm}}_user_perm_select-{{uid}}">{{perm|title}}</label>
+      <select class="form-select" multiple aria-label="{{perm}}_user_permissions" id="{{perm}}_user_perm_select-{{uid}}" name="user_{{perm}}">
+	{% for u, p in user_permissions_options %}
+	<option value="{{u.id}}" {% if perm in p %}selected{% endif %}>{{u}}</option>
+	{% endfor %}
+      </select>
+    </div>
+    {% endfor %}    
+  </div>
+  {% endif %}
+  
+  {% if group_permissions_options %}
+  <h4>Group permissions</h4>
+  <div class="row">
+    {% for perm in perms %}
+    <div class="col w-25">
+      <label for="{{perm}}_group_perm_select-{{uid}}">{{perm|title}}</label>
+      <select class="form-select" multiple aria-label="{{perm}}_group_permissions" id="{{perm}}_group_perm_select" name="group_{{perm}}">
+	{% for g, p in group_permissions_options %}
+	<option value="{{g.id}}" {% if perm in p %}selected{% endif %}>{{g}}</option>
+	{% endfor %}
+      </select>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+{% endblock %}

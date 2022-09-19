@@ -71,7 +71,6 @@ def shadow_index(request):
 #             pass
 #         elif action == "delete_batch":
 #             pass
-#         print(request, request.POST, request.headers)
 #     abandoned_assignments = []
 #     owned_projects = []
 #     if request.user.is_authenticated:

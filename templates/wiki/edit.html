@@ -20,7 +20,7 @@
 
   <div class="col-lg-8">
     <form method="POST" class="form-horizontal" id="article_edit_form">
-
+      {% csrf_token %}
       {% with edit_form as form %}
         {% include "wiki/includes/editor.html" %}
       {% endwith %}

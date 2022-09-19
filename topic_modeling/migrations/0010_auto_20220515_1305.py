@@ -44,6 +44,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='lexicon',
             name='lexical_sets',
-            field=models.JSONField(default=topic_modeling.models.default_lexicon),
+            field=models.JSONField(),
         ),
     ]

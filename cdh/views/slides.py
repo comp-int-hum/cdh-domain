@@ -11,9 +11,9 @@ from django.views.generic.edit import CreateView, DeleteView, UpdateView, Deleti
 from guardian.shortcuts import get_perms, get_objects_for_user, get_anonymous_user
 from cdh.models import Slide
 from .atomic import AtomicView
+from .base import BaseView
 
-
-class SlidesView(AtomicView):
+class SlidesView(BaseView):
 
     def __init__(self, *argv, **argd):
         super(SlidesView, self).__init__(*argv, **argd)

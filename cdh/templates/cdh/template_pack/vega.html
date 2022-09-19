@@ -1,0 +1,30 @@
+
+<div class="container w-75" id="{{id}}_elem_1">
+</div>
+<div class="container w-75" id="{{id}}_elem_2">
+</div>
+
+<div class="overflow-scroll vh-100" id="{{style.div_id}}"></div>
+
+
+{{ field.value|json_script:style.spec_id }}
+
+<script type="text/javascript">  
+  var view;
+  var spec = JSON.parse(document.getElementById("{{style.spec_id}}").textContent);
+  render(spec);
+  function render(spec) {
+      view = new vega.View(vega.parse(spec), {
+          renderer:  'canvas',  // renderer (canvas or svg)
+          container: '#{{style.div_id}}',   // parent DOM container
+          hover:     true       // enable hover processing
+      });      
+      view.resize();
+      var el = document.getElementById("{{style.div_id}}");
+      //view.width(el.offsetWidth);
+      //view.height(el.offsetHeight);
+      view.logLevel(vega.Warn);
+      return view.runAsync();
+      }
+</script>
+

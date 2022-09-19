@@ -1,5 +1,8 @@
 {% load i18n %}
 
+{% if widget.attrs.readonly == "true" %}
+{{widget.value}}
+{% else %}
 <div field_name="{{widget.name}}"
      value_id="{{widget.value_id}}"
      {% if widget.attrs.endpoint %}
@@ -7,9 +10,13 @@
      endpoint_url="{% url widget.attrs.endpoint %}"
      {% endif %}
      class="{% if widget.class %}{{widget.class}}{% else %}cdh-editor{% endif %} container-fluid"
+     {% if model_name %}model_name="{{model_name}}"{% endif %}
+     {% if app_label %}app_label="{{app_label}}"{% endif %}
+     {% if pk %}pk="{{pk}}"{% endif %}     
      {% include "django/forms/widgets/attrs.html" %}
      style="width: 800px; height: 200px; border: 1px solid grey">
 </div>
+
 
 {{ widget.list_value|json_script:widget.value_id }}
 <input type="hidden"
@@ -24,6 +31,8 @@
        id="{{widget.name}}-hidden"
        value="{{widget.value}}"/>
 {{ widget.hidden.attrs }}
+
+{% endif %}
 
 {% if widget.attrs.endpoint %}
 <div id="{{widget.output_id}}" class="container">

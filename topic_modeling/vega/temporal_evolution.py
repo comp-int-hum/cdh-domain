@@ -122,7 +122,7 @@ class TemporalEvolution(CdhVisualization):
                 "name" : "topic",
                 "value" : "None",
                 "bind" : {
-                    "element" : "#{}_topicinfo".format(self.prefix) if self.prefix else "#topicinfo"
+                    "element" : "#element_{}_1".format(self.prefix) if self.prefix else "#topicinfo"
                 },
                 "on" : [
                     {"events" : "area:mouseover", "update" : "datum.label"},
@@ -133,7 +133,7 @@ class TemporalEvolution(CdhVisualization):
                 "name" : "time",
                 "value" : "None",
                 "bind" : {
-                    "element" : "#{}_timeinfo".format(self.prefix) if self.prefix else "#timeinfo"
+                   "element" : "#element_{}_2".format(self.prefix) if self.prefix else "#timeinfo"
                 },
                 "on" : [
                     {

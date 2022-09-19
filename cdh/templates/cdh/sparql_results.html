@@ -11,8 +11,8 @@
   <tbody>
     {% for row in bindings %}
     <tr>
-      {% for v in row %}
-      <td>{{v}}</td>
+      {% for name, v in row %}
+      <td>{% if name == "url" %}<a href="{{v}}" target="_blank">Link</a>{% else %}{{v}}{% endif %}</td>
       {% endfor %}
     </tr>
     {% endfor %}

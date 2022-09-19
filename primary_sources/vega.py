@@ -1,13 +1,48 @@
 from cdh.vega import CdhVisualization
+from rdflib import Graph
+from rdflib.namespace import SH, RDF, RDFS
+import rdflib
+import json
+import os.path
 
 
 class PrimarySourceSchemaGraph(CdhVisualization):
 
-    def __init__(self, data, prefix=None): # entities, relationships, properties):
+    def __init__(self, schema, prefix=None): # entities, relationships, properties):
         self.prefix = prefix
-        self._entities = data["entities"]
-        self._relationships = data["relationships"]
-        self._properties = data["properties"]
+        g = Graph()
+        g.parse(data=json.dumps(schema), format="application/ld+json")        
+        entities, relationships, properties = {}, {}, {}
+            
+        for shape, _, entity in g.triples((None, SH.targetClass, None)):
+            entities[shape] = {
+                "entity_label" : os.path.basename(entity)
+            }
+
+        for bnode, _, entity in g.triples((None, SH["class"], None)):
+            relationships[bnode] = {
+                "target_label" : os.path.basename(entity)
+            }
+            
+        for shape, _, bnode in g.triples((None, SH.property, None)):
+            if bnode not in relationships:
+                properties[bnode] = {
+                    "entity_label" : entities[shape]["entity_label"]
+                }
+            else:
+                relationships[bnode]["source_label"] = entities[shape]["entity_label"]
+
+        for bnode, _, path in g.triples((None, SH.path, None)):
+            if bnode in properties:
+                properties[bnode]["property_label"] = os.path.basename(path)
+            else:
+                relationships[bnode]["relationship_label"] = os.path.basename(path)
+                #return {"entities" : list(entities.values()), "relationships" : list(relationships.values()), "properties" : list(properties.values())}
+
+
+        self._entities = list(entities.values())
+        self._relationships = list(relationships.values())
+        self._properties = list(properties.values())
         super(PrimarySourceSchemaGraph, self).__init__()
 
     @property

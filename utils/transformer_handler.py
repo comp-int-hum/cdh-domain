@@ -18,6 +18,7 @@ from ts.torch_handler.base_handler import BaseHandler
 from captum.attr import LayerIntegratedGradients
 from ts.context import Context
 
+
 logger = logging.getLogger(__name__)
 logger.info("Transformers version %s", transformers.__version__)
 
@@ -478,7 +479,4 @@ if __name__ =="__main__":
     ctx.get_request_header = lambda x, y : False
     initial_prompt = "It was a sunny day and so we went to the"
     prompt = initial_prompt
-    #for i in range(40):
     prompt = handler.handle([{"data" : prompt}], ctx)[0]
-    #print(initial_prompt)
-    #print(prompt)

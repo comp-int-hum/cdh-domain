@@ -1,0 +1,58 @@
+{% load i18n %}
+
+{% if not style.editable and field.write_only %}
+{% elif field.name == "name" and not style.editable %}
+{% else%}
+<div class="form-group {% if field.errors %}has-error{% endif %}">
+  {% if field.label %}
+    <label {% if style.hide_label %}class="sr-only"{% endif %}>{{ field.label }}</label>
+  {% endif %}
+
+{% if style.editable %}
+
+<div      
+  field_name="{{field.name}}"
+  value_id="{{style.value_id}}"
+  parent_id="{{style.parent_id}}"
+  {% if style.endpoint or style.detail_endpoint %}
+  output_id="{{style.output_id}}"
+  endpoint_url="{% if style.detail_endpoint %}{% url style.endpoint style.object.id %}{% else %}{% url style.endpoint %}{% endif %}"
+  {% endif %}
+  language="{{style.language}}"
+  class="{% if style.class %}{{style.class}}{% else %}cdh-editor{% endif %} container-fluid"
+  style="width: 600px; height: 200px; border: 1px solid grey">
+</div>
+
+
+{{ field.value|json_script:style.value_id }}
+<input
+  type="hidden"
+  name="{{field.name}}"
+  class="form-control"
+  id="{{style.value_id}}-hidden"
+  value="{{field.value}}"/>
+
+
+{% if style.endpoint or style.detail_endpoint %}
+<div id="{{style.output_id}}" class="container">
+</div>
+{% endif %}
+
+{% else %}
+<pre>{{field.value}}</pre>
+{% endif %}
+
+
+    {% if field.errors %}
+    {% for error in field.errors %}
+      <span class="help-block">{{ error }}</span>
+    {% endfor %}
+  {% endif %}
+
+  {% if field.help_text %}
+    <span class="help-block">{{ field.help_text|safe }}</span>
+  {% endif %}
+</div>
+{% endif %}
+
+

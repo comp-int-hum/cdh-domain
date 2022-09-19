@@ -24,6 +24,8 @@ APPS = {
     "topic_modeling" : "Topic modeling",
 }
 
+EMAIL_WHITELIST = []
+
 # CDH NOTE: For development you can follow the README instructions for running the needed backends locally,
 #           and set these to True, otherwise the framework will use hacks to simulate the behavior
 #           (but it may not be identical to the production site).  For a full production setup, the
@@ -327,6 +329,8 @@ CACHES = {
         'LOCATION': 'cache_table',
     }
 }
+
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators

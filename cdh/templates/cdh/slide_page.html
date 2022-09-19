@@ -17,7 +17,7 @@
 	<div class="container">
 	  <div class="row justify-content-md-center">
 	    <div class="col">
-	      <a href="{% url 'slide_detail' slide.id %}">
+	      <a href="{% url 'api:slide-detail' slide.id %}">
 	    <img
 	      class="position-relative top-0 start-50 translate-middle-x slide-img"
 	      src="{{slide.image.url}}"
@@ -42,7 +42,13 @@
 </div>
 
 {% if request.user.is_authenticated %}
-<a href="{% url 'slide_list' %}">Manage slides</a>
+<a
+  class="cdh-interactive"
+  href="{% url 'api:slide-list' %}"
+  style="display: none;"
+  >
+  Manage slides
+</a>
 {% endif %}
 
 {% endblock %}      

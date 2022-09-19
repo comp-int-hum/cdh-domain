@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+{% if include %}
+
+<div
+  hx-get="{% url include %}"
+  hx-trigger="intersect"
+  hx-swap="outerHTML"
+  hx-select="#top_level_content > *"
+  hx-headers='{"Accept" : "text/html include=true"}'
+  >
+</div>
+
+{% elif includes %}
+
+{% for include in includes %}
+
+{% endfor %}
+
+{% endif %}
+
+{% endblock %}

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load cdh %}
 
 {% block content %}
 
@@ -8,76 +9,72 @@
   pk="{{pk}}"
   id="container-{{uid}}">
 
-{% if form or buttons %}
-<form
-  {% comment %}
-  method="post"
-  action="{{request.path_info}}"
-  {% endcomment %}
-  hx-post="{{request.path_info}}"
-  id="form-{{uid}}"
-  hx-headers='{"X-CSRFToken": "{{ csrf_token }}", "uid" : "{{uid}}"}'
-  {% if form.is_multipart %}
-  hx-encoding="multipart/form-data"
-  enctype="multipart/form-data"
+  {% if create_serializer %}
+  <form
+    id="form-{{uid}}"
+    method="post"
+    action="{{model.create_url}}"
+    hx-encoding="multipart/form-data"
+    enctype="multipart/form-data"
+    >
+    {% csrf_token %}
+    {% cdh_render_form create_serializer template_pack="cdh/template_pack" %}
+    {% if style != "modal" and style != "accordion" and style != "tab" %}    
+    <button
+      class="btn btn-primary"
+      type="submit"
+      >
+      Save
+    </button>
+    {% endif %}
+  </form>
+  {% else %}
+
+  {% if edit_serializer %}
+  <div
+    class="cdh-alternatives"
+    >
+  <div
+    class="container w-75 cdh-edit"
+    style="display: none;"
+    >
+    <form
+      id="form-{{uid}}"
+      hx-patch="{{object.get_absolute_url}}"
+      hx-swap="none"
+      hx-headers='{"X-CSRFToken" : "{{csrf_token}}"}'
+      {% if edit_serializer.is_multipart %}
+      hx-encoding="multipart/form-data"
+      enctype="multipart/form-data"
+      {% endif %}
+      >
+      {% csrf_token %}
+
+      {% cdh_render_form edit_serializer template_pack="cdh/template_pack" %}
+      
+      <button
+	class="btn btn-primary"
+	type="submit"
+	>
+	Save
+      </button>
+      
+    </form>
+  </div>
   {% endif %}
-  >
-{% endif %}
 
-{% if preamble %}
-<div class="container w-75">
-  {{preamble.value}}
-</div>
-{% endif %}
+  {% if view_serializer %}
+  <div
+    class="container w-75 cdh-view"
+    >
+    {% cdh_render_form view_serializer template_pack="cdh/template_pack" %}
+  </div>
+  {% endif %}
+  {% if edit_serializer %}
+  </div>
+  {% endif %}
 
-{% if buttons and top_buttons %}
-<div class="btn-group" role="group" aria-label="actions">
-  {% for button in buttons %}
-  <button class="btn btn-{{button.style}}"
-	  {% if button.hx_post %}hx-post="{{button.hx_post}}"{% endif %}
-	  {% if button.hx_delete %}hx-delete="{{button.hx_delete}}"{% endif %}	    
-	  {% if button.hx_confirm %}hx-confirm='{{button.hx_confirm}}'{% endif %}
-	  {% if button.hx_target %}hx-target='{{button.hx_target}}'{% endif %}
-	  {% if button.hx_select %}hx-select='{{button.hx_select}}'{% endif %}
-	  {% if button.hx_swap %}hx-swap='{{button.hx_swap}}'{% endif %}
-	  hx-headers='{"X-CSRFToken": "{{ csrf_token }}", "uid" : "{{uid}}"}'
-	  >
-    {{button.label}}
-  </button>
-  {% endfor %}
-</div>
-{% endif %}
-
-{{content}}
-{{form}}
-
-{% if buttons and not top_buttons %}
-
-<div class="btn-group" role="group" aria-label="actions">
-  {% for button in buttons %}
-  <button class="btn btn-{{button.style}}"
-	  {% if button.hx_post %}hx-post="{{button.hx_post}}"{% endif %}
-	  {% if button.hx_delete %}hx-delete="{{button.hx_delete}}"{% endif %}
-	  {% if button.hx_confirm %}hx-confirm='{{button.hx_confirm}}'{% endif %}
-	  {% if button.hx_target %}hx-target='{{button.hx_target}}'{% endif %}
-	  {% if button.hx_select %}hx-select='{{button.hx_select}}'{% endif %}
-	  {% if button.hx_swap %}hx-swap='{{button.hx_swap}}'{% endif %}
-	  {% comment %}
-	  hx-vals='{"uid" : "{{uid}}"}'
-	  {% endcomment %}
-	  hx-headers='{"X-CSRFToken": "{{ csrf_token }}", "uid" : "{{uid}}"}'
-	  >
-    {{button.label}}
-  </button>
-  {% endfor %}
-</div>
-{% endif %}
-
-{% if form or buttons %}
-</form>
-{% endif %}
-
-</div>
+  {% endif %}
 
 </div>
 

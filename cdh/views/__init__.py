@@ -42,8 +42,8 @@ def generate_default_urls(*items):
                 AtomicView.as_view(
                     model=model,
                     editable=True,
+                    can_update=True,
                     fields="__all__",
-                #    preamble=instructions
                 ),
                 name="{}_create".format(model_name)
             ),
@@ -51,13 +51,20 @@ def generate_default_urls(*items):
                 '{}/list/'.format(model_name),
                 AccordionView.as_view(
                     model=model,
-                #    preamble=preamble,
-                    children={
-                        "model" : model,
-                        "url" : "{}:{}_detail".format(app_label, model_name),
-                    },
                 ),
                 name="{}_list".format(model_name)
             ),
+            path(
+                '{}/<int:pk>/'.format(model_name),
+                AtomicView.as_view(
+                    model=model,
+                    fields="__all__",
+                    can_delete=True,
+                    can_update=False,
+                    can_create=False,
+                    can_manage=False
+                ),
+                name="{}_delete".format(model_name)
+            ),            
         ]
     return urls

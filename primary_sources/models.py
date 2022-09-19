@@ -2,12 +2,13 @@ import json
 import zipfile
 import os.path
 from django.db import models
+from django.db.models import TextField
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
-from cdh import settings
+from django.conf import settings
 from cdh.models import CdhModel, User, AsyncMixin
-from cdh.fields import SparqlField
 from django.urls import path, reverse
+from cdh.decorators import cdh_action
 import requests
 from rdflib import Graph
 from rdflib.namespace import SH, RDF, RDFS
@@ -24,13 +25,7 @@ else:
 
 class PrimarySource(AsyncMixin, CdhModel):
 
-    def __str__(self):
-        return self.name
-
-    def get_absolute_url(self):
-        return reverse("primary_sources:primarysource_detail", args=(self.id,))
-
-    @property
+    @cdh_action(detail=True, methods=["get"])
     def schema(self):
         resp = requests.get(
             "http://{}:{}/{}_{}/get".format(settings.JENA_HOST, settings.JENA_PORT, self.id, "schema"),
@@ -39,39 +34,7 @@ class PrimarySource(AsyncMixin, CdhModel):
         )
         return json.loads(resp.content.decode("utf-8"))
 
-    @property
-    def vega_triples(self):        
-        schema = self.schema
-        g = Graph()
-        g.parse(data=json.dumps(schema), format="application/ld+json")        
-        entities, relationships, properties = {}, {}, {}
-            
-        for shape, _, entity in g.triples((None, SH.targetClass, None)):
-            entities[shape] = {
-                "entity_label" : os.path.basename(entity)
-            }
-
-        for bnode, _, entity in g.triples((None, SH["class"], None)):
-            relationships[bnode] = {
-                "target_label" : os.path.basename(entity)
-            }
-            
-        for shape, _, bnode in g.triples((None, SH.property, None)):
-            if bnode not in relationships:
-                properties[bnode] = {
-                    "entity_label" : entities[shape]["entity_label"]
-                }
-            else:
-                relationships[bnode]["source_label"] = entities[shape]["entity_label"]
-
-        for bnode, _, path in g.triples((None, SH.path, None)):
-            if bnode in properties:
-                properties[bnode]["property_label"] = os.path.basename(path)
-            else:
-                relationships[bnode]["relationship_label"] = os.path.basename(path)
-        return {"entities" : list(entities.values()), "relationships" : list(relationships.values()), "properties" : list(properties.values())}
-
-    @property
+    @cdh_action(detail=True, methods=["get"])
     def annotations(self):
         resp = requests.get(
             "http://{}:{}/{}_{}/get".format(settings.JENA_HOST, settings.JENA_PORT, self.id, "annotations"),
@@ -80,7 +43,7 @@ class PrimarySource(AsyncMixin, CdhModel):
         )
         return resp.content.decode("utf-8")
     
-    @property
+    @cdh_action(detail=True, methods=["get"])
     def data(self):
         resp = requests.get(
             "http://{}:{}/{}_{}/get".format(settings.JENA_HOST, settings.JENA_PORT, self.id, "data"),
@@ -89,14 +52,14 @@ class PrimarySource(AsyncMixin, CdhModel):
         )
         return resp.content.decode("utf-8")
 
-    def save(self, schema_fd=None, annotation_fd=None, data_fd=None, materials_fd=None):
+    def save(self, schema_file=None, annotations_file=None, data_file=None, materials_file=None, **argd):
         update = self.id and True
         retval = super(PrimarySource, self).save()                    
         for name, fd in [
-                ("schema", schema_fd),
-                ("annotation", annotation_fd),
-                ("data", data_fd),
-                ("materials", materials_fd)
+                ("schema", schema_file),
+                ("annotations", annotations_file),
+                ("data", data_file),
+                ("materials", materials_file)
         ]:
             if fd != None:
                 with open(os.path.join(settings.TEMP_ROOT, "primarysource_{}_{}".format(self.id, name)), "wb") as ofd:
@@ -107,13 +70,27 @@ class PrimarySource(AsyncMixin, CdhModel):
         return retval
                     
 
-class Query(CdhModel):
-    sparql = SparqlField()
+class Query(CdhModel):    
+    sparql = TextField()
     primary_source = models.ForeignKey(PrimarySource, on_delete=models.CASCADE, null=False)
+
+    class Meta:
+        verbose_name_plural = "Queries"
+    
     def __str__(self):
         return self.name
-    def get_absolute_url(self):
-        return reverse("primary_sources:index", args=(self.id,))
+
+    @cdh_action(detail=True, methods=["get"])    
+    def perform(self):
+        resp = requests.get(
+            "http://{}:{}/{}_{}/query".format(settings.JENA_HOST, settings.JENA_PORT, self.primary_source.id, "data"),
+            params={"query" : self.sparql},
+            auth=requests.auth.HTTPBasicAuth(settings.JENA_USER, settings.JENA_PASSWORD)
+        )
+        try:
+            return json.loads(resp.content.decode("utf-8"))
+        except:
+            return {"head" : {"vars" : []}, "results" : {"bindings" : []}}
 
 
 @shared_task
@@ -122,7 +99,7 @@ def save_primarysource(pk, update, *argv, **argd):
         try:
             ps = PrimarySource.objects.get(id=pk)
             ps.state = ps.PROCESSING
-            for graph_name in ["schema", "annotation", "data"]:
+            for graph_name in ["schema", "annotations", "data"]:
                 dbName = "{}_{}".format(ps.id, graph_name)
                 requests.post(
                     "http://{}:{}/$/datasets".format(settings.JENA_HOST, settings.JENA_PORT),
@@ -157,7 +134,7 @@ def save_primarysource(pk, update, *argv, **argd):
             ps.message = str(e)
             raise e
         finally:
-            for name in ["schema", "annotation", "data", "materials"]:
+            for name in ["schema", "annotations", "data", "materials"]:
                 fname = os.path.join(settings.TEMP_ROOT, "primarysource_{}_{}".format(ps.id, name))
                 if os.path.exists(fname):
                     os.remove(fname)

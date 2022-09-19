@@ -68,7 +68,6 @@ class ProjectForm(ModelForm):
     )
 
     def __init__(self, *args, **kwargs):
-        print(args, kwargs)
         if len(args) > 0 and len(args[0]["html_template"]) > 0:
             template_text = args[0]["html_template"][0]
         if len(args) > 1:
@@ -81,7 +80,6 @@ class ProjectForm(ModelForm):
             d["html_template"] = template_text #.decode("utf-8")
             args = list(args)
             args[0] = d
-            print(args)
         super().__init__(*args, **kwargs)
 
         #self.fields['template_file_upload'].widget = CustomButtonFileWidget(attrs={

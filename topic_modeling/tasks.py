@@ -20,7 +20,8 @@ from gensim.corpora import Dictionary
 from jsonpath import JSONPath
 from spacy.lang import en
 from gensim.models.callbacks import Metric
-
+import requests
+from .models import User
 
 if settings.USE_CELERY:
     from celery import shared_task
@@ -28,6 +29,9 @@ else:
     def shared_task(func):
         return func
 
+
+logger = logging.getLogger(__name__)
+    
     
 def process_zip(fname):
     with zipfile.ZipFile(fname) as ifd:
@@ -174,33 +178,54 @@ class EpochLogger(Metric):
 
     
 @shared_task
-def train_model(topic_model_id):
+def train_model(topic_model_id, *argv, **argd):
+    logging.info(topic_model_id, argv, argd)
     time.sleep(2)
     topic_model = models.TopicModel.objects.get(id=topic_model_id)
     topic_model.message = "Preparing training data"
     topic_model.save()
-    collection = topic_model.collection
+    #collection = topic_model.collection
     random.seed(topic_model.random_seed)
     try:
-        print("Querying documents")
-        qs = models.Document.objects.filter(collection=collection).only("id")
-        print("Making indices")        
-        indices = list(range(qs.count()))
-        print("Shuffling indices")
-        random.shuffle(indices)
-        print("Selecting indices")
-        indices = set(indices[:topic_model.maximum_documents])
-        print("Iterating documents")
         docs = []
-        for i, doc in enumerate(qs): #enumerate(models.Document.objects.filter(collection=collection)):
-            if i in indices:
-                text = doc.text.lower() if topic_model.lowercase else doc.text
+        if topic_model.query:
+            results = [{"url" : x["url"]["value"]} for x in topic_model.query.perform()["results"]["bindings"]]
+            random.shuffle(results)
+            logger.info("Loading %d documents with an upper limit of %d", len(results), topic_model.maximum_documents)
+            for result in results[:topic_model.maximum_documents]: #range(len(results)):
+                prefix, name = result["url"].split("/")[-2:]            
+                resp = requests.get(
+                    "http://{}:{}/materials/{}/{}/".format(settings.HOSTNAME, settings.PORT, prefix, name),
+                    auth=requests.auth.HTTPBasicAuth(settings.JENA_USER, settings.JENA_PASSWORD)
+                )
+                text = resp.content.decode("utf-8")
+                text = text.lower() if topic_model.lowercase else text
                 toks = [re.sub(topic_model.token_pattern_in, topic_model.token_pattern_out, t) for t in re.split(topic_model.split_pattern, text) if t.lower() not in en.stop_words.STOP_WORDS]
                 num_subdocs = round(0.5 + len(toks) / topic_model.max_context_size)
                 toks_per = int(len(toks) / num_subdocs)
+                logger.info("Loading %s", name)
                 for i in range(num_subdocs):
                     docs.append(toks[i * toks_per : (i + 1) * toks_per])                
-
+        else:
+            pass
+            # logger.info("Querying documents")
+            # qs = models.Document.objects.filter(collection=collection).only("id")
+            # logger.info("Making indices")        
+            # indices = list(range(qs.count()))
+            # logger.info("Shuffling indices")
+            # random.shuffle(indices)
+            # logger.info("Selecting %d indices", topic_model.maximum_documents)
+            # indices = set(indices[:topic_model.maximum_documents])
+            # logger.info("Iterating documents")            
+            # for i, doc in enumerate(qs): #enumerate(models.Document.objects.filter(collection=collection)):
+            #     if i in indices:
+            #         text = doc.text.lower() if topic_model.lowercase else doc.text
+            #         toks = [re.sub(topic_model.token_pattern_in, topic_model.token_pattern_out, t) for t in re.split(topic_model.split_pattern, text) if t.lower() not in en.stop_words.STOP_WORDS]
+            #         num_subdocs = round(0.5 + len(toks) / topic_model.max_context_size)
+            #         toks_per = int(len(toks) / num_subdocs)
+            #         for i in range(num_subdocs):
+            #             docs.append(toks[i * toks_per : (i + 1) * toks_per])                
+        logger.info("Loaded %d subdocuments", len(docs))
         dictionary = Dictionary(docs)
         dictionary.filter_extremes(no_below=topic_model.minimum_occurrence, no_above=topic_model.maximum_proportion, keep_n=topic_model.maximum_vocabulary)
         corpus = [dictionary.doc2bow(doc) for doc in docs]
@@ -228,20 +253,13 @@ def train_model(topic_model_id):
 
 
 @shared_task
-def apply_model(labeledcollection_id):
+def apply_model(labeledcollection_id, user_id):
+    user = User.objects.get(id=user_id)
     time.sleep(2)
     labeledcollection = models.LabeledCollection.objects.get(id=labeledcollection_id)
     labeledcollection.message = "Preparing to label documents"
     labeledcollection.save()
     try:
-        print("Querying documents")
-        qs = models.Document.objects.filter(collection=labeledcollection.collection).only("id")
-        print("Making indices")        
-        indices = list(range(qs.count()))
-        print("Shuffling indices")
-        random.shuffle(indices)
-        print("Selecting indices")
-        indices = set(indices[:labeledcollection.maximum_documents])
         number_labeled = 0        
         if labeledcollection.lexicon:
             lexicon = json.loads(labeledcollection.lexicon.lexical_sets)
@@ -253,6 +271,7 @@ def apply_model(labeledcollection_id):
                 labeled_doc = models.LabeledDocument(
                     document=doc,
                     labeledcollection=labeledcollection,
+                    created_by=user,
                 )
                 labeled_doc.save()
                 text = doc.text
@@ -277,25 +296,34 @@ def apply_model(labeledcollection_id):
                         content=content,
                         labeleddocument=labeled_doc,
                         metadata={"topic_counts" : subdoc_topic_counts},
+                        created_by=user,
                     )
                     subdoc.save()
                 labeled_doc.metadata = {"topic_counts" : topic_counts}
                 labeled_doc.save()
         elif labeledcollection.model:
-            model = pickle.loads(labeledcollection.model.serialized.tobytes()) #LdaModel.load(output.model.disk_serialized.path)
-            for j, doc in enumerate(models.Document.objects.only("id").filter(collection=labeledcollection.collection)):
-                if j not in indices:
-                    continue
-                labeled_doc = models.LabeledDocument(
-                    document=doc,
-                    labeledcollection=labeledcollection,
-                )
+            model = pickle.loads(labeledcollection.model.serialized) #LdaModel.load(output.model.disk_serialized.path)
+            for j, doc in enumerate(labeledcollection.collection.documents()): #enumerate(models.Document.objects.only("id").filter(collection=labeledcollection.collection)):
+                #if j not in indices:
+                #    continue
+                if "document_id" in doc:
+                    labeled_doc = models.LabeledDocument(
+                        document=doc["document"],
+                        labeledcollection=labeledcollection,
+                        created_by=user,
+                    )
+                else:
+                    labeled_doc = models.LabeledDocument(
+                        material_id=doc["material_id"],
+                        labeledcollection=labeledcollection,
+                        created_by=user,
+                    )
                 labeled_doc.save()
                 number_labeled += 1
                 if number_labeled % 1000 == 0:
                     labeledcollection.message = "Labeling document #{}/{}".format(number_labeled, len(indices))
                     labeledcollection.save()
-                text = doc.text
+                text = doc["text"]
                 toks = [re.sub(labeledcollection.model.token_pattern_in, labeledcollection.model.token_pattern_out, t) for t in re.split(labeledcollection.model.split_pattern, text)]
                 num_subdocs = round(0.5 + len(toks) / labeledcollection.model.max_context_size)
                 toks_per = int(len(toks) / num_subdocs)
@@ -318,6 +346,7 @@ def apply_model(labeledcollection_id):
                         content=content,
                         labeleddocument=labeled_doc,
                         metadata={"topic_counts" : subdoc_topic_counts},
+                        created_by=user,
                     )
                     subdoc.save()
                 labeled_doc.metadata = {"topic_counts" : topic_counts}

@@ -1,6 +1,11 @@
+import logging
+from secrets import token_hex as random_token
 from django.forms import Textarea, Media, Widget
 from django.template.loader import get_template
 from cdh.widgets import MonacoEditorWidget
+
+
+logger = logging.getLogger(__name__)
 
 
 class MachineLearningModelInteractionWidget(Textarea):
@@ -9,8 +14,14 @@ class MachineLearningModelInteractionWidget(Textarea):
     def __init__(self, *args, **kwargs):
         self.language = kwargs.get("language", "")
         self.default_value = kwargs.get("default_value", "")
-        default_attrs = {"language" : kwargs.get("language", ""), "field_name" : kwargs.get("name", "interaction"), "class" : "cdh-model-interaction"}
-        default_attrs.update(kwargs.get("attrs", {}))        
+        default_attrs = {
+            "language" : kwargs.get("language", ""),
+            "field_name" : kwargs.get("name", "interaction"),
+            "class" : "cdh-model-interaction",
+            "id" : "widget_{}".format(random_token(6))
+        }
+        default_attrs.update(kwargs.get("attrs", {}))
+        logger.info("%s", default_attrs)
         super().__init__(default_attrs)
 
 
@@ -23,7 +34,7 @@ class MachineLearningModelInteractionWidget(Textarea):
         context["widget"]["value"] = context["widget"]["value"] if context["widget"].get("value", None) else self.default_value
         context["widget"]["list_value"] = context["widget"]["value"].split("\n")
         context["widget"]["class"] = "cdh-model-interaction"
-        print(context)
+        logger.info(context)
         return context
 
     def value_from_datadict(self, data, files, name):
