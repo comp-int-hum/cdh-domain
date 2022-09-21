@@ -10,8 +10,7 @@ from django.views.generic.edit import CreateView, DeleteView, UpdateView, Deleti
 from guardian.shortcuts import get_perms, get_objects_for_user, assign_perm, get_users_with_perms, get_groups_with_perms, remove_perm
 from cdh.models import User
 from .mixins import ButtonsMixin, NestedMixin
-from .atomic import AtomicView
-from .base import BaseView
+
 
 class PermissionsView(SingleObjectTemplateResponseMixin, View): #AtomicView):
     template_name = "cdh/permissions.html"

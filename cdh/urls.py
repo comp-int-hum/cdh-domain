@@ -21,7 +21,7 @@ from rest_framework.serializers import ModelSerializer
 from guardian.shortcuts import assign_perm, get_anonymous_user
 from .settings import MEDIA_URL, MEDIA_ROOT, STATIC_URL, STATIC_ROOT, BUILTIN_PAGES, APPS, DEBUG
 from .forms import UserCreateForm
-from .views import AtomicView, PermissionsView, AccordionView, TabsView, SlidesView, MarkdownView, SparqlView, MaterialView, generate_default_urls
+from .views import PermissionsView, SlidesView, MarkdownView, SparqlView, MaterialView
 from .models import Slide, ResearchArtifact, CdhModel, Documentation
 from .viewsets import AtomicViewSet
 from .routers import CdhRouter

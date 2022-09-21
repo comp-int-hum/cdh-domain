@@ -12,12 +12,15 @@ logger = logging.getLogger(__name__)
 
 
 class CdhSerializer(ModelSerializer):
+
     def __init__(self, *argv, **argd):
         for field in self.Meta.model._meta.fields:
             if isinstance(field, ForeignKey):
-                self.fields[field.name] = HyperlinkedRelatedField(view_name="api:{}-detail".format(field.related_model._meta.model_name), queryset=field.related_model.objects.all())
-            
-        super(CdhSerializer, self).__init__(*argv, **argd)
+                self.fields[field.name] = HyperlinkedRelatedField(
+                    view_name="api:{}-detail".format(field.related_model._meta.model_name),
+                    queryset=field.related_model.objects.all()
+                )            
+        retval = super(CdhSerializer, self).__init__(*argv, **argd)
         self.fields["url"] = HyperlinkedIdentityField(
             view_name="api:{}-detail".format(self.Meta.model._meta.model_name),
             lookup_field="id",
@@ -26,10 +29,11 @@ class CdhSerializer(ModelSerializer):
         self.fields["created_by"] = HiddenField(
             default=CurrentUserDefault()
         )
+        return retval
 
 
 class UserSerializer(CdhSerializer):
-    
+
     class Meta:
         model = User
         fields = ["first_name", "last_name", "homepage", "title", "photo", "description", "url", "id", "password", "email", "username", "created_by"]
@@ -48,6 +52,7 @@ class UserSerializer(CdhSerializer):
 
     
 class SlideSerializer(CdhSerializer):
+
     class Meta:
         model = Slide
         fields = [f.name for f in Slide._meta.fields if not isinstance(f, ForeignKey)] + ["url", "created_by"]
@@ -57,6 +62,7 @@ class SlideSerializer(CdhSerializer):
         
 
 class ResearchArtifactSerializer(CdhSerializer):
+
     class Meta:
         model = ResearchArtifact
         fields = [f.name for f in ResearchArtifact._meta.fields if not isinstance(f, ForeignKey)] + ["url", "created_by"]
@@ -66,17 +72,11 @@ class ResearchArtifactSerializer(CdhSerializer):
         
 
 class DocumentationSerializer(ModelSerializer):
-
     content = MonacoEditorField(language="markdown", property_field="content", allow_blank=True, required=False, endpoint="markdown")
-
     view_name = CharField()
     object_id = IntegerField(required=False)
     content_type = PrimaryKeyRelatedField(queryset=ContentType.objects)
-    #content_type = 
-    #object_id = PrimaryKeyRelatedField()
     name = CharField()
-    #def __init__(self, *argv, **argd):
-    #    super(DocumentationSerializer, self).__init__(*argv, **argd)
     url = HyperlinkedIdentityField(
         view_name="api:documentation-detail",
         lookup_field="id",
@@ -88,14 +88,7 @@ class DocumentationSerializer(ModelSerializer):
     
     class Meta:
         model = Documentation        
-
-
-
         fields = ["content", "name", "view_name", "content_type", "object_id", "url", "created_by", "id"]
-        #[f.name for f in Documentation._meta.fields if not isinstance(f, ForeignKey) and f.name not in ["name"]] + ["url", "created_by"]
         view_fields = ["content"] + ["url", "created_by"]
         edit_fields = ["content", "url", "created_by", "id"]
         create_fields = ["content", "url", "created_by", "id"]
-
-    #def __init__(self, *argv, **argd):
-    #    super(DocumentationSerializer, self).__init__(*argv, **argd)

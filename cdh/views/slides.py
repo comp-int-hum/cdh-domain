@@ -10,19 +10,19 @@ from django.views.generic.detail import SingleObjectMixin, SingleObjectTemplateR
 from django.views.generic.edit import CreateView, DeleteView, UpdateView, DeletionMixin, ModelFormMixin, ProcessFormView
 from guardian.shortcuts import get_perms, get_objects_for_user, get_anonymous_user
 from cdh.models import Slide
-from .atomic import AtomicView
-from .base import BaseView
 
-class SlidesView(BaseView):
 
+class SlidesView(View):
+    model = None
+    
     def __init__(self, *argv, **argd):
         super(SlidesView, self).__init__(*argv, **argd)
     
     def get_context_data(self, *argv, **argd):
-        ctx = super(SlidesView, self).get_context_data(*argv, **argd)
-        ctx["slides"] = get_objects_for_user(get_anonymous_user(), "cdh.view_slide")
-        return ctx
+        context = {}
+        context["slides"] = get_objects_for_user(get_anonymous_user(), "cdh.view_slide")
+        return context
         
     def get(self, request, *argv, **argd):
-        ctx = self.get_context_data()
-        return render(request, "cdh/slide_page.html", ctx)
+        context = self.get_context_data()
+        return render(request, "cdh/slide_page.html", context)

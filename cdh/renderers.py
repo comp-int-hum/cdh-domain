@@ -1,5 +1,5 @@
 import logging
-from django.template import engines, loader
+from django.template import loader
 from rest_framework.renderers import TemplateHTMLRenderer, HTMLFormRenderer
 from rest_framework.utils.serializer_helpers import BoundField
 from cdh.fields import ActionOrInterfaceField
@@ -43,7 +43,7 @@ class CdhHTMLFormRenderer(HTMLFormRenderer):
             template = loader.get_template(template_name)
             context = {'field': field, 'style': style}
             return template.render(context)
-
+        print(field.name, field.style)
         retval = super(CdhHTMLFormRenderer, self).render_field(field, parent_style, *argv, **argd)
         return retval
     
@@ -57,9 +57,6 @@ class CdhTemplateHTMLRenderer(TemplateHTMLRenderer):
         for k, v in renderer_context.items():
             if not context.get(k):
                 context[k] = v
-
+            #else:
+            #    logger.info("Not replacing %s with %s for context item %s", context.get(k), v, k)
         return context
-        
-    def render(self, data, accepted_media_type=None, renderer_context=None):
-        print(renderer_context)
-        return super(CdhTemplateHTMLRenderer, self).render(data, accepted_media_type, renderer_context)

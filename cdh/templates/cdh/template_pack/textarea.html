@@ -4,9 +4,11 @@
       {{ field.label }}
     </label>
   {% endif %}
-
-  <textarea name="{{ field.name }}" class="form-control" {% if style.placeholder %}placeholder="{{ style.placeholder }}"{% endif %} {% if style.rows %}rows="{{ style.rows }}"{% endif %}>{% if field.value %}{{ field.value }}{% endif %}</textarea>
-
+    {% if style.editable == True %}
+    <textarea name="{{ field.name }}" class="form-control" {% if style.placeholder %}placeholder="{{ style.placeholder }}"{% endif %} {% if style.rows %}rows="{{ style.rows }}"{% endif %}>{% if field.value %}{{ field.value }}{% endif %}</textarea>
+    {% else %}
+    <p>{{field.value}}</p>
+    {% endif %}
   {% if field.errors %}
     {% for error in field.errors %}<span class="help-block">{{ error }}</span>{% endfor %}
   {% endif %}

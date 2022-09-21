@@ -4,7 +4,7 @@
 
 {% block content %}
 
-{% comment %}
+
 <div
   class="cdh-alternatives"
   >
@@ -12,6 +12,7 @@
     class="container w-75 cdh-edit"
     style="display: none;"
     >
+    {% if documentation_model %}
 
     <form
       hx-swap="none"
@@ -20,7 +21,7 @@
       {% else %}
       hx-post="{{documentation_model.get_list_url}}"
       {% endif %}
-      hx-headers='{"X-CSRFToken" : "{{csrf_token}}"}'>
+      hx-headers='{"X-CSRFToken" : "{{csrf_token}}"}'
       >
       {% csrf_token %}
       {% cdh_render_form documentation_serializer %}
@@ -28,6 +29,8 @@
       <button class="btn btn-primary" type="submit">Save</button>
       {% endif %}
     </form>
+
+    {% endif %}
   </div>
   <div
     class="container w-75 cdh-view"
@@ -37,7 +40,6 @@
     {% endif %}
   </div>
 </div>
-{% endcomment %}
 
 <div class="container w-75">  
   {% if "add" in model_perms and create_serializer %}

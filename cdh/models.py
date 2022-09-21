@@ -59,6 +59,14 @@ class User(AbstractUser):
     def __str__(self):
         return "{} {}".format(self.first_name, self.last_name) if self.last_name else self.username
 
+    @property
+    def is_object(self):
+        return isinstance(self.id, int)
+
+    @classmethod
+    def is_model(self):
+        return True
+    
     @classmethod
     def model_title_name(cls):
         return cls._meta.verbose_name.title().replace(" ", "")

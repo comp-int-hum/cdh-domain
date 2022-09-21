@@ -474,6 +474,7 @@ function handleCdhEvent(event){
     else if(event_type == "create"){
 	var model_url = event.detail.model_url;
 	//var accItem = event.target.parentElement.parentElement.parentElement.parentElement;
+	/*
 	$.ajax(
 	    {		
 		url: model_url,
@@ -483,7 +484,7 @@ function handleCdhEvent(event){
 		    dummy.innerHTML = data;
 		    for(let el of dummy.getElementsByClassName(object_class)){
 			for(let tgt of document.getElementsByClassName(model_class)){
-			    console.error(el, tgt);
+			    //console.error(el, tgt);
 			    //var accItem = htmx.closest(tgt, ".accordion-item");
 			    tgt.insertAdjacentElement("beforeend", el);
 			    cdhSetup(el, true);
@@ -493,11 +494,11 @@ function handleCdhEvent(event){
 			    //htmx.trigger(ch, "refreshForm");
 			    //}
 			    //collapseAccordionItem(accItem);
-			    for(let ch of el.querySelectorAll("*[hx-trigger='intersect']")){
-				htmx.trigger(ch, "intersect");
-			    }
+			    //for(let ch of el.querySelectorAll("*[hx-trigger='intersect']")){
+			    //htmx.trigger(ch, "intersect");
+			    //}
 			    //expandAccordionItem(accItem);
-			    expandAccordionItem(el);
+			    //expandAccordionItem(el);
 			    //htmx.trigger(el, 
 			    restoreEditingState();
 			    
@@ -507,7 +508,7 @@ function handleCdhEvent(event){
 		dataType: "html"
 	    }
 	);
-
+	*/
 
 	//console.error(model_url);
 	/*var accItem = event.target.parentElement.parentElement.parentElement.parentElement;
