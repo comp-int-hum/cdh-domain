@@ -1,4 +1,10 @@
 {% load sekizai_tags static %}
+{% load guardian_tags %}
+{% load cdh %}
+
+{% cdh_get_documentation_object view_name item as doc_info %}
+{% get_obj_perms request.user for doc_info.object as "doc_perms" %}
+
 
 <!doctype html>
 <html lang="en" >
@@ -7,21 +13,15 @@
     {% addtoblock "css" %}
     <link rel='stylesheet' id='bootstrap-css'  href="{% static 'bootstrap/dist/css/bootstrap.min.css' %}" type='text/css' />
     <link rel='stylesheet' id='main-stylesheet-css'  href="{% static 'cdh/css/cdh.css' %}" type='text/css' media='all' />
-
     <link rel='stylesheet' id='main-stylesheet-css'  href="{% static 'monaco/min/vs/editor/editor.main.css' %}" type='text/css' media='all' />    
-    {% comment %}
-    <link rel="stylesheet" id="monaco_css" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.0-dev.20220627/min/vs/editor/editor.main.min.css"/>
-    {% endcomment %}
     {% endaddtoblock %}
     
     {% render_block "css" %}
     
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    
-    <meta name="date" content="April 16, 2022" />        
-
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />    
+    <meta name="date" content="September 25, 2022" />        
     <link rel="icon" href="{% static 'cdh/img/favicon.png' %}">
 
     {% addtoblock "initial_js" %}
@@ -72,7 +72,7 @@
 		<li>
 		  {% if request.user.is_authenticated %}
 		  <a
-		    href="/accounts/logout"
+		    href="/accounts/logout?next={{request.path_info}}"
 		    title="Log out as {{request.user.first_name}} {{request.user.last_name}}"
 		    >
 		    <svg
@@ -93,7 +93,7 @@
 		  </a>
 		  {% else %}
 		  <a
-		    href="/accounts/login"
+		    href="/accounts/login?next={{request.path_info}}"
 		    title="Log in or create an account"
 		    >
 		    <svg
@@ -114,31 +114,6 @@
 		  </a>
 		  {% endif %}
 		</li>
-		{% if request.user.is_authenticated %}
-		<li>
-		  <a
-		    id="editing_toggle"
-		    {% if request.user.is_authenticated %}
-		    onclick="toggleEditingMode(event)"		    
-		    title="Activate editing mode"
-		    {% else %}
-		    title="To edit, first log in"
-		    {% endif %}
-		    >
-		    <svg
-		      xmlns="http://www.w3.org/2000/svg"
-		      width="32"
-		      height="32"
-		      class="bi bi-pen-fill"
-		      viewBox="0 0 16 16"
-		      >
-		      <path
-			d="m13.498.795.149-.149a1.207 1.207 0 1 1 1.707 1.708l-.149.148a1.5 1.5 0 0 1-.059 2.059L4.854 14.854a.5.5 0 0 1-.233.131l-4 1a.5.5 0 0 1-.606-.606l1-4a.5.5 0 0 1 .131-.232l9.642-9.642a.5.5 0 0 0-.642.056L6.854 4.854a.5.5 0 1 1-.708-.708L9.44.854A1.5 1.5 0 0 1 11.5.796a1.5 1.5 0 0 1 1.998-.001z"
-			/>
-		    </svg>
-		  </a>		  
-		</li>
-		{% endif %}
 		<li>
 		  <a
 		    href="/wiki/help"
@@ -273,40 +248,6 @@
 	    </ul>
 	    {% endif %}	    
 	    <div id="top_level_content" class="container">
-	      {% if documentation %}
-	      <div
-		id="documentation-{{uid}}"
-		hx-get="{{documentation.detail_url}}"
-		hx-swap="innerHTML"
-		hx-trigger="intersect"
-		hx-select="#top_level_content > *"
-		>		
-	      </div>
-	      {% comment %}
-	      <div
-		class="cdh-alternatives"
-		>		
-	      <div
-		class="container w-75 cdh-view"
-		>
-		{{documentation.render|safe}}
-	      </div>
-	      <div
-		class="container w-75 cdh-edit"
-		hx-get="{{documentation.detail_url}}"
-		hx-trigger="intersect"
-		hx-swap="innerHTML"
-		hx-headers='{"uid" : "documentation_{{uid}}"}'
-		hx-select="#top_level_content > *"
-		style="display: none;"
-		>
-	      </div>
-	      {% endcomment %}
-	      {% endif %}
-	      
-
-	      
-	      
 	      {% block content %}{% endblock %}
 	      {% block body %}{% endblock %}
 	    </div>

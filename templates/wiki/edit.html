@@ -28,6 +28,7 @@
       <div class="form-group form-actions">
         <div class="col-lg-12">
           <div class="col-lg-offset-2">
+	    {% comment %}
             <button class="btn btn-secondary" type="submit" name="preview" value="1" id="id_preview"
                     formaction="{% url 'wiki:preview' path=urlpath.path article_id=article.id %}"
                     formtarget="previewWindow"
@@ -35,6 +36,7 @@
               <span class="fa fa-eye"></span>
               {% trans "Preview" %}
             </button>
+	    {% endcomment %}
             <button class="btn btn-primary" type="submit" name="save" value="1" id="id_save">
               <span class="fa fa-check"></span>
               {% trans "Save changes" %}

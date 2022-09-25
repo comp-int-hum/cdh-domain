@@ -22,6 +22,9 @@ logger = logging.getLogger(__name__)
 class Lexicon(CdhModel):
     lexical_sets = models.TextField()
 
+    class Meta(CdhModel.Meta):
+        pass
+    
     def clean(self):
         try:
             j = json.loads(self.lexical_sets)
@@ -59,7 +62,7 @@ class TopicModel(AsyncMixin, CdhModel):
     query = models.ForeignKey(Query, on_delete=models.CASCADE, null=True, help_text="The primary source query to train on")
     serialized = models.BinaryField(null=True)
     maximum_documents = models.IntegerField(default=30000, help_text="Randomly choose this number of documents to train on (if the collection is larger)")
-
+    
     @property
     @cdh_cache_method
     def topic_word_probabilities(self, num_words=50):

@@ -7,75 +7,13 @@
   model_name="{{model_name}}"
   app_label="{{app_label}}"
   pk="{{pk}}"
-  id="container-{{uid}}">
-
-  {% if create_serializer %}
-  <form
-    id="form-{{uid}}"
-    method="post"
-    action="{{model.create_url}}"
-    hx-encoding="multipart/form-data"
-    enctype="multipart/form-data"
-    >
-    {% csrf_token %}
-    {% cdh_render_form create_serializer template_pack="cdh/template_pack" %}
-    {% if style != "modal" and style != "accordion" and style != "tab" %}    
-    <button
-      class="btn btn-primary"
-      type="submit"
-      >
-      Save
-    </button>
-    {% endif %}
-  </form>
-  {% else %}
-
-  {% if edit_serializer %}
+  id="container-{{uid}}"
+  >
   <div
-    class="cdh-alternatives"
+    class="container w-75 cdh-{{mode}}"
     >
-  <div
-    class="container w-75 cdh-edit"
-    style="display: none;"
-    >
-    <form
-      id="form-{{uid}}"
-      hx-patch="{{object.get_absolute_url}}"
-      hx-swap="none"
-      hx-headers='{"X-CSRFToken" : "{{csrf_token}}"}'
-      {% if edit_serializer.is_multipart %}
-      hx-encoding="multipart/form-data"
-      enctype="multipart/form-data"
-      {% endif %}
-      >
-      {% csrf_token %}
-
-      {% cdh_render_form edit_serializer template_pack="cdh/template_pack" %}
-      
-      <button
-	class="btn btn-primary"
-	type="submit"
-	>
-	Save
-      </button>
-      
-    </form>
+    {% cdh_render_form serializer template_pack="cdh/template_pack" mode=mode %}
   </div>
-  {% endif %}
-
-  {% if view_serializer %}
-  <div
-    class="container w-75 cdh-view"
-    >
-    {% cdh_render_form view_serializer template_pack="cdh/template_pack" %}
-  </div>
-  {% endif %}
-  {% if edit_serializer %}
-  </div>
-  {% endif %}
-
-  {% endif %}
-
 </div>
 
 {% endblock %}

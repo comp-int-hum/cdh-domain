@@ -1,32 +1,20 @@
 {% extends "base.html" %}
 {% load static %}
-
+{% load guardian_tags %}
+{% get_obj_perms request.user for slide_model as "perms" %}
 {% block content %}
 
 <div class="container-fluid">
   <div id="slides" class="carousel carousel-dark slide" data-bs-ride="carousel">
     <div class="carousel-indicators">
-      {% for slide in items %}
+      {% for item in items %}
       <button type="button" data-bs-target="#slides" data-bs-slide-to="{{forloop.counter0}}" {% if forloop.counter == 1 %}class="active" aria-current="true"{% endif %} aria-label="Slide {{forloop.counter}}"></button>
       {% endfor %}
     </div>  
     <div class="carousel-inner slide">
-      {% for slide in items %}
+      {% for item in items %}
       <div class="carousel-item{% if forloop.counter == 1 %} active{% endif %} mt-0 mb-0">
-	<div class="carousel-caption d-none d-md-block top-0 mt-0 mb-0 g-0"><h6 class="mt-0 mb-0 g-0">{{slide.title}}</h6></div>
-	<div class="container">
-	  <div class="row justify-content-md-center">
-	    <div class="col">
-	      <a href="{% url 'api:slide-detail' slide.id %}">
-	    <img
-	      class="position-relative top-0 start-50 translate-middle-x slide-img"
-	      src="{{slide.image.url}}"
-	      alt="{{slide.name}}"
-	      />
-	    </a>
-	  </div>
-	  </div>
-	</div>
+	{% include "cdh/slide.html" with item=item %}
       </div>
       {% endfor %}
     </div>
@@ -41,14 +29,11 @@
   </div>
 </div>
 
-{% if request.user.is_authenticated %}
-<a
-  class="cdh-interactive"
-  href="{% url 'api:slide-list' %}"
-  style="display: none;"
-  >
-  Manage slides
-</a>
-{% endif %}
+
+<div class="container w-75">
+  {% if slide_model.get_add_perm in perms %}
+  {% include "cdh/modal.html" with mode="create" uid=uid index="0" csrf_token=csrf_token item=slide_model serializer=serializer %}
+  {% endif %}
+</div>
 
 {% endblock %}      

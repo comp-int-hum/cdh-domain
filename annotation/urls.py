@@ -60,8 +60,8 @@ urlpatterns = [
             template_name="cdh/accordion.html",
             extra_context={
                 "items" : [
-                    {"title" : "Annotate", "name" : "shadow_index"},
-                    {"title" : "Manage", "name" : "manage"},
+                    {"title" : "Annotate", "name" : "shadow_index", "is_model" : False, "is_object" : False},
+                    {"title" : "Manage", "name" : "manage", "is_model" : False, "is_object" : False},
                 ]
             }
         ),

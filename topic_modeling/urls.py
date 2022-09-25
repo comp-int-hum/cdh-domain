@@ -5,7 +5,7 @@ from django.contrib import admin
 from django.urls import path
 from django.views.generic import TemplateView
 from .models import Lexicon, TopicModel
-
+from cdh.models import Documentation
 
 app_name = "topic_modeling"
 urlpatterns = [
@@ -18,7 +18,7 @@ urlpatterns = [
                     TopicModel,
                     Lexicon
                 ],
-                "uid" : "1"
+                "uid" : "1",
             }
         ),
         name="index"

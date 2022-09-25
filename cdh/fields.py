@@ -6,7 +6,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.urls import reverse
 from .widgets import MonacoEditorWidget
-import markdown
+from markdown import markdown
 from wiki.editors.base import BaseEditor
 from rdflib.plugins.sparql import prepareQuery
 import json
@@ -16,6 +16,22 @@ from jsonpath import JSONPath
 
 logger = logging.getLogger(__name__)
 
+
+class ViewEditField(Field):
+
+    def __init__(self, view, edit, *argv, **argd):
+        print(view, edit, argv, argd)        
+        retval = super(ViewEditField, self).__init__(*argv, **argd)
+        self.view = view
+        self.edit = edit
+        return retval
+
+    def to_representation(self, object, *argv, **argd):
+        return self.edit.to_representation(object, *argv, **argd)
+
+    def to_internal_value(self, *argv, **argd):
+        return self.edit.to_internal_value(*argv, **argd)
+    
 
 class ActionOrInterfaceField(HyperlinkedIdentityField):
     
@@ -92,6 +108,8 @@ class VegaField(Field):
         return self.vega_class(object).json
 
 
+
+    
 class MonacoEditorField(CharField):
     def __init__(self, *argv, **argd):
         property_field = argd.pop("property_field", None)        
@@ -111,10 +129,31 @@ class MonacoEditorField(CharField):
         self.style["detail_endpoint"] = detail_endpoint
         self.style["endpoint"] = endpoint
         self.style["template_pack"] = "cdh/template_pack"
-        self.style["editable"] = True
+        self.style["editable"] = False
+        #self.style["field"] = self
         self.field_name = "monaco_{}".format(random_token(6))
         return retval
 
+    # def get_admin_widget(self, instance=None):
+    #     return MonacoEditorWidget(language="markdown", endpoint="markdown")
+
+    # def get_widget(self, instance=None):
+    #     return MonacoEditorWidget(language="markdown", endpoint="markdown")
+
+    # class AdminMedia:
+    #     css = {
+    #     }
+    #     js = (
+    #     )
+
+    # class Media:
+    #     css = {
+    #         "all": (
+    #         )
+    #     }
+    #     js = (
+    #     )
+    
     def get_default_value(self):
         return ""
 
@@ -132,6 +171,30 @@ class MonacoEditorField(CharField):
         )
     
 
+class MarkdownEditorField(MonacoEditorField):
+
+    def __init__(self, *argv, **argd):
+        retval = super(MarkdownEditorField, self).__init__(*argv, **argd)
+        self.style["rendering_url"] = "markdown"
+        self.style["hide_label"] = True
+
+
+class JsonEditorField(MonacoEditorField):
+    def __init__(self, *argv, **argd):
+        argd["language"] = "json"
+        retval = super(JsonEditorField, self).__init__(*argv, **argd)
+        #self.style["rendering_url"] = "markdown"
+        self.style["hide_label"] = True
+
+        
+class SparqlEditorField(MonacoEditorField):
+    def __init__(self, *argv, **argd):
+        argd["language"] = "sparql"
+        retval = super(SparqlEditorField, self).__init__(*argv, **argd)
+        self.style["rendering_url"] = "sparql"
+        self.style["hide_label"] = True
+        
+    
 class WikiMarkdownField(BaseEditor):
     editor_id = "markitup"
 
@@ -166,16 +229,16 @@ class MarkdownField(models.TextField):
         return super(MarkdownField, self).formfield(**argd)
 
 
-class MarkdownFormField(forms.CharField):
+# class MarkdownFormField(forms.CharField):
 
-    def __init__(self, *argv, **argd):
-        argd["widget"] = MonacoEditorWidget(language="markdown", endpoint="markdown")
-        return super(MarkdownFormField, self).__init__(*argv, **argd)
+#     def __init__(self, *argv, **argd):
+#         argd["widget"] = MonacoEditorWidget(language="markdown", endpoint="markdown")
+#         return super(MarkdownFormField, self).__init__(*argv, **argd)
 
-    def clean(self, value):
-        try:
-            html = markdown.markdown(value)
-        except Exception as e:
-            raise ValidationError(str(e))
-        return value
+#     def clean(self, value):
+#         try:
+#             html = markdown.markdown(value)
+#         except Exception as e:
+#             raise ValidationError(str(e))
+#         return value
         

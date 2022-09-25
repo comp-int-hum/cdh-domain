@@ -194,7 +194,7 @@ function restoreState(root){
 
 }
 
-
+/*
 function restoreEditingState(){
     var editing = getValue("editing");
     var node = document.getElementById("editing_toggle");
@@ -245,11 +245,43 @@ function restoreEditingState(){
 	for(let interactive of document.getElementsByClassName("cdh-interactive")){
 	    interactive.setAttribute("style", "display: none;");
 	}	
-    }
-    
+    }    
 }
-
-
+*/
+/*
+function setEditables(){
+    for(let alternative of document.getElementsByClassName("cdh-alternatives")){
+	var view = null;
+	var edit = null;
+	var items = [];
+	for(let child of alternative.children){
+	    if(child.classList.contains("cdh-view")){
+		view = child;
+	    }
+	    else if(child.classList.contains("cdh-edit")){
+		edit = child;
+	    }
+	    else{
+		items.push(child);
+	    }
+	}
+	if(view != null && edit != null){
+	    items = [view, edit];
+	}
+	items[0].setAttribute("style", "display: block;");
+	items[1].setAttribute("style", "display: none;");
+	items[0].addEventListener("dblclick", (event) => {
+		items[0].setAttribute("style", "display: none;");
+		items[1].setAttribute("style", "display: block;");		
+	});
+	items[1].addEventListener("dblclick", (event) => {
+	    items[1].setAttribute("style", "display: none;");
+	    items[0].setAttribute("style", "display: block;");		
+	});
+    }
+}
+*/
+/*
 function toggleEditingMode(event){
     var node = document.getElementById("editing_toggle");
     node.classList.toggle("editing");
@@ -257,7 +289,7 @@ function toggleEditingMode(event){
     setValue("editing", editing);
     restoreEditingState();
 }
-
+*/
 
 function cdhSetup(root, htmxSwap){
     console.info("Performing initial setup on", root.id);
@@ -294,16 +326,14 @@ function cdhSetup(root, htmxSwap){
     // run initialization for Monaco editor widgets
     for(let el of htmx.findAll(root, ".cdh-editor")){
 	if(el.getAttribute("processed") != "true"){
-	require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.0-dev.20220625/min/vs' } });	
+	    require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.0-dev.20220625/min/vs' } });
 	    require(['vs/editor/editor.main'], function () {
 		var value = JSON.parse(document.getElementById(el.getAttribute("value_id")).textContent);
-		
-		//var listValue = JSON.parse(document.getElementById(el.getAttribute("value_id")).textContent);
-	    var form = el.parentNode;
-	    var language = el.getAttribute("language");
-	    var readOnly = el.getAttribute("readonly") == "true";
-	    var editor = monaco.editor.create(el, {	      
-		value: value, //listValue.join('\n'),
+		var form = el.parentNode;
+		var language = el.getAttribute("language");
+		var readOnly = el.getAttribute("readonly") == "true";
+		var editor = monaco.editor.create(el, {	      
+		value: value,
 		language: language,
 		automaticLayout: true,
 		tabCompletion: "on",
@@ -311,7 +341,8 @@ function cdhSetup(root, htmxSwap){
 		codeLens: false,
 		readOnly: readOnly,
 		domReadOnly: readOnly
-	    });
+		});
+
 	    el.addEventListener("keyup", (event) => {
 		if(language == "torchserve_text"){
 		    if(event.key == "Tab" && event.shiftKey == true){
@@ -344,7 +375,25 @@ function cdhSetup(root, htmxSwap){
 			var content = editor.getModel().getValue();
 			var div = event.target.parentElement.parentElement.parentElement;
 			var endpoint = div.getAttribute("endpoint_url");
-			var parentId = div.getAttribute("parent_id");
+			var parentId = div.getAttribute("parent_id");			
+			if(parentId == ""){
+			    var sib;
+			    var sibs = htmx.findAll(div.parentElement.parentElement, "div select[name='primary_source'] option");
+			    console.error(sibs);
+			    if(sibs.length == 1){
+				sib = sibs[0];
+			    }
+			    else{
+				for(let psib of sibs){
+				    if(psib.hasAttribute("selected")){
+					sib = psib;
+				    }
+				}
+			    }
+			    var toks = sib.getAttribute("value").split("/");
+			    console.error(toks);
+			    parentId = toks[toks.length - 2];
+			}
 			var target = document.getElementById(div.getAttribute("output_id"));
 			$.ajax(
 			    {
@@ -361,7 +410,7 @@ function cdhSetup(root, htmxSwap){
 			);
 		    }
 		}
-		else if(language == "markdown"){
+		else if(language == "markdown"){		    
 		    if(event.key == "Tab" && event.shiftKey == true){
 			
 			// var content = editor.getModel().getValue();
@@ -396,12 +445,14 @@ function cdhSetup(root, htmxSwap){
 		}
 
 
-	    });
+		});
+
 	    editor.getModel().onDidChangeContent((event) => {
 		var content = editor.getModel().getValue();
 		var hid = document.getElementById(el.getAttribute("value_id") + "-hidden");
 		hid.setAttribute("value", content);
-	    });
+		});
+		
 	});
 	    el.setAttribute("processed", "true");
 	}
@@ -444,7 +495,8 @@ function cdhSetup(root, htmxSwap){
             }
 	}
     }
-    restoreEditingState();
+    //restoreEditingState();
+    //setEditables();
 }
 
 

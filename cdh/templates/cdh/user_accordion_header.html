@@ -1,0 +1,22 @@
+{% load static %}
+<div class="card" style="max-height:15rem;">
+  <div class="row no-gutters">
+    <div class="col">
+      {% if item.photo %}
+      <img src="{% get_media_prefix %}{{item.photo}}" alt="Picture of {{item.first_name}} {{item.last_name}}" class="img-fluid float-start" style="max-height:12rem;" />
+      {% else %}
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-item-fill card-img-top" viewBox="0 0 16 16">
+	<path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1H3zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+      </svg>
+      {% endif %}
+    </div>
+    <div class="col-8">
+      <div class="card-block px-2">
+	<h2 class="card-title">{{item.first_name}} {{item.last_name}}</h1>
+	<h6 class="card-subtitle">{{item.title}}</h6>
+	{% comment %}<p class="card-text">{{item.description}}</p>{% endcomment %}
+      </div>
+    </div>    
+  </div>
+</div>
+

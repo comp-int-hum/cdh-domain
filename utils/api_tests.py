@@ -2,6 +2,7 @@ import sys
 import requests
 import logging
 import os.path
+import json
 
 
 logging.basicConfig(level=logging.INFO)
@@ -47,11 +48,13 @@ if __name__ == "__main__":
     parser.add_argument("--port", dest="port", default=8080, type=int)
     parser.add_argument("--protocol", dest="protocol", default="http")
     parser.add_argument("--primarysource_path", dest="primarysource_path", default="/home/tom/projects/hathitrust/work")
+    parser.add_argument("--image_path", dest="image_path")
+    parser.add_argument("--input", dest="input")
     args = parser.parse_args()
 
     base_url = "{}://{}:{}/api/".format(args.protocol, args.host, args.port)
     headers = {"Accept" : "application/json"}
-
+        
     anon = User()
     first = User("user1", "user")
     second = User("user2", "user")
@@ -60,6 +63,32 @@ if __name__ == "__main__":
     logging.info("Anonymous model list")
     models = anon.get(base_url)
 
+    with open(args.input, "rt") as ifd:
+        fixtures = json.loads(ifd.read())
+
+    for model, objs in fixtures.items():
+        if model == "user":
+            continue
+        fields = set()
+        to_add = {}
+        existing = {}
+        for obj in objs:
+            key = tuple(sorted([(k, v) for k, v in obj.items() if v != None and k not in ["url", "password"] and not k.startswith("@")]))
+            for k, _ in key:
+                fields.add(k)
+            to_add[key] = obj
+        for obj in first.get(models[model])["results"]:
+            key = tuple(sorted([(k, v) for k, v in obj.items() if k in fields and v != None]))
+            existing[key] = obj
+        for key, obj in to_add.items():
+            if key not in existing:
+                files = {k[1:] : open(os.path.join(args.image_path, v), "rb") for k, v in obj.items() if k.startswith("@")}
+                non_files = {k : v for k, v in obj.items() if not k.startswith("@")}
+                first.post(models[model], non_files, files=files)
+
+    sys.exit()
+
+    
     for ps in first.get(models["primarysource"])["results"]:
         logger.info("%s", ps)
         logger.info("%s", first.get(ps["schema_url"], expected=200))

@@ -1,8 +1,8 @@
 import logging
-from rest_framework.serializers import ModelSerializer, BaseSerializer, HyperlinkedModelSerializer, HyperlinkedRelatedField
-from rest_framework.serializers import ModelSerializer, HiddenField, CurrentUserDefault, HyperlinkedModelSerializer, HyperlinkedIdentityField, ReadOnlyField, FileField, CharField
+
+from rest_framework.serializers import ModelSerializer, HiddenField, CurrentUserDefault, HyperlinkedModelSerializer, HyperlinkedIdentityField, ReadOnlyField, FileField, CharField, HyperlinkedRelatedField
 from .models import PrimarySource, Query
-from cdh.fields import VegaField, ActionOrInterfaceField, MonacoEditorField, TabularResultsField
+from cdh.fields import VegaField, ActionOrInterfaceField, SparqlEditorField, TabularResultsField
 from django.conf import settings
 from .vega import PrimarySourceSchemaGraph
 from cdh.serializers import CdhSerializer
@@ -54,7 +54,7 @@ WHERE {
 
 class QuerySerializer(CdhSerializer):
     primary_source = HyperlinkedRelatedField(view_name="api:primarysource-detail", queryset=PrimarySource.objects.all())
-    sparql = MonacoEditorField(initial=example_query, language="sparql", property_field=None, allow_blank=True, required=False, endpoint="sparql", nested_parent_field="primary_source")
+    sparql = SparqlEditorField(initial=example_query, language="sparql", property_field=None, allow_blank=True, required=False, endpoint="sparql", nested_parent_field="primary_source")
     perform_url = ActionOrInterfaceField(
         TabularResultsField(property_field="perform"),
         view_name="api:query-perform",

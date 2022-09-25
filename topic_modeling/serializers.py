@@ -1,5 +1,5 @@
 import logging
-from cdh.fields import VegaField, MonacoEditorField
+from cdh.fields import VegaField, JsonEditorField
 from cdh.serializers import CdhSerializer
 from cdh.widgets import VegaWidget
 from primary_sources.models import Query
@@ -58,7 +58,7 @@ example_lexicon = """
 
 
 class LexiconSerializer(CdhSerializer):
-    lexical_sets = MonacoEditorField(language="json", initial=example_lexicon)
+    lexical_sets = JsonEditorField(initial=example_lexicon)
     class Meta:
         model = Lexicon
         fields = ["name", "lexical_sets", "url", "created_by", "id"]

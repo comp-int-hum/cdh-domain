@@ -1,0 +1,99 @@
+{% load sekizai_tags static %}
+{% load guardian_tags %}
+{% load cdh %}
+{% if item.is_model or item.is_object %}
+{% get_obj_perms request.user for item as "perms" %}
+{% endif %}
+{% get_obj_perms request.user for documentation_model as "doc_perms" %}
+{% cdh_get_documentation_object request.path_info item as doc_info %}
+
+<div
+  class="accordion-item cdh-accordion-item {% if item.is_object %}{{item.object_class}}{% endif %}"
+  id="accordionitem-{{uid}}_{{index}}"
+  >
+  <div
+    class="accordion-header cdh-accordion-header w-100"
+    id="header-{{uid}}_{{index}}"
+    >
+    <div
+      class="btn-group w-100"
+      role="group"
+      aria-label="actions"
+      >
+      <button
+	class="accordion-button cdh-accordion-button collapsed {% if request.user.is_authenticated %}w-75{% else %}w-100{% endif %}"
+	data-bs-toggle="collapse"
+	type="button"
+	aria-expanded="false"
+	data-bs-target="#content-{{uid}}_{{index}}"
+	id="button-{{uid}}_{{index}}"
+	aria-controls="content-{{uid}}_{{index}}"
+	>
+	{% if accordion_header_template_name %}
+          {% include accordion_header_template_name with item=item %}
+	{% elif item.is_model and not item.is_object %}
+	  {{item.model_title_plural}}
+	{% elif item.is_object %}
+	  {{item}}
+	{% else %}
+	  {{item.title}}
+	{% endif %}
+      </button>
+
+      <!-- start modals: group these more tightly, or conditionally? -->
+      {% if request.user.is_authenticated %}
+      
+        {% if item.is_model and not item.is_object and item.get_add_perm in perms %}
+          {% include "cdh/modal.html" with mode="create" uid=uid index=index csrf_token=csrf_token item=item serializer=serializer %}
+        {% endif %}
+
+        {% if item.is_object and item.get_change_perm in perms %}
+          {% include "cdh/modal.html" with mode="edit" uid=uid index=index csrf_token=csrf_token item=item %}
+        {% endif %}
+      
+        {% if item.is_object and item.get_delete_perm in perms %}
+          {% include "cdh/modal.html" with mode="permissions" uid=uid index=index csrf_token=csrf_token item=item %}
+          {% include "cdh/modal.html" with mode="delete" uid=uid index=index csrf_token=csrf_token item=item %}
+        {% endif %}
+
+        {% if doc_info.can_edit %}
+          {% include "cdh/modal.html" with mode="documentation" uid=uid index=index csrf_token=csrf_token item=item doc_info=doc_info %}
+        {% endif %}
+      
+      {% endif %}
+
+    </div>
+  </div>
+
+  <!-- start content -->
+  <div
+    class="accordion-collapse cdh-accordion-collapse collapse w-95 ps-4"
+    id="content-{{uid}}_{{index}}"
+    aria-labelledby="header-{{uid}}_{{index}}"
+    data-bs-parent="#accordion-{{uid}}_{{index}}"
+    >
+    {% if doc_info.object.id and doc_info.object.get_view_perm in doc_perms %}
+    <div
+      class="container w-75 cdh-view"
+      >
+      {{doc_info.object.render|safe}}  
+    </div>
+    {% endif %}
+    <div
+      id="accordionitemcontent-{{uid}}_{{index}}"
+      {% if item.is_object %}
+        hx-get="{{item.get_absolute_url}}"
+      {% elif item.is_model %}
+        hx-get="{{item.get_list_url}}"
+      {% else %}
+        hx-get="{% url item.name %}"
+      {% endif %}
+      hx-vals='{"uid" : "{{uid}}_{{index}}" {% if relation %}, "relation" : "{{relation}}", "pk" : "{{pk}}"{% endif %} }'
+      hx-headers='{"uid" : "{{uid}}_{{index}}", "style" : "accordion", "Accept" : "text/html include=true", "mode" : "view"}'
+      hx-trigger="show.bs.collapse from:#content-{{uid}}_{{index}}, intersect"
+      hx-select="#top_level_content > *"
+      hx-swap="outerHTML"
+      >
+    </div>
+  </div>
+</div>

@@ -59,7 +59,6 @@ class User(AbstractUser):
     def __str__(self):
         return "{} {}".format(self.first_name, self.last_name) if self.last_name else self.username
 
-    @property
     def is_object(self):
         return isinstance(self.id, int)
 
@@ -118,8 +117,7 @@ class CdhModel(MetadataMixin, Model):
 
     class Meta:
         abstract = True
-
-    @property
+        
     def is_object(self):
         return isinstance(self.id, int)
 
@@ -161,7 +159,10 @@ class CdhModel(MetadataMixin, Model):
         return "view_{}".format(self._meta.model_name)    
 
     @classmethod
-    def model_title(self):
+    def model_title_singular(self):
+        return self._meta.verbose_name.title()
+
+    def model_title_plural(self):
         return self._meta.verbose_name_plural.title()
 
     @classmethod
@@ -257,13 +258,16 @@ class ResearchArtifact(CdhModel):
     key = CharField(max_length=1000, null=True)
     editor = CharField(max_length=1000, null=True)
     edition = CharField(max_length=1000, null=True)
-    url = URLField(max_length=1000, null=True)
+    biburl = URLField(max_length=1000, null=True)
     slides = FileField(upload_to="research/slides", null=True)
     document = FileField(upload_to="research/documents", null=True)
     appendix = FileField(upload_to="research/appendices", null=True)
     image = ImageField(upload_to="research/images", null=True)
     description = TextField(blank=True, null=True)
 
+    class Meta:
+        ordering = ["-year", "-month"]
+        
 
 class Documentation(CdhModel):
     content = TextField(blank=True, null=True)

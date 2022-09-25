@@ -39,7 +39,7 @@ class VegaWidget(Widget):
 
 
 class MonacoEditorWidget(Textarea):
-    template_name = "cdh/editor.html"
+    template_name = "cdh/template_pack/editor.html"
     id = None #"prefix".format(random_token(8))
     #value_id = None #"value_prefix_{}".format(id)
     
@@ -49,7 +49,8 @@ class MonacoEditorWidget(Textarea):
         #self.id = "prefix_{}".format(random_token(8))
         #self.value_id = "value_{}".format(self.id)
         #self.output_id = "output_{}".format(self.id)
-        
+        self.field_name = kwargs.get("name", "content")
+        #print(self.field_name)
         default_attrs = {
             "language" : kwargs.get("language", "javascript"),
             "field_name" : kwargs.get("name", "content"),
@@ -68,7 +69,28 @@ class MonacoEditorWidget(Textarea):
         context["widget"]["value_id"] = "value_{}".format(context["widget"]["attrs"]["id"])
         context["widget"]["output_id"] = "output_{}".format(context["widget"]["attrs"]["id"])
         context["widget"]["value"] = context["widget"]["value"] if context["widget"].get("value", None) else self.default_value
-        context["widget"]["list_value"] = context["widget"]["value"].split("\n")
+        rid = "prefix_{}".format(random_token(8))
+        context["field"] = {
+            "name" : self.field_name,
+            "value" : value
+        }
+        context["style"] = {
+            #"property_field" : property_field,
+            
+            "base_template" : "editor.html",
+            "css" : self.media._css["all"],
+            "js" : self.media._js,
+            "id" : rid,
+            "value_id" : "value_{}".format(rid),
+            "output_id" : "output_{}".format(rid),
+            "language" : self.language,
+            #"detail_endpoint" : self.language,
+            "endpoint" : self.language,
+            "template_pack" : "cdh/template_pack",
+            "editable" : True,
+            "field_name" : "monaco_{}".format(random_token(6)),
+        }
+
         return context
 
     def value_from_datadict(self, data, files, name):

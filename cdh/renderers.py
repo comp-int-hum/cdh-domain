@@ -43,7 +43,7 @@ class CdhHTMLFormRenderer(HTMLFormRenderer):
             template = loader.get_template(template_name)
             context = {'field': field, 'style': style}
             return template.render(context)
-        print(field.name, field.style)
+        #print(field.name, field.style)
         retval = super(CdhHTMLFormRenderer, self).render_field(field, parent_style, *argv, **argd)
         return retval
     

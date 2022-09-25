@@ -58,11 +58,21 @@ for k, v in apps.app_configs.items():
 router.register("user", AtomicViewSet.for_model(User, exclude_={"username" : "AnonymousUser"}), basename="user")
 router.register("documentation", AtomicViewSet.for_model(Documentation), basename="documentation")
 
+
 app_name = "cdh"
 urlpatterns = [
+
     path(
         '',
-        SlidesView.as_view(model=Slide),
+        TemplateView.as_view(
+            template_name="cdh/base.html",
+            extra_context={
+                "include" : "api:slide-list",
+                "style" : "slideshow",
+                "image_field" : "image",
+                "content_field" : "article"
+            }
+        ),
         name="index"
     ),
     path(

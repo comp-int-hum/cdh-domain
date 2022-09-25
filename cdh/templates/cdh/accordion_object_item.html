@@ -20,7 +20,7 @@
 
 
       <button
-	class="accordion-button cdh-accordion-button collapsed w-75"
+	class="accordion-button cdh-accordion-button collapsed w-100"
 	data-bs-toggle="collapse"
 	type="button"
 	aria-expanded="false"
@@ -28,7 +28,11 @@
 	id="button-{{uid}}_{{index}}"
 	aria-controls="content-{{uid}}_{{index}}"
 	>
+	{% if accordion_header_template_name %}
+	{% include accordion_header_template_name with item=item %}
+	{% else %}
 	{{item}}
+	{% endif %}
       </button>
            
       {% if item.get_delete_perm in obj_perms %}

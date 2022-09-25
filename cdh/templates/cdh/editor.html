@@ -18,7 +18,7 @@
 </div>
 
 
-{{ widget.list_value|json_script:widget.value_id }}
+{{ widget.value|json_script:widget.value_id }}
 <input type="hidden"
        name="{{widget.name}}"
        {% if False and widget.attrs.endpoint %}

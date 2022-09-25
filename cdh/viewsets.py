@@ -3,6 +3,7 @@ from django.utils.module_loading import import_string
 from django.shortcuts import get_object_or_404
 from django.http import HttpResponse
 from django.contrib.contenttypes.models import ContentType
+from django.template.loader import get_template, TemplateDoesNotExist
 from rest_framework.viewsets import ModelViewSet
 from rest_framework import exceptions, status
 from rest_framework.response import Response
@@ -13,7 +14,7 @@ from guardian.shortcuts import get_perms, get_objects_for_user, get_anonymous_us
 from .renderers import CdhTemplateHTMLRenderer
 from .negotiation import CdhContentNegotiation
 from .serializers import DocumentationSerializer
-from .models import Documentation
+from .models import Documentation, Slide
 
 
 logger = logging.getLogger(__name__)
@@ -24,6 +25,7 @@ class AtomicViewSet(ModelViewSet):
     renderer_classes = [BrowsableAPIRenderer, JSONRenderer, CdhTemplateHTMLRenderer]
     detail_template_name = "cdh/atomic.html"
     list_template_name = "cdh/accordion.html"
+    slideshow_template_name = "cdh/slideshow.html"
     model = None
     exclude = {}
     
@@ -43,6 +45,11 @@ class AtomicViewSet(ModelViewSet):
         model_name = model_._meta.model_name.title()
         app_name = model_._meta.app_label
         class_name = model_._meta.verbose_name.title().replace(" ", "")
+        accordion_header_template_name_ = "{}/{}_accordion_header.html".format(app_name, model_name.lower())
+        try:
+            accordion_header_template_ = get_template(accordion_header_template_name_)
+        except TemplateDoesNotExist as e:
+            accordion_header_template_ = False
         class GeneratedViewSet(cls):
             schema = AutoSchema(
                 tags=[model_name],
@@ -51,7 +58,9 @@ class AtomicViewSet(ModelViewSet):
             )
             model = model_
             exclude = exclude_
-            serializer_class = import_string("{}.serializers.{}Serializer".format(app_name, class_name))                
+            serializer_class = import_string("{}.serializers.{}Serializer".format(app_name, class_name))
+            accordion_header_template_name = accordion_header_template_name_ if accordion_header_template_ else None
+            
         for name, props in extra_actions:
             def callback(self, request, pk=None):
                 obj = self.get_object()
@@ -80,7 +89,8 @@ class AtomicViewSet(ModelViewSet):
             'attribute on the view correctly.' %
             (self.__class__.__name__, lookup_url_kwarg)
         )
-
+        if self.kwargs[lookup_url_kwarg] == "None":
+            return None
         filter_kwargs = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
         obj = get_object_or_404(queryset, **filter_kwargs)
         return obj
@@ -90,8 +100,11 @@ class AtomicViewSet(ModelViewSet):
         self.template_name = self.list_template_name if self.action == "list" else self.detail_template_name
         self.request = request
         self.uid = self.request.headers.get("uid", "1")
-        # style (currently) can be: "tab", "accordion", "modal", or None
+        # style (currently) can be: "tab", "accordion", "modal", "slideshow", or None/""
         self.style = self.request.headers.get("style")
+        self.mode = self.request.headers.get("mode")
+        if self.style == "slideshow":
+            self.template_name = self.slideshow_template_name
         self.method = self.request.method
         self.from_htmx = self.request.headers.get("Hx-Request", False) and True
         if self.model:
@@ -111,32 +124,45 @@ class AtomicViewSet(ModelViewSet):
     
     def get_renderer_context(self, *argv, **argd):
         context = super(AtomicViewSet, self).get_renderer_context(*argv, **argd)
+        context["mode"] = self.mode
         context["model"] = self.model
         context["model_name"] = self.model._meta.verbose_name.title()
         context["model_name_plural"] = self.model._meta.verbose_name_plural.title()
         context["model_perms"] = self.model_perms
         context["uid"] = self.uid
         context["style"] = self.style
+        if self.style == "slideshow":
+            context["image_field"] = self.request.headers.get("image_field")
+            context["content_field"] = self.request.headers.get("content_field")
+            context["slide_model"] = Slide
         if self.detail:
             obj = self.get_object()
-            context["view_serializer"] = self.get_serializer_variant(obj, "view")
-            if obj.get_change_perm() in get_perms(self.request.user, obj):
-                context["edit_serializer"] = self.get_serializer_variant(obj, "edit")
-                for field in context["edit_serializer"].fields:
-                    npf = getattr(context["edit_serializer"].fields[field], "nested_parent_field", None)
-                    if npf != None:
-                        context["edit_serializer"].fields[field].style["parent_id"] = getattr(obj, npf).id
-            for field in context["view_serializer"].fields:
-                context["view_serializer"].fields[field].style["object"] = obj
-                context["view_serializer"].fields[field].style["method"] = self.request.method
-            context["object"] = obj
+            if obj != None:
+                context["view_serializer"] = self.get_serializer_variant(obj, "view")
+                if obj.get_change_perm() in get_perms(self.request.user, obj):
+                    context["edit_serializer"] = self.get_serializer_variant(obj, "edit")
+                    for field in context["edit_serializer"].fields:
+                        npf = getattr(context["edit_serializer"].fields[field], "nested_parent_field", None)
+                        if npf != None:
+                            context["edit_serializer"].fields[field].style["parent_id"] = getattr(obj, npf).id
+                for field in context["view_serializer"].fields:
+                    context["view_serializer"].fields[field].style["object"] = obj
+                    context["view_serializer"].fields[field].style["method"] = self.request.method
+                context["serializer"] = self.get_serializer(obj)
+                context["object"] = obj
+            else:
+                context["serializer"] = self.get_serializer() #_variant(None, "create")
         elif self.action == "create":
-            context["serializer"] = self.get_serializer_variant(None, "create")
-        else:
+            context["serializer"] = self.get_serializer() #_variant(None, "create")
+        elif not self.detail:
+            context["serializer"] = self.get_serializer() #_variant(None, "create")
             context["create_serializer"] = self.get_serializer_variant(None, "create")
             for field in context["create_serializer"].fields:
                 context["create_serializer"].fields[field].style["editable"] = True
             context["items"] = self.get_queryset()
+            context["accordion_header_template_name"] = self.accordion_header_template_name
+        else:
+            raise Exception("Incoherent combination of detail/action on AtomicViewSet")
         view_name = self.request.path_info
         content_type = ContentType.objects.get_for_model(context["model"]) if context.get("model", None) else None
         object_id = getattr(context.get("object", None), "id", None)
@@ -145,24 +171,35 @@ class AtomicViewSet(ModelViewSet):
             content_type=content_type,
             object_id=object_id
         )
-        context["documentation_model"] = Documentation
+
         if docs.count() > 1:
             raise Exception("More than one Documentation object for view_name={}/content_type={}/object_id={}".format(view_name, content_type, object_id))
         elif docs.count() == 1:
             context["documentation_serializer"] = DocumentationSerializer(docs[0], context={"request" : self.request})
             context["documentation_object"] = docs[0]
-        else:
-            context["documentation_serializer"] = DocumentationSerializer(
-                instance = Documentation(
-                    **{
-                        "name" : "/".join([str(x) for x in [view_name.rstrip("/"), context.get("model_name", None), object_id] if x]),
-                        "view_name" : view_name,
-                        "content_type" : content_type,
-                        "object_id" : object_id
-                    }
-                    ),
-                context={"request" : self.request}
-            )
+        context["documentation_model"] = Documentation
+        context["view_name"] = view_name
+        context["content_type"] = content_type
+
+        
+        #     #context["documentation_object"] = docs[0]
+        #     doc_perms = get_perms(self.request.user, docs[0])
+        #     context["can_view_documentation"] = Documentation.get_view_perm() in doc_perms
+        #     context["can_change_documentation"] = Documentation.get_change_perm() in doc_perms
+        #     context["can_delete_documentation"] = Documentation.get_delete_perm() in doc_perms
+        # else:
+        #     context["can_add_documentation"] = Documentation.get_add_perm() in get_perms(self.request.user, Documentation)
+        #     context["documentation_serializer"] = DocumentationSerializer(
+        #         instance = Documentation(
+        #             **{
+        #                 "name" : "/".join([str(x) for x in [view_name.rstrip("/"), context.get("model_name", None), object_id] if x]),
+        #                 "view_name" : view_name,
+        #                 "content_type" : content_type,
+        #                 "object_id" : object_id
+        #             }
+        #             ),
+        #         context={"request" : self.request}
+        #     )
         logger.info("Accepted renderer: %s", self.request.accepted_renderer)
         return context
 
@@ -178,7 +215,11 @@ class AtomicViewSet(ModelViewSet):
         logger.info("Create %s invoked by %s", self.model._meta.model_name, request.user)
         if request.user.has_perm("{}.add_{}".format(self.model._meta.app_label, self.model._meta.model_name)):
             logger.info("Permission verified")
-            retval = super(AtomicViewSet, self).create(request)
+            try:
+                retval = super(AtomicViewSet, self).create(request)
+            except Exception as e:
+                print(e, 234)
+                raise e
             pk = retval.data["id"]
             if request.accepted_renderer.format == "cdh":
                 retval = HttpResponse()
@@ -200,7 +241,11 @@ class AtomicViewSet(ModelViewSet):
 
     def retrieve(self, request, pk=None):
         logger.info("Retrieve invoked by %s", request.user)
-        ser = self.get_serializer(self.get_object())
+        obj = self.get_object()
+        if obj == None:
+            ser = self.get_serializer()
+        else:
+            ser = self.get_serializer(obj)
         return Response(ser.data)
 
     def destroy(self, request, pk=None):
@@ -219,7 +264,11 @@ class AtomicViewSet(ModelViewSet):
         logger.info("Update invoked by %s for %s", request.user, pk)
         if self.model.get_change_perm() in get_perms(request.user, self.get_object()):
             logger.info("Permission verified")
-            retval = super(AtomicViewSet, self).update(request, pk)
+            try:
+                retval = super(AtomicViewSet, self).update(request, pk)
+            except Exception as e:
+                print(e, 4444)
+
             return retval
         else:
             raise exceptions.PermissionDenied(

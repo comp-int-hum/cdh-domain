@@ -1,11 +1,12 @@
 {% load cdh %}
 
+
+<!-- begin modal trigger (basically, just icons) -->
 <button
   class="btn cdh-modal cdh-interactive"
   type="button"
   data-bs-toggle="modal"
   data-bs-target="#{{mode}}_modal-{{uid}}_{{index}}"
-  style="display: none;"
   >
   {% if mode == "documentation" %}
   <svg
@@ -23,7 +24,7 @@
       d="M2 2a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2zm10-1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1z"
       />
   </svg>
-  {% elif mode == "deletion" %}
+  {% elif mode == "delete" %}
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width="16"
@@ -36,7 +37,7 @@
       d="M6.5 1h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5ZM11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3A1.5 1.5 0 0 0 5 1.5v1H2.506a.58.58 0 0 0-.01 0H1.5a.5.5 0 0 0 0 1h.538l.853 10.66A2 2 0 0 0 4.885 16h6.23a2 2 0 0 0 1.994-1.84l.853-10.66h.538a.5.5 0 0 0 0-1h-.995a.59.59 0 0 0-.01 0H11Zm1.958 1-.846 10.58a1 1 0 0 1-.997.92h-6.23a1 1 0 0 1-.997-.92L3.042 3.5h9.916Zm-7.487 1a.5.5 0 0 1 .528.47l.5 8.5a.5.5 0 0 1-.998.06L5 5.03a.5.5 0 0 1 .47-.53Zm5.058 0a.5.5 0 0 1 .47.53l-.5 8.5a.5.5 0 1 1-.998-.06l.5-8.5a.5.5 0 0 1 .528-.47ZM8 4.5a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5Z"
       />
   </svg>  
-  {% elif mode == "creation" %}
+  {% elif mode == "create" %}
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width="16"
@@ -52,7 +53,7 @@
       d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"
       />
   </svg>
-  {% elif mode == "editing" %}
+  {% elif mode == "edit" %}
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width="16"
@@ -101,12 +102,13 @@
 </button>
 
 
+<!-- begin modal content -->
 <div
   class="modal fade"
   id="{{mode}}_modal-{{uid}}_{{index}}"
   tabindex="-1"
   role="dialog"
-  aria-labelledby="{{mode}}_modal_label-{{uid}}"
+  aria-labelledby="{{mode}}_modal_label-{{uid}}_{{index}}"
   aria-hidden="true"
   >
   <div
@@ -121,18 +123,18 @@
 	>
         <h5
 	  class="modal-title"
-	  id="{{mode}}_modal_label-{{uid}}"
+	  id="{{mode}}_modal_label-{{uid}}_{{index}}"
 	  >
-	  {% if mode == "creation" %}
-	  Creating a new {{model_name}}
-	  {% elif mode == "deletion" %}
-	  Deleting {{item}}
-	  {% elif mode == "editing" %}
-	  Editing {{model_name}} {{object}}
+	  {% if mode == "create" %}
+	  Creating a new {{item.model_title_singular}}
+	  {% elif mode == "delete" %}
+	  Deleting {{item.model_title_singular}} '{{item}}'
+	  {% elif mode == "edit" %}
+	  Editing {{item.model_title_singular}} '{{item}}'
 	  {% elif mode == "documentation" %}
-	  Editing documentation for {{model_name_plural}}
+	  Editing documentation for {% if item.is_object %}{{item.model_title_singular}} '{{item}}'{% elif item.is_model %}{{item.model_title_plural}}{% else %}{{item.title}}{% endif %}
 	  {% elif mode == "permissions" %}
-	  Modifying permissions of {{item}}
+	  Modifying permissions of {{item.model_title_singular}} '{{item}}'
 	  {% else %}
 	  {{title}}
 	  {% endif %}
@@ -150,30 +152,36 @@
 	  </span>
         </button>
       </div>
-      {% if mode == "deletion" %}
+      {% if mode == "delete" %}
       <div
 	class="modal-body"
 	>
 	Are you sure?
       </div>
-      {% elif mode == "creation" %}
-      <div	
+      {% elif mode == "create" %}
+      <form
+	id="form-{{mode}}_{{uid}}_{{index}}"
+	hx-post="{{item.get_list_url}}"
+	hx-swap="none"
+	hx-encoding="multipart/form-data"
+	hx-headers='{"uid" : "{{mode}}_{{uid}}_{{index}}", "style" : "modal", "X-CSRFToken" : "{{csrf_token}}", "include" : true}'
 	>
-	<form
-	  id="form-{{mode}}_{{uid}}"
-	  hx-post="{{item.get_list_url}}"
-	  hx-encoding="multipart/form-data"
-	  hx-headers='{"uid" : "{{mode}}_{{uid}}", "style" : "modal", "X-CSRFToken" : "{{csrf_token}}", "include" : true}'>
-	  {% csrf_token %}
-	  {% cdh_render_form create_serializer template_pack="cdh/template_pack" %}
-	</form>
-      </div>
+	<div
+	  hx-get="{{item.get_absolute_url}}"
+	  hx-vals='{"uid" : "{{mode}}_{{uid}}_{{index}}" {% if relation %}, "relation" : "{{relation}}", "pk" : "{{pk}}"{% endif %} }'
+	  hx-headers='{"uid" : "{{mode}}_{{uid}}_{{index}}", "mode" : "create", "Accept" : "text/html include=true"}'
+	  hx-trigger="show.bs.collapse from:#content-{{mode}}_{{uid}}_{{index}}, intersect"
+	  hx-select="#top_level_content > *"
+	  hx-swap="outerHTML"	
+	  >
+	</div>
+      </form>
       {% elif mode == "permissions" %}
       <form
-	id="form-{{mode}}_{{uid}}"
+	id="form-{{mode}}_{{uid}}_{{index}}"
 	hx-post="{{item.get_permissions_url}}"
 	hx-encoding="multipart/form-data"
-	hx-headers='{"uid" : "{{mode}}_{{uid}}", "style" : "modal", "X-CSRFToken" : "{{csrf_token}}", "include" : true}'
+	hx-headers='{"uid" : "{{mode}}_{{uid}}_{{index}}", "style" : "modal", "X-CSRFToken" : "{{csrf_token}}", "include" : true}'
 	>
       <div
 	class="modal-body"
@@ -181,20 +189,44 @@
 	hx-swap="innerHTML"
 	hx-select="#top_level_content > *"
 	hx-get="{{item.get_permissions_url}}"
-	hx-headers='{"uid" : "{{mode}}_{{uid}}", "style" : "modal", "X-CSRFToken" : "{{csrf_token}}"}'
+	hx-headers='{"uid" : "{{mode}}_{{uid}}_{{index}}", "style" : "modal", "X-CSRFToken" : "{{csrf_token}}", "mode" : "edit"}'
 	>
       </div>
       </form>
-      {% else %}
+      {% elif mode == "edit" %}
+      <form
+	id="form-{{mode}}_{{uid}}_{{index}}"
+	hx-patch="{{item.get_absolute_url}}"
+	hx-encoding="multipart/form-data"
+	hx-headers='{"uid" : "{{mode}}_{{uid}}_{{index}}", "style" : "modal", "X-CSRFToken" : "{{csrf_token}}", "include" : true}'
+	>
       <div
 	class="modal-body"
 	hx-trigger="intersect"
 	hx-swap="innerHTML"
 	hx-select="#top_level_content > *"
 	hx-get="{{item.get_absolute_url}}"
-	hx-headers='{"uid" : "{{mode}}_{{uid}}", "style" : "modal", "X-CSRFToken" : "{{csrf_token}}"}'
+	hx-headers='{"uid" : "{{mode}}_{{uid}}_{{index}}", "style" : "modal", "X-CSRFToken" : "{{csrf_token}}", "mode" : "edit"}'
 	>
       </div>
+      </form>
+      {% elif mode == "documentation" %}
+      <form
+	id="form-{{mode}}_{{uid}}_{{index}}"
+	{% if doc_info.object.id %}
+	hx-patch="{{doc_info.object.get_absolute_url}}"
+	{% else %}
+	hx-post="{{doc_info.object.get_list_url}}"	
+	{% endif %}
+	hx-encoding="multipart/form-data"
+	hx-headers='{"uid" : "{{mode}}_{{uid}}_{{index}}", "style" : "modal", "X-CSRFToken" : "{{csrf_token}}", "include" : true}'
+	>	
+	<div
+	  class="modal-body"
+	  >
+	  {% cdh_render_form doc_info.serializer template_pack="cdh/template_pack" mode="create" %}
+	</div>
+      </form>
       {% endif %}
 	<div
 	  class="modal-footer"
@@ -206,22 +238,23 @@
 	    >
 	    Never mind
 	  </button>
-	  {% if mode == "deletion" %}
+	  {% if mode == "delete" %}
 	  <button
 	    class="btn btn-danger"
 	    hx-delete="{{item.get_absolute_url}}"
-	    id="{{mode}}_button-{{uid}}"
+	    id="{{mode}}_button-{{uid}}_{{index}}"
 	    data-bs-dismiss="modal"
-	    hx-headers='{"uid" : "{{mode}}_{{uid}}", "style" : "modal", "X-CSRFToken" : "{{csrf_token}}", "include" : true}'
+	    hx-headers='{"uid" : "{{mode}}_{{uid}}_{{index}}", "style" : "modal", "X-CSRFToken" : "{{csrf_token}}", "include" : true}'
 	    >
 	    Delete
 	  </button>
 	  {% else %}
+	  <!-- make conditional on success -->
           <button
 	    type="submit"
 	    class="btn btn-primary"
-	    form="form-{{mode}}_{{uid}}"
-	    id="{{mode}}_button-{{uid}}"
+	    form="form-{{mode}}_{{uid}}_{{index}}"
+	    id="{{mode}}_button-{{uid}}_{{index}}"	    
 	    data-bs-dismiss="modal"	    
 	    >
 	    Save
