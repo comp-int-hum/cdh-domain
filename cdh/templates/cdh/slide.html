@@ -2,7 +2,7 @@
 {% get_obj_perms request.user for item as "obj_perms" %}
 
 
-<div class="carousel-caption d-none d-md-block top-0 mt-0 mb-0 g-0"><h6 class="mt-0 mb-0 g-0">{{item.name}}</h6>
+<div class="carousel-caption d-none d-md-block top-0 mt-0 mb-0 g-0"><h6 class="mt-0 mb-0 g-0"></h6>
   {% if item.get_change_perm in obj_perms %}
   {% include "cdh/modal.html" with mode="edit" uid=uid index=index csrf_token=csrf_token item=item %}
   {% endif %}
