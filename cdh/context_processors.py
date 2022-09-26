@@ -1,12 +1,11 @@
 from django.conf import settings
-from cdh.models import User
+from cdh.models import User, Documentation
 from django.contrib.flatpages.models import FlatPage
 import re
 
+
 def app_directory(request):
     top_level = request.path.lstrip("/").split("/")[0]
-    if "editing" in request.GET:
-        request.session["editing"] = request.GET.get("editing") == "true"
     return {
         "flat_pages" : [p for p in FlatPage.objects.all() if re.match(r"^\/[^\/]+\/$", p.url)],
         "is_admin" : request.user.is_staff or request.user.groups.filter(name="cdhweb").exists(),
@@ -15,5 +14,5 @@ def app_directory(request):
         "messages" : [],
         "top_level" : top_level,
         "interaction_name" : settings.APPS.get(top_level, "API"),
-        "editing" : request.session.get("editing", False)
+        "documentation_model" : Documentation
     }

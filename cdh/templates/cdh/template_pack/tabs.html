@@ -1,0 +1,18 @@
+<div
+  id="tabs-{{uid}}"
+  >
+  <ul class="nav nav-tabs cdh-nav-tabs" id="controls-{{uid}}" role="tablist">
+    {% for tab in tabs %}
+    {% if not tab.read_only %}
+    {% include "cdh/template_pack/tab_control.html" with index=forloop.counter title=tab.title %}
+    {% endif %}
+    {% endfor %}
+  </ul>
+  <div class="tab-content" id="contents-{{uid}}">
+    {% for tab in tabs %}
+    {% if not tab.read_only %}
+    {% include "cdh/template_pack/tab_content.html" with index=forloop.counter content=tab %}
+    {% endif %}
+    {% endfor %}
+  </div>
+</div>

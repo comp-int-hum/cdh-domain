@@ -27,16 +27,16 @@ class Migration(migrations.Migration):
             model_name='slide',
             name='rendered_article',
         ),
-        migrations.AlterField(
-            model_name='researchartifact',
-            name='description',
-            field=cdh.fields.MarkdownField(blank=True),
-        ),
-        migrations.AlterField(
-            model_name='slide',
-            name='article',
-            field=cdh.fields.MarkdownField(blank=True),
-        ),
+        #migrations.AlterField(
+        #    model_name='researchartifact',
+        #    name='description',
+        #    field=cdh.fields.MarkdownField(blank=True),
+        #),
+        #migrations.AlterField(
+        #    model_name='slide',
+        #    name='article',
+        #    field=cdh.fields.MarkdownField(blank=True),
+        #),
         migrations.DeleteModel(
             name='SlidePage',
         ),

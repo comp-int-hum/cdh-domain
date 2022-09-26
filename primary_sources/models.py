@@ -26,7 +26,7 @@ else:
 class PrimarySource(AsyncMixin, CdhModel):
 
     @cdh_action(detail=True, methods=["get"])
-    def schema(self):
+    def domain(self):
         resp = requests.get(
             "http://{}:{}/{}_{}/get".format(settings.JENA_HOST, settings.JENA_PORT, self.id, "schema"),
             headers={"Accept" : "application/ld+json"},
@@ -80,7 +80,7 @@ class Query(CdhModel):
     def __str__(self):
         return self.name
 
-    @cdh_action(detail=True, methods=["get"])    
+    @cdh_action(detail=True, methods=["get"])
     def perform(self):
         resp = requests.get(
             "http://{}:{}/{}_{}/query".format(settings.JENA_HOST, settings.JENA_PORT, self.primary_source.id, "data"),
@@ -99,6 +99,23 @@ def save_primarysource(pk, update, *argv, **argd):
         try:
             ps = PrimarySource.objects.get(id=pk)
             ps.state = ps.PROCESSING
+            paths = {}
+            for graph_name in ["schema", "annotations", "data"]:
+                fname = os.path.join(settings.TEMP_ROOT, "primarysource_{}_{}".format(ps.id, graph_name))
+                if os.path.exists(fname):
+                    paths[graph_name] = fname
+                    
+            materials_fname = os.path.join(settings.TEMP_ROOT, "primarysource_{}_materials".format(ps.id))
+            if os.path.exists(materials_fname):
+                psf = PairtreeStorageFactory()
+                with zipfile.ZipFile(materials_fname, "r") as zifd:
+                    for zname in zifd.namelist():
+                        prefix, fname = os.path.split(zname)
+                        name = os.path.splitext(fname)[0] if fname.endswith(".metadata") else fname
+                        stream_name = "metadata" if fname.endswith(".metadata") else "data"
+                        store = psf.get_store(store_dir=os.path.join(settings.MATERIALS_ROOT, prefix), uri_base="https://cdh.jhu.edu/materials/")
+                        obj = store.get_object(name, create_if_doesnt_exist=True)
+                        obj.add_bytestream(stream_name, zifd.read(zname))            
             for graph_name in ["schema", "annotations", "data"]:
                 dbName = "{}_{}".format(ps.id, graph_name)
                 requests.post(
@@ -117,17 +134,6 @@ def save_primarysource(pk, update, *argv, **argd):
                             data=ifd,
                             auth=requests.auth.HTTPBasicAuth(settings.JENA_USER, settings.JENA_PASSWORD)                    
                         )
-            materials_fname = os.path.join(settings.TEMP_ROOT, "primarysource_{}_materials".format(ps.id))
-            if os.path.exists(materials_fname):
-                psf = PairtreeStorageFactory()
-                with zipfile.ZipFile(materials_fname, "r") as zifd:
-                    for zname in zifd.namelist():
-                        prefix, fname = os.path.split(zname)
-                        name = os.path.splitext(fname)[0] if fname.endswith(".metadata") else fname
-                        stream_name = "metadata" if fname.endswith(".metadata") else "data"
-                        store = psf.get_store(store_dir=os.path.join(settings.MATERIALS_ROOT, prefix), uri_base="https://cdh.jhu.edu/materials/")
-                        obj = store.get_object(name, create_if_doesnt_exist=True)
-                        obj.add_bytestream(stream_name, zifd.read(zname))
             ps.state = ps.COMPLETE
         except Exception as e:
             ps.state = ps.ERROR

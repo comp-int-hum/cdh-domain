@@ -22,7 +22,7 @@ from guardian.shortcuts import assign_perm, get_anonymous_user
 from .settings import MEDIA_URL, MEDIA_ROOT, STATIC_URL, STATIC_ROOT, BUILTIN_PAGES, APPS, DEBUG
 from .forms import UserCreateForm
 from .views import PermissionsView, SlidesView, MarkdownView, SparqlView, MaterialView
-from .models import Slide, ResearchArtifact, CdhModel, Documentation
+from .models import Slide, ResearchArtifact, CdhModel, Documentation, Event, Calendar
 from .viewsets import AtomicViewSet
 from .routers import CdhRouter
 
@@ -45,18 +45,20 @@ class CustomPasswordResetView(PasswordResetView):
 
 router = CdhRouter()
 for k, v in apps.app_configs.items():
-     for model in v.get_models():
-         if issubclass(model, CdhModel) and model != Documentation:
-             mtn = model.model_title_name()
-             router.register(
-                 model._meta.model_name,
-                 AtomicViewSet.for_model(
-                     model,
-                 ),
-                 basename=model._meta.model_name
-             )
+    for model in v.get_models():
+        if issubclass(model, CdhModel) and model != Documentation:
+            mtn = model.model_title_name()
+            router.register(
+                model._meta.model_name,
+                AtomicViewSet.for_model(
+                    model,
+                ),
+                basename=model._meta.model_name
+            )
 router.register("user", AtomicViewSet.for_model(User, exclude_={"username" : "AnonymousUser"}), basename="user")
 router.register("documentation", AtomicViewSet.for_model(Documentation), basename="documentation")
+router.register("event", AtomicViewSet.for_model(Event, serializer_class_=None), basename="event")
+router.register("calendar", AtomicViewSet.for_model(Calendar, serializer_class_=None), basename="calendar")
 
 
 app_name = "cdh"
@@ -138,16 +140,24 @@ urlpatterns = [
         PermissionsView.as_view(),        
         name="permissions"
     ),
-
+    #path(
+    #    "calendar/",
+    #    TemplateView.as_view(
+    #    ),
+    #    name="calendar"
+    #),
+    path('calendar/', include('schedule.urls')),
+    #url(r'^fullcalendar/', TemplateView.as_view(template_name="fullcalendar.html"), name='fullcalendar'),
     
     # api-related
     path("api/", include((router.urls, "api"))),
     path('openapi/', get_schema_view(
         title="CDH",
         description="API for various aspects of the JHU Center for Digital Humanities",
-        version="1.0.0"
+        version="1.0.0",
     ), name='openapi-schema'),
 ] + [
+    
     # each app has its own set of urls
     path("{}/".format(k), include("{}.urls".format(k))) for k, v in APPS.items()
 ]

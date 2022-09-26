@@ -1,5 +1,7 @@
 import sys
 import requests
+import coreapi
+import aiopenapi3
 import logging
 import os.path
 import json
@@ -49,12 +51,16 @@ if __name__ == "__main__":
     parser.add_argument("--protocol", dest="protocol", default="http")
     parser.add_argument("--primarysource_path", dest="primarysource_path", default="/home/tom/projects/hathitrust/work")
     parser.add_argument("--image_path", dest="image_path")
+    parser.add_argument("--user", dest="user", default="user1")
+    parser.add_argument("--password", dest="password", default="user")
     parser.add_argument("--input", dest="input")
     args = parser.parse_args()
 
-    base_url = "{}://{}:{}/api/".format(args.protocol, args.host, args.port)
+    openapi_url = "{}://{}:{}/openapi/".format(args.protocol, args.host, args.port)
+    #base_url = "{}://{}:{}/api/".format(args.protocol, args.host, args.port)
     headers = {"Accept" : "application/json"}
-        
+
+    sys.exit()
     anon = User()
     first = User("user1", "user")
     second = User("user2", "user")
@@ -63,6 +69,9 @@ if __name__ == "__main__":
     logging.info("Anonymous model list")
     models = anon.get(base_url)
 
+
+    sys.exit()
+    
     with open(args.input, "rt") as ifd:
         fixtures = json.loads(ifd.read())
 

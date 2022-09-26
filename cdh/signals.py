@@ -31,7 +31,7 @@ def post_save_callback(sender, instance, created, raw, using, update_fields, *ar
                     perm,
                     instance._meta.model_name
                 ),
-                instance.created_by,
+                instance if isinstance(instance, get_user_model()) else instance.created_by,
                 instance
             )
         logger.info("Set initial permissions for %s", instance)

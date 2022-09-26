@@ -11,6 +11,9 @@
   hx-select="#top_level_content > *"
   hx-headers='{"Accept" : "text/html include=true", "style" : "{{style}}", "image_field" : "test", "content_field" : "{{content_field}}"}'
   >
+  <div class="spinner-border text-primary" role="status">
+    <span class="visually-hidden">Loading...</span>
+  </div>
 </div>
 
 {% elif includes %}

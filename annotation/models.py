@@ -1,15 +1,15 @@
 import logging
 from django.db import models
-from turkle import models
+from turkle.models import Batch, Project
 from cdh.models import CdhModel
 
 
 logger = logging.getLogger(__name__)
 
 
-class Batch(models.Batch, CdhModel):
+class AnnotationBatch(Batch, CdhModel):
     pass
 
-class Project(models.Project, CdhModel):
-    pass
 
+class AnnotationProject(Project, CdhModel):
+    pass

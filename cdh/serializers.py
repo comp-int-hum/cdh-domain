@@ -2,7 +2,7 @@ import logging
 from rest_framework.serializers import ModelSerializer, BaseSerializer, HyperlinkedModelSerializer, HiddenField, HyperlinkedIdentityField, ReadOnlyField, CurrentUserDefault, HyperlinkedRelatedField, PrimaryKeyRelatedField, CharField, IntegerField
 from django.contrib.auth.hashers import make_password
 from django.contrib.contenttypes.models import ContentType
-from .models import User, Slide, ResearchArtifact, Documentation
+from .models import User, Slide, ResearchArtifact, Documentation, Event, Calendar
 from django.db.models.fields.related import ForeignKey
 from rest_framework.decorators import action
 from cdh.fields import MonacoEditorField, ViewEditField, MarkdownEditorField
@@ -61,8 +61,20 @@ class SlideSerializer(CdhSerializer):
         view_fields = ["url", "image", "article", "id"]
         edit_fields = ["name", "url", "image", "article", "id"]
         create_fields = ["name", "url", "image", "article", "id"]
-        
 
+
+class EventSerializer(CdhSerializer):
+    class Meta:
+        model = Event
+        fields = "__all__"
+
+
+class CalendarSerializer(CdhSerializer):
+    class Meta:
+        model = Calendar
+        fields = "__all__"
+        
+        
 class ResearchArtifactSerializer(CdhSerializer):
     description = MarkdownEditorField(language="markdown", property_field="description", allow_blank=True, required=False, endpoint="markdown")
     name = CharField(source="title", required=False)

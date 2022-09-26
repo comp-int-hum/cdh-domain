@@ -17,7 +17,7 @@ class PrimarySourceSerializer(CdhSerializer):
     annotations_file = FileField(write_only=True, allow_empty_file=True, allow_null=True, required=False)
     materials_file = FileField(write_only=True, allow_empty_file=True, allow_null=True, required=False)
     schema_url = ActionOrInterfaceField(
-        VegaField(vega_class=PrimarySourceSchemaGraph, property_field="schema"),
+        VegaField(vega_class=PrimarySourceSchemaGraph, property_field="domain"),
         view_name="api:primarysource-schema",
     )    
     
@@ -56,7 +56,13 @@ class QuerySerializer(CdhSerializer):
     primary_source = HyperlinkedRelatedField(view_name="api:primarysource-detail", queryset=PrimarySource.objects.all())
     sparql = SparqlEditorField(initial=example_query, language="sparql", property_field=None, allow_blank=True, required=False, endpoint="sparql", nested_parent_field="primary_source")
     perform_url = ActionOrInterfaceField(
-        TabularResultsField(property_field="perform"),
+        TabularResultsField(
+            property_field="perform",
+            column_names_path="head.vars",
+            lookup_path="head.vars",
+            rows_path="results.bindings",
+            value_format="{0[value]}",
+        ),
         view_name="api:query-perform",
     )
     

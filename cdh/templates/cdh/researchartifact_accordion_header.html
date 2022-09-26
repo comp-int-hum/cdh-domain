@@ -1,12 +1,12 @@
 {% load static %}
+{% comment %}
 <div class="card" style="max-height:15rem;">
   <div class="row no-gutters">
     <div class="col-8">
       <div class="card-block px-2">
-	<h5 class="card-title">{{item.title}}, {{item.year}}</h5>
-	{% if item.author %}
-	<h6 class="card-subtitle">{{item.author}}</h6>
-	{% endif %}
+	{% endcomment %}
+	<h5 class="card-title">{{item.author}}. {{item.title}}. {{item.year}}.</h5>
+	{% comment %}
 	{% if item.url %}
 	<a href="{{item.url}}" class="btn btn-primary">Link</a>
 	{% endif %}
@@ -14,4 +14,4 @@
     </div>    
   </div>
 </div>
-
+{% endcomment %}

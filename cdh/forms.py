@@ -1,4 +1,4 @@
-from . import settings
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django import forms
 from django.core.exceptions import ValidationError
@@ -83,8 +83,8 @@ class UserEditForm(forms.ModelForm):
 class UserCreateForm(RegistrationFormUniqueEmail):
     def clean_email(self):
         data = self.cleaned_data["email"].lower()
-        if not any([data.endswith(s) for s in ["jh.edu", "jhu.edu", "jhmi.edu"]]):
-            raise ValidationError("Email address must end with 'jh.edu', 'jhu.edu', or 'jhmi.edu'")
+        if not any([data.endswith(s) for s in ["jh.edu", "jhu.edu", "jhmi.edu"]]) and data not in settings.EMAIL_WHITELIST:
+            raise ValidationError("Email address must end with 'jh.edu', 'jhu.edu', or 'jhmi.edu' (or be explicitly permitted by the site administrator)")
         else:
             return data
     def clean_username(self):

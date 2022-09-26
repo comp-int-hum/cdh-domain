@@ -15,6 +15,8 @@ class CdhHTMLFormRenderer(HTMLFormRenderer):
         return retval
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
+        for style_field_name in ["mode", "tab_view", "uid", "index"]:
+            renderer_context["style"][style_field_name] = renderer_context.get(style_field_name)
         return super(CdhHTMLFormRenderer, self).render(data, accepted_media_type=accepted_media_type, renderer_context=renderer_context)
     
     def render_field(self, field, parent_style, *argv, **argd):        
@@ -59,4 +61,5 @@ class CdhTemplateHTMLRenderer(TemplateHTMLRenderer):
                 context[k] = v
             #else:
             #    logger.info("Not replacing %s with %s for context item %s", context.get(k), v, k)
+        print(context.get("uid"))
         return context

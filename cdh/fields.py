@@ -20,7 +20,6 @@ logger = logging.getLogger(__name__)
 class ViewEditField(Field):
 
     def __init__(self, view, edit, *argv, **argd):
-        print(view, edit, argv, argd)        
         retval = super(ViewEditField, self).__init__(*argv, **argd)
         self.view = view
         self.edit = edit
@@ -37,11 +36,13 @@ class ActionOrInterfaceField(HyperlinkedIdentityField):
     
     def __init__(self, interface_field, *argv, **argd):
         self.nested_parent_field = argd.pop("nested_parent_field", False)
+        title = argd.pop("title", None)
         retval = super(ActionOrInterfaceField, self).__init__(*argv, **argd)
+        self.style["title"] = title
+        self.title = title
         self.interface_field = interface_field
         self.read_only = argd.get("read_only", False)
-
-        #self.interface_field.style["property_name"] = property_name
+        
         return retval
 
     def to_representation(self, object, *argv, **argd):
@@ -54,6 +55,10 @@ class ActionOrInterfaceField(HyperlinkedIdentityField):
 class TabularResultsField(Field):
 
     def __init__(self, property_field, *argv, **argd):
+        self.value_format = argd.pop("value_format", "{0}")
+        for param in ["row_names_path", "column_names_path", "row_label_path", "column_label_path", "lookup_path", "rows_path"]:
+            val = argd.pop(param, None)
+            setattr(self, param, JSONPath(val) if val else None)
         retval = super(TabularResultsField, self).__init__(*argv, **argd)
         self.style["property_field"] = property_field        
         self.style["base_template"] = "tabular.html"
@@ -63,24 +68,25 @@ class TabularResultsField(Field):
         self.style["spec_id"] = "spec_{}".format(self.style["id"])
         self.style["div_id"] = "div_{}".format(self.style["id"])
         self.style["editable"] = True
-        self.field_name = "vega_{}".format(random_token(6))
-        self.column_names_path = JSONPath(argd.get("column_names_path", "head.vars"))
-        self.rows_path = JSONPath(argd.get("rows_path", "results.bindings"))
-        self.value_format = argd.get("value_format", "{0[value]}")
+        self.field_name = "tabular_{}".format(random_token(6))
         return retval
 
     def get_default_value(self):
         j = getattr(self.style["object"], self.style["property_field"])()
-        col_names = self.column_names_path.parse(j)[0]
-        retval = {
-            "column_names" : col_names,
-            "rows" : []
-        }
-        for row in self.rows_path.parse(j)[0]:
-            item = []
-            for col_name in col_names:
-                item.append(self.value_format.format(row[col_name]) if col_name in row else "")
-            retval["rows"].append(item)        
+        retval = {}
+        for param in ["row_names_path", "column_names_path", "row_label_path", "column_label_path", "lookup_path", "rows_path"]:
+            val = getattr(self, param, None)
+            if val:
+                retval[param] = val.parse(j)[0]
+        retval["rows"] = []
+        for row in retval["rows_path"]: #self.rows_path.parse(j)[0]:            
+            if retval.get("lookup_path", None):
+                item = []
+                for col_name in retval["lookup_path"]:
+                    item.append(self.value_format.format(row[col_name]) if col_name in row else "")
+            else:
+                item = [self.value_format.format(v) for v in row]
+            retval["rows"].append(item)
         return retval
     
     
@@ -88,6 +94,7 @@ class VegaField(Field):
 
     def __init__(self, vega_class, *argv, **argd):
         property_field = argd.pop("property_field", None)
+        self.title = argd.pop("title", "")
         retval = super(VegaField, self).__init__(*argv, **argd)
         self.vega_class = vega_class
         self.style["property_field"] = property_field
@@ -130,29 +137,8 @@ class MonacoEditorField(CharField):
         self.style["endpoint"] = endpoint
         self.style["template_pack"] = "cdh/template_pack"
         self.style["editable"] = False
-        #self.style["field"] = self
         self.field_name = "monaco_{}".format(random_token(6))
         return retval
-
-    # def get_admin_widget(self, instance=None):
-    #     return MonacoEditorWidget(language="markdown", endpoint="markdown")
-
-    # def get_widget(self, instance=None):
-    #     return MonacoEditorWidget(language="markdown", endpoint="markdown")
-
-    # class AdminMedia:
-    #     css = {
-    #     }
-    #     js = (
-    #     )
-
-    # class Media:
-    #     css = {
-    #         "all": (
-    #         )
-    #     }
-    #     js = (
-    #     )
     
     def get_default_value(self):
         return ""
@@ -177,7 +163,7 @@ class MarkdownEditorField(MonacoEditorField):
         retval = super(MarkdownEditorField, self).__init__(*argv, **argd)
         self.style["rendering_url"] = "markdown"
         self.style["hide_label"] = True
-
+        
 
 class JsonEditorField(MonacoEditorField):
     def __init__(self, *argv, **argd):
@@ -217,28 +203,3 @@ class WikiMarkdownField(BaseEditor):
         }
         js = (
         )
-
-
-class MarkdownField(models.TextField):
-
-    def __init__(self, *argv, **argd):
-        return super(MarkdownField, self).__init__(*argv, **argd)    
-
-    def formfield(self, *argv, **argd):
-        argd["form_class"] = MarkdownFormField
-        return super(MarkdownField, self).formfield(**argd)
-
-
-# class MarkdownFormField(forms.CharField):
-
-#     def __init__(self, *argv, **argd):
-#         argd["widget"] = MonacoEditorWidget(language="markdown", endpoint="markdown")
-#         return super(MarkdownFormField, self).__init__(*argv, **argd)
-
-#     def clean(self, value):
-#         try:
-#             html = markdown.markdown(value)
-#         except Exception as e:
-#             raise ValidationError(str(e))
-#         return value
-        

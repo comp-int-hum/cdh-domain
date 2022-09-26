@@ -63,7 +63,6 @@ class TopicModel(AsyncMixin, CdhModel):
     serialized = models.BinaryField(null=True)
     maximum_documents = models.IntegerField(default=30000, help_text="Randomly choose this number of documents to train on (if the collection is larger)")
     
-    @property
     @cdh_cache_method
     def topic_word_probabilities(self, num_words=50):
         if self.state != self.COMPLETE:
@@ -79,7 +78,24 @@ class TopicModel(AsyncMixin, CdhModel):
         )
         return words
 
-    @property
+    @cdh_action(detail=True, methods=["get"])
+    def topics(self, num_words=8):
+        ws = self.topic_word_probabilities(num_words)
+        retval = {
+            "column_names" : ["" for i in range(1, num_words + 1)],
+            "row_names" : [str(i) for i in range(1, self.topic_count)],
+            "column_label" : "Words in decreasing probability",
+            "row_label" : "Topics",
+            "rows" : []
+        }
+        for i in range(1, self.topic_count + 1):
+            si = str(i)
+            words = list(sorted([x for x in ws if x["topic"] == si], key=lambda x : x["probability"], reverse=True))[:num_words]
+            retval["rows"].append(
+                words
+            )
+        return retval
+    
     @cdh_cache_method
     def topic_names(self, num_words=20):
         words = self.vega_words

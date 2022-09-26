@@ -45,7 +45,7 @@
     {% endif %}
 
   {% else %}
-      <textarea name="content" readonly="true" rows="15">{{field.value}}</textarea>
+    {{field.value|safe}}
   {% endif %}
 
 

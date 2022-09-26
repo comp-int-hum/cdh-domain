@@ -1,5 +1,5 @@
 import logging
-from cdh.fields import VegaField, JsonEditorField
+from cdh.fields import VegaField, JsonEditorField, ActionOrInterfaceField, TabularResultsField
 from cdh.serializers import CdhSerializer
 from cdh.widgets import VegaWidget
 from primary_sources.models import Query
@@ -12,14 +12,33 @@ logger = logging.getLogger(__name__)
 
 
 class TopicModelSerializer(CdhSerializer):
-    topic_word_probabilities = VegaField(vega_class=WordCloud, property_field="topic_word_probabilities", required=False)
+    topic_word_probabilities = VegaField(
+        vega_class=WordCloud,
+        property_field="topic_word_probabilities",
+        required=False,
+        title="Word clouds"
+    )
+    topics_url = ActionOrInterfaceField(
+        TabularResultsField(
+            property_field="topics",
+            column_names_path="column_names",
+            row_names_path="row_names",
+            column_label_path="column_label",
+            row_label_path="row_label",
+            rows_path="rows",
+            value_format="{0[probability]:.03f}:{0[word]}",
+        ),
+        view_name="api:topicmodel-topics",
+        title="Most-probable words by topic"
+    )
 
     class Meta:
         model = TopicModel
-        fields = ["name", "query", "url", "created_by", "id", "topic_count", "lowercase", "max_context_size", "topic_word_probabilities"]
-        view_fields = ["topic_word_probabilities", "id"]
+        fields = ["name", "query", "url", "created_by", "id", "topic_count", "lowercase", "max_context_size", "topic_word_probabilities", "topics_url"]
+        view_fields = ["topic_word_probabilities", "topics_url", "id"]
         edit_fields = ["name", "id"]
         create_fields = ["name", "query", "created_by", "topic_count", "lowercase", "max_context_size", "url", "id"]
+        tab_view = True
             #{
             #    "type" : "table",
             #    "title" : "Topic-Word Table",

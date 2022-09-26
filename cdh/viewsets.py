@@ -58,7 +58,7 @@ class AtomicViewSet(ModelViewSet):
             )
             model = model_
             exclude = exclude_
-            serializer_class = import_string("{}.serializers.{}Serializer".format(app_name, class_name))
+            serializer_class = serializer_class_ if serializer_class_ else import_string("{}.serializers.{}Serializer".format(app_name, class_name))
             accordion_header_template_name = accordion_header_template_name_ if accordion_header_template_ else None
             
         for name, props in extra_actions:
@@ -113,15 +113,6 @@ class AtomicViewSet(ModelViewSet):
             self.model_perms = ["add"] if self.request.user.has_perm("{}.add_{}".format(self.app_label, self.model_name)) else []
         return retval
 
-    def get_serializer_variant(self, obj, variant):
-        serializer = self.get_serializer(obj) if obj else self.get_serializer()
-        keep = getattr(serializer.Meta, "{}_fields".format(variant), [])
-        serializer.fields = {field_name : field for field_name, field in serializer.fields.items() if field_name in keep}
-        for field in serializer.fields:
-            if variant == "edit":
-                serializer.fields[field].style["editable"] = True
-        return serializer
-    
     def get_renderer_context(self, *argv, **argd):
         context = super(AtomicViewSet, self).get_renderer_context(*argv, **argd)
         context["mode"] = self.mode
@@ -138,68 +129,18 @@ class AtomicViewSet(ModelViewSet):
         if self.detail:
             obj = self.get_object()
             if obj != None:
-                context["view_serializer"] = self.get_serializer_variant(obj, "view")
-                if obj.get_change_perm() in get_perms(self.request.user, obj):
-                    context["edit_serializer"] = self.get_serializer_variant(obj, "edit")
-                    for field in context["edit_serializer"].fields:
-                        npf = getattr(context["edit_serializer"].fields[field], "nested_parent_field", None)
-                        if npf != None:
-                            context["edit_serializer"].fields[field].style["parent_id"] = getattr(obj, npf).id
-                for field in context["view_serializer"].fields:
-                    context["view_serializer"].fields[field].style["object"] = obj
-                    context["view_serializer"].fields[field].style["method"] = self.request.method
                 context["serializer"] = self.get_serializer(obj)
                 context["object"] = obj
             else:
-                context["serializer"] = self.get_serializer() #_variant(None, "create")
+                context["serializer"] = self.get_serializer()
         elif self.action == "create":
-            context["serializer"] = self.get_serializer() #_variant(None, "create")
+            context["serializer"] = self.get_serializer()
         elif not self.detail:
-            context["serializer"] = self.get_serializer() #_variant(None, "create")
-            context["create_serializer"] = self.get_serializer_variant(None, "create")
-            for field in context["create_serializer"].fields:
-                context["create_serializer"].fields[field].style["editable"] = True
+            context["serializer"] = self.get_serializer()
             context["items"] = self.get_queryset()
             context["accordion_header_template_name"] = self.accordion_header_template_name
         else:
             raise Exception("Incoherent combination of detail/action on AtomicViewSet")
-        view_name = self.request.path_info
-        content_type = ContentType.objects.get_for_model(context["model"]) if context.get("model", None) else None
-        object_id = getattr(context.get("object", None), "id", None)
-        docs = Documentation.objects.filter(
-            view_name=view_name,
-            content_type=content_type,
-            object_id=object_id
-        )
-
-        if docs.count() > 1:
-            raise Exception("More than one Documentation object for view_name={}/content_type={}/object_id={}".format(view_name, content_type, object_id))
-        elif docs.count() == 1:
-            context["documentation_serializer"] = DocumentationSerializer(docs[0], context={"request" : self.request})
-            context["documentation_object"] = docs[0]
-        context["documentation_model"] = Documentation
-        context["view_name"] = view_name
-        context["content_type"] = content_type
-
-        
-        #     #context["documentation_object"] = docs[0]
-        #     doc_perms = get_perms(self.request.user, docs[0])
-        #     context["can_view_documentation"] = Documentation.get_view_perm() in doc_perms
-        #     context["can_change_documentation"] = Documentation.get_change_perm() in doc_perms
-        #     context["can_delete_documentation"] = Documentation.get_delete_perm() in doc_perms
-        # else:
-        #     context["can_add_documentation"] = Documentation.get_add_perm() in get_perms(self.request.user, Documentation)
-        #     context["documentation_serializer"] = DocumentationSerializer(
-        #         instance = Documentation(
-        #             **{
-        #                 "name" : "/".join([str(x) for x in [view_name.rstrip("/"), context.get("model_name", None), object_id] if x]),
-        #                 "view_name" : view_name,
-        #                 "content_type" : content_type,
-        #                 "object_id" : object_id
-        #             }
-        #             ),
-        #         context={"request" : self.request}
-        #     )
         logger.info("Accepted renderer: %s", self.request.accepted_renderer)
         return context
 
@@ -211,6 +152,7 @@ class AtomicViewSet(ModelViewSet):
         else:
             return super(AtomicViewSet, self).list(request)
 
+    # this should return response for HTML too
     def create(self, request):
         logger.info("Create %s invoked by %s", self.model._meta.model_name, request.user)
         if request.user.has_perm("{}.add_{}".format(self.model._meta.app_label, self.model._meta.model_name)):
@@ -264,12 +206,7 @@ class AtomicViewSet(ModelViewSet):
         logger.info("Update invoked by %s for %s", request.user, pk)
         if self.model.get_change_perm() in get_perms(request.user, self.get_object()):
             logger.info("Permission verified")
-            try:
-                retval = super(AtomicViewSet, self).update(request, pk)
-            except Exception as e:
-                print(e, 4444)
-
-            return retval
+            return super(AtomicViewSet, self).update(request, pk)
         else:
             raise exceptions.PermissionDenied(
                 detail="{} does not have permission to change {} object {}".format(

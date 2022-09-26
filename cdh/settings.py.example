@@ -330,6 +330,11 @@ CACHES = {
     }
 }
 
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'PAGE_SIZE': 100
+}
+
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 
 # Password validation
