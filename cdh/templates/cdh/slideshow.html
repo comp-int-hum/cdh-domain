@@ -5,24 +5,24 @@
 {% block content %}
 
 <div class="container-fluid">
-  <div id="slides" class="carousel carousel-dark slide" data-bs-ride="carousel">
+  <div id="slides_{{uid}}" class="carousel carousel-dark slide cdh-carousel">
     <div class="carousel-indicators">
       {% for item in items %}
-      <button type="button" data-bs-target="#slides" data-bs-slide-to="{{forloop.counter0}}" {% if forloop.counter == 1 %}class="active" aria-current="true"{% endif %} aria-label="Slide {{forloop.counter}}"></button>
+      <button type="button" data-bs-target="#slides_{{uid}}" data-bs-slide-to="{{forloop.counter0}}" {% if forloop.counter == 1 %}class="active" aria-current="true"{% endif %} aria-label="Slide {{forloop.counter}}"></button>
       {% endfor %}
     </div>  
     <div class="carousel-inner slide">
       {% for item in items %}
       <div class="carousel-item{% if forloop.counter == 1 %} active{% endif %} mt-0 mb-0">
-	{% include "cdh/slide.html" with item=item %}
+	{% include "cdh/slide.html" with item=item index=forloop.counter uid=uid %}
       </div>
       {% endfor %}
     </div>
-    <button class="carousel-control-prev" type="button" data-bs-target="#slides" data-bs-slide="prev">
+    <button class="carousel-control-prev" type="button" data-bs-target="#slides_{{uid}}" data-bs-slide="prev">
       <span class="carousel-control-prev-icon" aria-hidden="true"></span>
       <span class="visually-hidden">Previous</span>
     </button>
-    <button class="carousel-control-next" type="button" data-bs-target="#slides" data-bs-slide="next">
+    <button class="carousel-control-next" type="button" data-bs-target="#slides_{{uid}}" data-bs-slide="next">
       <span class="carousel-control-next-icon" aria-hidden="true"></span>
       <span class="visually-hidden">Next</span>
     </button>

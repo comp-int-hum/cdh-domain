@@ -3,17 +3,8 @@
 
 
 <div class="carousel-caption d-none d-md-block top-0 mt-0 mb-0 g-0"><h6 class="mt-0 mb-0 g-0"></h6>
-  {% if item.get_change_perm in obj_perms %}
-  {% include "cdh/modal.html" with mode="edit" uid=uid index=index csrf_token=csrf_token item=item %}
-  {% endif %}
-
-  {% if item.get_delete_perm in obj_perms %}
-  {% include "cdh/modal.html" with mode="permissions" uid=uid index=index csrf_token=csrf_token item=item %}
-  {% endif %}
-
-  {% if item.get_delete_perm in obj_perms %}
-  {% include "cdh/modal.html" with mode="delete" uid=uid index=index csrf_token=csrf_token item=item %}
-  {% endif %}  
+  <h5>{{item.name}}</h5>
+  
 </div>
 <div class="container">
   <div class="row justify-content-md-center">
@@ -25,4 +16,16 @@
 	/>
     </div>
   </div>
+  {% if item.get_change_perm in obj_perms %}
+  {% include "cdh/modal.html" with mode="edit" uid=uid index=index csrf_token=csrf_token item=item %}
+  {% endif %}
+
+  {% if item.get_delete_perm in obj_perms %}
+  {% include "cdh/modal.html" with mode="permissions" uid=uid index=index csrf_token=csrf_token item=item %}
+  {% endif %}
+
+  {% if item.get_delete_perm in obj_perms %}
+  {% include "cdh/modal.html" with mode="delete" uid=uid index=index csrf_token=csrf_token item=item %}
+  {% endif %}  
+  
 </div>

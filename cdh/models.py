@@ -209,6 +209,69 @@ class Event(CdhModel, schedule_models.Event):
     pass
 
 
+class Rule(schedule_models.Rule):
+    created_by = ForeignKey(User, null=True, on_delete=SET_NULL, editable=False)
+    created_at = DateTimeField(auto_now_add=True, editable=False)
+    modified_at = DateTimeField(auto_now=True, editable=False)
+        
+    def is_object(self):
+        return isinstance(self.id, int)
+
+    @classmethod
+    def is_model(self):
+        return True
+    
+    def __str__(self):
+        return self.name    
+
+    @classmethod
+    def model_title_name(cls):
+        return cls._meta.verbose_name.title().replace(" ", "")
+
+    def get_absolute_url(self):
+        return reverse("api:{}-detail".format(self._meta.model_name), args=(self.id,))
+
+    def get_permissions_url(self):
+        return reverse("permissions", args=(self._meta.app_label, self._meta.model_name, self.id))
+
+    @classmethod
+    def get_list_url(self):
+        return reverse("api:{}-list".format(self._meta.model_name))
+
+    @classmethod
+    def get_add_perm(self):
+        return "add_{}".format(self._meta.model_name)
+
+    @classmethod
+    def get_delete_perm(self):
+        return "delete_{}".format(self._meta.model_name)
+
+    @classmethod
+    def get_change_perm(self):
+        return "change_{}".format(self._meta.model_name)    
+
+    @classmethod
+    def get_view_perm(self):
+        return "view_{}".format(self._meta.model_name)    
+
+    @classmethod
+    def model_title_singular(self):
+        return self._meta.verbose_name.title()
+
+    def model_title_plural(self):
+        return self._meta.verbose_name_plural.title()
+
+    @classmethod
+    def model_class(self):
+        return "{}-{}".format(self._meta.app_label, self._meta.model_name)
+
+    @property
+    def object_class(self):
+        return "{}-{}-{}".format(self._meta.app_label, self._meta.model_name, self.id)
+
+    pass
+
+
 class Calendar(schedule_models.Calendar):
     created_by = ForeignKey(User, null=True, on_delete=SET_NULL, editable=False)
     created_at = DateTimeField(auto_now_add=True, editable=False)

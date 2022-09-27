@@ -495,8 +495,11 @@ function cdhSetup(root, htmxSwap){
             }
 	}
     }
-    //restoreEditingState();
-    //setEditables();
+
+    for(let el of htmx.findAll(root, ".cdh-carousel")){
+	var carousel = new bootstrap.Carousel(el);
+	carousel.cycle();
+    }
 }
 
 

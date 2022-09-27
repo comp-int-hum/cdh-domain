@@ -12,21 +12,21 @@ logger = logging.getLogger(__name__)
 
 
 class PrimarySourceSerializer(CdhSerializer):
-    schema_file = FileField(write_only=True, allow_empty_file=True, allow_null=True, required=False)
+    domain_file = FileField(write_only=True, allow_empty_file=True, allow_null=True, required=False)
     data_file = FileField(write_only=True, allow_empty_file=True, allow_null=True, required=False)
     annotations_file = FileField(write_only=True, allow_empty_file=True, allow_null=True, required=False)
     materials_file = FileField(write_only=True, allow_empty_file=True, allow_null=True, required=False)
-    schema_url = ActionOrInterfaceField(
+    domain_url = ActionOrInterfaceField(
         VegaField(vega_class=PrimarySourceSchemaGraph, property_field="domain"),
-        view_name="api:primarysource-schema",
+        view_name="api:primarysource-domain",
     )    
     
     class Meta:
         model = PrimarySource
-        fields = ["name", "schema_file", "data_file", "annotations_file", "materials_file", "created_by", "url", "schema_url", "id"]
-        view_fields = ["schema_url"]
-        edit_fields = ["name", "schema_file", "data_file", "annotations_file", "materials_file", "created_by", "url", "id"]
-        create_fields = ["name", "schema_file", "data_file", "annotations_file", "materials_file", "created_by", "url", "id"]
+        fields = ["name", "domain_file", "data_file", "annotations_file", "materials_file", "created_by", "url", "domain_url", "id"]
+        view_fields = ["domain_url"]
+        edit_fields = ["name", "domain_file", "data_file", "annotations_file", "materials_file", "created_by", "url", "id"]
+        create_fields = ["name", "domain_file", "data_file", "annotations_file", "materials_file", "created_by", "url", "id"]
         
     def create(self, validated_data):
         obj = PrimarySource.objects.create(name=validated_data["name"], created_by=validated_data["created_by"])

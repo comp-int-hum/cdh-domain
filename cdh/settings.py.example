@@ -163,6 +163,8 @@ ANONYMOUS = True
 
 TURKLE_TEMPLATE_LIMIT = 1024
 
+USE_DEPRECATED_PYTZ = True
+
 # CDH NOTE: Edit to match your circumstances (the default will work with
 #           the development process in the README file).
 if USE_CELERY:

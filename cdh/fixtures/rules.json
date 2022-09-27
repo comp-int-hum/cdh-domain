@@ -1,0 +1,22 @@
+{
+    "rule" : [
+	{
+	    "name" : "Daily",
+	    "frequency" : "DAILY",
+	    "description" : "Will recur every day",
+	    "params" : ""
+	},
+	{
+	    "name" : "Weekly",
+	    "frequency" : "WEEKLY",
+	    "description" : "Will recur every week",
+	    "params" : ""
+	},
+	{
+	    "name" : "Monthly",
+	    "frequency" : "MONTHLY",
+	    "description" : "Will recur every month",
+	    "params" : ""
+	},
+    ]
+}

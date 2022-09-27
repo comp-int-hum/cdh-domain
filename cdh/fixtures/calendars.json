@@ -1,0 +1,8 @@
+{
+    "calendar" : [
+	{
+	    "name" : "Internal CDH Calendar",
+	    "slug" : "internal"
+	}
+    ]
+}

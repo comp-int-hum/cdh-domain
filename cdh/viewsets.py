@@ -6,6 +6,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.template.loader import get_template, TemplateDoesNotExist
 from rest_framework.viewsets import ModelViewSet
 from rest_framework import exceptions, status
+from rest_framework.fields import empty
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer
@@ -152,6 +153,7 @@ class AtomicViewSet(ModelViewSet):
         else:
             return super(AtomicViewSet, self).list(request)
 
+        
     # this should return response for HTML too
     def create(self, request):
         logger.info("Create %s invoked by %s", self.model._meta.model_name, request.user)

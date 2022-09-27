@@ -22,7 +22,7 @@ from guardian.shortcuts import assign_perm, get_anonymous_user
 from .settings import MEDIA_URL, MEDIA_ROOT, STATIC_URL, STATIC_ROOT, BUILTIN_PAGES, APPS, DEBUG
 from .forms import UserCreateForm
 from .views import PermissionsView, SlidesView, MarkdownView, SparqlView, MaterialView
-from .models import Slide, ResearchArtifact, CdhModel, Documentation, Event, Calendar
+from .models import Slide, ResearchArtifact, CdhModel, Documentation, Event, Calendar, Rule
 from .viewsets import AtomicViewSet
 from .routers import CdhRouter
 
@@ -57,8 +57,8 @@ for k, v in apps.app_configs.items():
             )
 router.register("user", AtomicViewSet.for_model(User, exclude_={"username" : "AnonymousUser"}), basename="user")
 router.register("documentation", AtomicViewSet.for_model(Documentation), basename="documentation")
-router.register("event", AtomicViewSet.for_model(Event, serializer_class_=None), basename="event")
-router.register("calendar", AtomicViewSet.for_model(Calendar, serializer_class_=None), basename="calendar")
+router.register("rule", AtomicViewSet.for_model(Rule), basename="rule")
+router.register("calendar", AtomicViewSet.for_model(Calendar), basename="calendar")
 
 
 app_name = "cdh"
