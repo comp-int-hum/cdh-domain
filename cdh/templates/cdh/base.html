@@ -24,4 +24,8 @@
 
 {% endif %}
 
+{% if create %}
+{% include "cdh/modal.html" with mode="create" uid=uid index=index csrf_token=csrf_token item=create.model serializer=create.serializer %}
+{% endif %}
+
 {% endblock %}

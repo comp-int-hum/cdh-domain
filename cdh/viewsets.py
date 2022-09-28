@@ -208,7 +208,13 @@ class AtomicViewSet(ModelViewSet):
         logger.info("Update invoked by %s for %s", request.user, pk)
         if self.model.get_change_perm() in get_perms(request.user, self.get_object()):
             logger.info("Permission verified")
-            return super(AtomicViewSet, self).update(request, pk)
+            retval = super(AtomicViewSet, self).update(request, pk)
+            retval.headers["HX-Trigger"] = """{{"cdhEvent" : {{"event_type" : "update", "model_class" : "{app_label}-{model_name}", "object_class" : "{app_label}-{model_name}-{pk}"}}}}""".format(
+                app_label=self.model._meta.app_label,
+                model_name=self.model._meta.model_name,
+                pk=pk
+            )                
+            return retval
         else:
             raise exceptions.PermissionDenied(
                 detail="{} does not have permission to change {} object {}".format(

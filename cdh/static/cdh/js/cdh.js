@@ -508,6 +508,9 @@ function handleCdhEvent(event){
     var object_class = event.detail.object_class;
     var model_class = event.detail.model_class;
     console.info("Handling event of type", event_type, ", object class", object_class, ", model class", model_class);
+    location.reload(true);
+
+    /*
     if(event_type == "delete"){
 
 	for(let el of document.getElementsByClassName(object_class)){
@@ -527,7 +530,8 @@ function handleCdhEvent(event){
 	}	
     }
     else if(event_type == "create"){
-	var model_url = event.detail.model_url;
+    var model_url = event.detail.model_url;
+    */
 	//var accItem = event.target.parentElement.parentElement.parentElement.parentElement;
 	/*
 	$.ajax(
@@ -627,9 +631,10 @@ function handleCdhEvent(event){
 	    }
 	}
 	*/		    
-	
+/*	
     }
     else{
 	console.warn("Unknown CDH event type:", event_type);
     }
+*/
 }

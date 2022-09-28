@@ -25,6 +25,7 @@ from .views import PermissionsView, SlidesView, MarkdownView, SparqlView, Materi
 from .models import Slide, ResearchArtifact, CdhModel, Documentation, Event, Calendar, Rule
 from .viewsets import AtomicViewSet
 from .routers import CdhRouter
+from .serializers import ResearchArtifactSerializer
 
 
 logger = logging.getLogger(__name__)
@@ -101,11 +102,16 @@ urlpatterns = [
         'research/',
         TemplateView.as_view(
             template_name="cdh/base.html",
-            extra_context={"include" : "api:researchartifact-list"}
+            extra_context={
+                "include" : "api:researchartifact-list",
+                "create" : {
+                    "model" : ResearchArtifact,
+                    "serializer" : ResearchArtifactSerializer
+                }
+            }
         ),
         name="researchartifact_list"
     ),
-
     
     # account-related
     path('accounts/register/',
@@ -117,7 +123,6 @@ urlpatterns = [
     path('accounts/password_reset/', CustomPasswordResetView.as_view()),    
     path('accounts/', include('django_registration.backends.activation.urls')),
     path('accounts/', include('django.contrib.auth.urls')),
-
 
     # end-points for dedicated special purposes
     path(
@@ -139,15 +144,8 @@ urlpatterns = [
         'permissions/<str:app_label>/<str:model>/<int:pk>/',
         PermissionsView.as_view(),        
         name="permissions"
-    ),
-    #path(
-    #    "calendar/",
-    #    TemplateView.as_view(
-    #    ),
-    #    name="calendar"
-    #),
+    ),    
     path('calendar/', include('schedule.urls')),
-    #url(r'^fullcalendar/', TemplateView.as_view(template_name="fullcalendar.html"), name='fullcalendar'),
     
     # api-related
     path("api/", include((router.urls, "api"))),
