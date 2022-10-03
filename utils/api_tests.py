@@ -63,6 +63,7 @@ if __name__ == "__main__":
     parser.add_argument("--file_path", dest="file_path", default="/home/tom/projects/hathitrust/work")
     parser.add_argument("--username", dest="username", default="user1")
     parser.add_argument("--password", dest="password", default="user")
+    parser.add_argument("--auth", dest="auth")
     parser.add_argument(
         "--delete",
         dest="delete",
@@ -76,9 +77,21 @@ if __name__ == "__main__":
     #openapi_url = "{}://{}:{}/openapi/".format(args.protocol, args.host, args.port)
     base_url = "{}://{}:{}".format(args.protocol, args.host, args.port)
     headers = {"Accept" : "application/json"}
-    user = User(args.username, args.password)
 
-    logging.info("Anonymous model list")
+    if args.auth:
+        with open(args.auth, "rt") as ifd:
+            toks = ifd.read().strip().split(" ")
+            username = toks[0]
+            password = " ".join(toks[1:])
+    elif args.username:
+        username = args.username
+        if args.password:
+            password = args.password
+        else:
+            raise Exception("Implement getting password interactively")
+    user = User(username, password)
+
+    logging.info("Top-level API (model list)")
     models = user.get("{}/api/".format(base_url))
     for model_name, model_url in models.items():
         logging.info("'%s' endpoint is '%s'", model_name, model_url)

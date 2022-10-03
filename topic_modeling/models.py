@@ -172,17 +172,23 @@ class EpochLogger(Metric):
     
 
 @shared_task
-def train_model(topic_model_id, url_field, text_field, remove_stopwords):
-    logging.info(topic_model_id, url_field)
+def train_model(topicmodel_id, url_field, text_field, remove_stopwords):
+    logging.info(topicmodel_id, url_field)
     time.sleep(2)
-    topic_model = TopicModel.objects.get(id=topic_model_id)
-    topic_model.message = "Preparing training data"
-    topic_model.save()
-    #collection = topic_model.collection
-    random.seed(topic_model.random_seed)
+    topicmodel = TopicModel.objects.get(id=topicmodel_id)
+    
+    primarysource = topicmodel.query.primarysource
+    while primarysource.state == primarysource.PROCESSING:
+        time.sleep(10)
+        primarysource = PrimarySource.objects.get(id=primarysource.id)
+
+    topicmodel.message = "Preparing training data"
+    topicmodel.save()
+    #collection = topicmodel.collection
+    random.seed(topicmodel.random_seed)
     try:
         results = []
-        for hit in topic_model.query.perform()["results"]["bindings"]:
+        for hit in topicmodel.query.perform()["results"]["bindings"]:
             url = hit[url_field]["value"]
             prefix, name = url.split("/")[-2:]
             if name.endswith("jsonl.gz"):
@@ -199,9 +205,9 @@ def train_model(topic_model_id, url_field, text_field, remove_stopwords):
                 results.append({"url" : url})
 
         random.shuffle(results)
-        logger.info("Loading %d documents and will randomly select a subset of %d", len(results), topic_model.maximum_documents)
+        logger.info("Loading %d documents and will randomly select a subset of %d", len(results), topicmodel.maximum_documents)
         docs = []
-        for result in results[:topic_model.maximum_documents]: #range(len(results)):
+        for result in results[:topicmodel.maximum_documents]: #range(len(results)):
             if "text" in result:
                 text = result["text"]
             else:
@@ -211,9 +217,9 @@ def train_model(topic_model_id, url_field, text_field, remove_stopwords):
                     #auth=requests.auth.HTTPBasicAuth(settings.JENA_USER, settings.JENA_PASSWORD)
                 )
                 text = resp.content.decode("utf-8")
-            text = text.lower() if topic_model.lowercase else text
-            toks = [re.sub(topic_model.token_pattern_in, topic_model.token_pattern_out, t) for t in re.split(topic_model.split_pattern, text) if (not remove_stopwords) or (t.lower() not in en.stop_words.STOP_WORDS)]
-            num_subdocs = round(0.5 + len(toks) / topic_model.max_context_size)
+            text = text.lower() if topicmodel.lowercase else text
+            toks = [re.sub(topicmodel.token_pattern_in, topicmodel.token_pattern_out, t) for t in re.split(topicmodel.split_pattern, text) if (not remove_stopwords) or (t.lower() not in en.stop_words.STOP_WORDS)]
+            num_subdocs = round(0.5 + len(toks) / topicmodel.max_context_size)
             if num_subdocs == 0:
                 continue
             toks_per = int(len(toks) / num_subdocs)
@@ -221,29 +227,29 @@ def train_model(topic_model_id, url_field, text_field, remove_stopwords):
                 docs.append(toks[i * toks_per : (i + 1) * toks_per])
         logger.info("Loaded %d subdocuments", len(docs))
         dictionary = Dictionary(docs)
-        dictionary.filter_extremes(no_below=topic_model.minimum_occurrence, no_above=topic_model.maximum_proportion, keep_n=topic_model.maximum_vocabulary)
+        dictionary.filter_extremes(no_below=topicmodel.minimum_occurrence, no_above=topicmodel.maximum_proportion, keep_n=topicmodel.maximum_vocabulary)
         corpus = [dictionary.doc2bow(doc) for doc in docs]
-        el = EpochLogger(topic_model)
+        el = EpochLogger(topicmodel)
         model = LdaModel(
             corpus=corpus,
             id2word=dictionary,
-            num_topics=topic_model.topic_count,
+            num_topics=topicmodel.topic_count,
             alpha="auto",
             eta="auto",
-            iterations=topic_model.iterations,
-            passes=topic_model.passes,
-            random_state=topic_model.random_seed,
+            iterations=topicmodel.iterations,
+            passes=topicmodel.passes,
+            random_state=topicmodel.random_seed,
             eval_every=None,
             callbacks=[el],
         )
-        topic_model.state = topic_model.COMPLETE
-        topic_model.serialized = pickle.dumps(model)
+        topicmodel.state = topicmodel.COMPLETE
+        topicmodel.serialized = pickle.dumps(model)
     except Exception as e:
-        topic_model.state = topic_model.ERROR
-        topic_model.message = "{}".format(e)
+        topicmodel.state = topicmodel.ERROR
+        topicmodel.message = "{}".format(e)
         raise e
-    topic_model.message = ""
-    topic_model.save()
+    topicmodel.message = ""
+    topicmodel.save()
 
 
 def topicmodel_label(topicmodel, gensim_model, text):
@@ -284,6 +290,9 @@ def lexicon_label(lexicon, text):
 def apply_lexicon_or_topicmodel(query_id, url, graph_name, lexicon_id=None, topicmodel_id=None, url_field="url", text_field="text"):
     query = Query.objects.get(id=query_id)
     primarysource = query.primarysource
+    while primarysource.state == primarysource.PROCESSING:
+        time.sleep(10)
+        primarysource = PrimarySource.objects.get(id=primarysource.id)
     annotation_graph = Graph()
     annotation_graph.bind("cdh", CDH)
     ann_node = BNode()
@@ -322,6 +331,10 @@ def apply_lexicon_or_topicmodel(query_id, url, graph_name, lexicon_id=None, topi
                 )                
     else:
         topicmodel = TopicModel.objects.get(id=topicmodel_id)
+        while topicmodel.state == topicmodel.PROCESSING:
+            time.sleep(10)
+            topicmodel = TopicModel.objects.get(id=topicmodel.id)
+
         labeler = pickle.loads(topicmodel.serialized)
         labeler_id = topicmodel.id
         labeler_type = "topicmodel"
