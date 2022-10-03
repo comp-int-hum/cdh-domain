@@ -16,16 +16,22 @@
 	/>
     </div>
   </div>
-  {% if item.get_change_perm in obj_perms %}
-  {% include "cdh/modal.html" with mode="edit" uid=uid index=index csrf_token=csrf_token item=item %}
-  {% endif %}
-
-  {% if item.get_delete_perm in obj_perms %}
-  {% include "cdh/modal.html" with mode="permissions" uid=uid index=index csrf_token=csrf_token item=item %}
-  {% endif %}
-
-  {% if item.get_delete_perm in obj_perms %}
-  {% include "cdh/modal.html" with mode="delete" uid=uid index=index csrf_token=csrf_token item=item %}
-  {% endif %}  
-  
+  <div class="row">
+    <div class="col"></div>
+    <div class="col justify-content-md-center">
+      {% if slide_model.get_add_perm in perms %}
+      {% include "cdh/modal.html" with mode="create" index=index uid=uid index="0" csrf_token=csrf_token item=slide_model serializer=serializer %}
+      {% endif %}
+      {% if item.get_change_perm in obj_perms %}
+      {% include "cdh/modal.html" with mode="edit" uid=uid index=index csrf_token=csrf_token item=item %}
+      {% endif %}
+      {% if item.get_delete_perm in obj_perms %}
+      {% include "cdh/modal.html" with mode="permissions" uid=uid index=index csrf_token=csrf_token item=item %}
+      {% endif %}
+      {% if item.get_delete_perm in obj_perms %}
+      {% include "cdh/modal.html" with mode="delete" uid=uid index=index csrf_token=csrf_token item=item %}
+      {% endif %}
+    </div>
+    <div class="col"></div>
+  </div>
 </div>

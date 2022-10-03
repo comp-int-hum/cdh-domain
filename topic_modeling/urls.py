@@ -17,10 +17,10 @@ urlpatterns = [
                 "items" : [
                     TopicModel,
                     Lexicon,
-                    {
-                        "title" : "Labeled text",
-                        "name" : "api:topicmodel-list"
-                    }
+                    # {
+                    #     "title" : "Labeled text",
+                    #     "name" : "api:topicmodel-list"
+                    # }
                 ],
                 "uid" : "1",
             }

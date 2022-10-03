@@ -1,6 +1,6 @@
 {% load rest_framework %}
 {% if style.tab_view %}
-{% include "cdh/template_pack/tabs.html" with tabs=form %}
+{% include "cdh/template_pack/tabs.html" with tabs=form style=style uid=uid %}
 {% else %}
 {% for field in form %}
   {% if not field.read_only %}

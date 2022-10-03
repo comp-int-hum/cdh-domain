@@ -25,7 +25,7 @@ class SparqlView(View):
             logger.error(e)
             return HttpResponse("Invalid SPARQL query")
         resp = requests.get(
-            "http://{}:{}/{}_{}/query".format(settings.JENA_HOST, settings.JENA_PORT, primary_source_id, "data"),
+            "http://{}:{}/{}/query".format(settings.JENA_HOST, settings.JENA_PORT, primary_source_id),
             params={"query" : query_text},
             auth=requests.auth.HTTPBasicAuth(settings.JENA_USER, settings.JENA_PASSWORD)
         )
@@ -34,6 +34,7 @@ class SparqlView(View):
         boolean = j.get("boolean", None)
         variables = j["head"].get("vars", [])
         # bnode literal uri
+        # HACK: treats "url" as special
         ctx = {
             "variables" : variables,
             "bindings" : [[(v, r.get(v, {}).get("value", "").replace("cdh.jhu.edu", "{}:{}".format(settings.HOSTNAME, settings.PORT)) if v == "url" else r.get(v, {}).get("value", "").split("/")[-1].split("#")[-1]) for v in variables] for r in j.get("results", {}).get("bindings", [])]

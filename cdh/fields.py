@@ -10,12 +10,18 @@ from markdown import markdown
 from wiki.editors.base import BaseEditor
 from rdflib.plugins.sparql import prepareQuery
 import json
-from rest_framework.serializers import Field, CharField, HyperlinkedIdentityField
+from rest_framework.serializers import Field, CharField, HyperlinkedIdentityField, HyperlinkedRelatedField, RelatedField
 from jsonpath import JSONPath
 
 
 logger = logging.getLogger(__name__)
 
+
+class AnnotationSourceField(RelatedField):
+    def get_queryset(self, *argv, **argd):
+        return None
+    pass
+    
 
 class ViewEditField(Field):
 
@@ -30,6 +36,18 @@ class ViewEditField(Field):
 
     def to_internal_value(self, *argv, **argd):
         return self.edit.to_internal_value(*argv, **argd)
+
+
+class AnnotationField(HyperlinkedIdentityField):
+    def __init__(self, *argv, **argd):
+        self.model_field = argd.pop("model_field", None)
+        return super(AnnotationField, self).__init__(*argv, **argd)
+    
+    def to_representation(self, object, *argv, **argd):
+        return super(AnnotationField, self).to_representation(object, *argv, *argd)
+
+    def to_internal_value(self, *argv, **argd):
+        return {}
     
 
 class ActionOrInterfaceField(HyperlinkedIdentityField):
@@ -100,7 +118,7 @@ class VegaField(Field):
         self.style["property_field"] = property_field
         self.style["base_template"] = "vega.html"
         self.style["template_pack"] = "cdh/template_pack"
-        self.style["id"] = "prefix_{}".format(random_token(8))
+        self.style["id"] = "{}".format(random_token(8))
         self.style["value_id"] = "value_{}".format(self.style["id"])
         self.style["spec_id"] = "spec_{}".format(self.style["id"])
         self.style["div_id"] = "div_{}".format(self.style["id"])
@@ -113,6 +131,7 @@ class VegaField(Field):
     
     def to_representation(self, object, *argv, **argd):
         return self.vega_class(object).json
+    
 
 
 

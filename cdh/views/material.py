@@ -18,7 +18,7 @@ class MaterialView(View):
         
     def get(self, request, *argv, **argd):
         psf = PairtreeStorageFactory()
-        store = psf.get_store(store_dir=os.path.join(settings.MATERIALS_ROOT, self.prefix), uri_base="https://cdh.jhu.edu/materials/")
+        store = psf.get_store(store_dir=os.path.join(settings.MATERIALS_ROOT, self.prefix), uri_base="{}://{}:{}/materials/".format(settings.PROTO, settings.HOSTNAME, settings.PORT))
         obj = store.get_object(self.name, create_if_doesnt_exist=False)
         fnames = obj.list_parts()
         metadata = {}
@@ -51,6 +51,11 @@ class MaterialView(View):
                 for page in zifd.namelist():
                     document_pages.append(zifd.read(page).decode("utf-8"))                            
             content = "\n".join(document_pages)
+        elif "cdh_data" in files:
+            with obj.get_bytestream(files["cdh_data"], streamable=True) as ifd:
+                content = ifd.read()
+            metadata = {}
         else:
+            o.get_bytestream(os.path.join(part, files["hathitrust_data"]), streamable=True)
             raise Exception()
         return HttpResponse(content, content_type=metadata.get("content_type", "unknown"))

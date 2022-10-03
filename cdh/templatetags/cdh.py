@@ -25,6 +25,10 @@ register = template.Library()
 def cdh_render_form(context, serializer, template_pack=None, mode="view"):
     try:
         style = {'template_pack': template_pack} if template_pack else {}
+        #args = {}
+        #for name in ["uid"]:
+        #    if name in context:
+        #        args[name] = context[name]
         renderer = CdhHTMLFormRenderer()
         try:
             style["object_id"] = serializer.data.get("id", None)
@@ -34,9 +38,11 @@ def cdh_render_form(context, serializer, template_pack=None, mode="view"):
         keep = getattr(serializer.Meta, "{}_fields".format(mode), None) if hasattr(serializer, "Meta") else None
         if keep:
             serializer.fields = {field_name : field for field_name, field in serializer.fields.items() if field_name in keep}
-        for field in serializer.fields:
+        #uid = context["view"].uid
+        for i, field in enumerate(serializer.fields):
+            serializer.fields[field].style["index"] = i
             if mode in ["edit", "create"]:
-                serializer.fields[field].style["editable"] = True
+                serializer.fields[field].style["editable"] = True                
         return renderer.render(serializer.data, None, {'style': style, "mode" : mode, "tab_view" : tab_view})
     except Exception as e:
         logger.info("Exception: %s", e)

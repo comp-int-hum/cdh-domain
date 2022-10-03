@@ -16,15 +16,14 @@ class CdhHTMLFormRenderer(HTMLFormRenderer):
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
         for style_field_name in ["mode", "tab_view", "uid", "index"]:
-            renderer_context["style"][style_field_name] = renderer_context.get(style_field_name)
+            if style_field_name in renderer_context:
+                renderer_context["style"][style_field_name] = renderer_context[style_field_name]
         return super(CdhHTMLFormRenderer, self).render(data, accepted_media_type=accepted_media_type, renderer_context=renderer_context)
     
-    def render_field(self, field, parent_style, *argv, **argd):        
+    def render_field(self, field, parent_style, *argv, **argd):
         if isinstance(field._field, ActionOrInterfaceField):
             # if GET then pull value from object, else empty
-            
             field = BoundField(field._field.interface_field, field._field.interface_field.get_default_value(), [])
-            #field = BoundField(field._field.interface_field) #, N, [])
             style = self.default_style[field].copy()
             style.update(field.style)
             if 'template_pack' not in style:
@@ -45,7 +44,7 @@ class CdhHTMLFormRenderer(HTMLFormRenderer):
             template = loader.get_template(template_name)
             context = {'field': field, 'style': style}
             return template.render(context)
-        #print(field.name, field.style)
+        
         retval = super(CdhHTMLFormRenderer, self).render_field(field, parent_style, *argv, **argd)
         return retval
     
@@ -61,5 +60,4 @@ class CdhTemplateHTMLRenderer(TemplateHTMLRenderer):
                 context[k] = v
             #else:
             #    logger.info("Not replacing %s with %s for context item %s", context.get(k), v, k)
-        print(context.get("uid"))
         return context

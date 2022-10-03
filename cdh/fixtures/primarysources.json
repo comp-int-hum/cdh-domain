@@ -1,0 +1,14 @@
+{
+    "primarysource" : [
+	{
+	    "name" : "HathiTrust",
+	    "domain_file" : {"filename" : "schema.ttl", "content_type" : "text/turtle"},
+	    "data_file" : {"filename" : "data2.ttl", "content_type" : "text/turtle"},
+	    "materials_file" : {"filename" : "materials.zip", "content_type" : "application/zip"}
+	},
+	{
+	    "name" : "COVID Tweets",
+	    "materials_file" : {"filename" : "covid.zip", "content_type" : "application/zip"}
+	}
+    ]
+}

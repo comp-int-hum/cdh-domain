@@ -1,0 +1,18 @@
+{
+    "annotation" : [
+	{
+	    "name" : "Topic model annotation",
+	    "app_label" : "topic_modeling",
+	    "model_class" : "topicmodel",
+	    "object_id" : {"model_class" : "topicmodel", "app_label" : "topic_modeling", "match" : {"name" : "COVID topic model"}, "field" : "id"},
+	    "query" : {"model_class" : "query", "app_label" : "primary_sources", "match" : {"name" : "COVID query"}, "field" : "url"}
+	},
+	{
+	    "name" : "Lexicon annotation",	    
+	    "app_label" : "topic_modeling",
+	    "model_class" : "lexicon",
+	    "object_id" : {"model_class" : "lexicon", "app_label" : "topic_modeling", "match" : {"name" : "Sentiment lexicon"}, "field" : "id"},
+	    "query" : {"model_class" : "query", "app_label" : "primary_sources", "match" : {"name" : "COVID query"}, "field" : "url"}
+	}
+    ]
+}

@@ -378,8 +378,7 @@ function cdhSetup(root, htmxSwap){
 			var parentId = div.getAttribute("parent_id");			
 			if(parentId == ""){
 			    var sib;
-			    var sibs = htmx.findAll(div.parentElement.parentElement, "div select[name='primary_source'] option");
-			    console.error(sibs);
+			    var sibs = htmx.findAll(div.parentElement.parentElement, "div select[name='primarysource'] option");
 			    if(sibs.length == 1){
 				sib = sibs[0];
 			    }
@@ -390,8 +389,7 @@ function cdhSetup(root, htmxSwap){
 				    }
 				}
 			    }
-			    var toks = sib.getAttribute("value").split("/");
-			    console.error(toks);
+			    var toks = sib.getAttribute("value").split("/");			    
 			    parentId = toks[toks.length - 2];
 			}
 			var target = document.getElementById(div.getAttribute("output_id"));

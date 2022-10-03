@@ -1,10 +1,10 @@
 import logging
-from cdh.fields import VegaField, JsonEditorField, ActionOrInterfaceField, TabularResultsField
+from rest_framework.serializers import CharField, BooleanField
+from cdh.fields import VegaField, JsonEditorField, ActionOrInterfaceField, TabularResultsField, AnnotationField
 from cdh.serializers import CdhSerializer
 from cdh.widgets import VegaWidget
 from primary_sources.models import Query
 from .models import TopicModel, Lexicon
-from .tasks import extract_documents, train_model, apply_model
 from .vega import WordCloud
 
 
@@ -31,28 +31,27 @@ class TopicModelSerializer(CdhSerializer):
         view_name="api:topicmodel-topics",
         title="Most-probable words by topic"
     )
-
+    url_field = CharField(initial="url", write_only=True, default="url", required=False)
+    text_field = CharField(initial="text", write_only=True, default="text", required=False)
+    remove_stopwords = BooleanField(initial=True, write_only=True, default=True, required=False)
+    apply_url = AnnotationField(model_field="apply", view_name="api:topicmodel-apply")
+    
     class Meta:
         model = TopicModel
-        fields = ["name", "query", "url", "created_by", "id", "topic_count", "lowercase", "max_context_size", "topic_word_probabilities", "topics_url"]
-        view_fields = ["topic_word_probabilities", "topics_url", "id"]
+        fields = ["apply_url", "name", "query", "url", "created_by", "id", "topic_count", "lowercase", "maximum_documents", "max_context_size", "maximum_vocabulary", "minimum_occurrence", "maximum_proportion", "url_field", "text_field", "topic_word_probabilities", "topics_url", "remove_stopwords"]
+        view_fields = ["apply_url", "topic_word_probabilities", "topics_url", "id"]
+        #view_fields = ["apply_url", "topics_url", "id"]
         edit_fields = ["name", "id"]
-        create_fields = ["name", "query", "created_by", "topic_count", "lowercase", "max_context_size", "url", "id"]
+        create_fields = ["name", "query", "created_by", "topic_count", "lowercase", "maximum_documents", "max_context_size", "url_field", "text_field", "remove_stopwords", "maximum_vocabulary", "minimum_occurrence", "maximum_proportion", "url", "id"]
         tab_view = True
-            #{
-            #    "type" : "table",
-            #    "title" : "Topic-Word Table",
-            #    "property" : "topic_word_probabilities",
-            #    "content" : "other",
-            #}
         
     def update(self, instance, validated_data):
         return instance
         
     def create(self, validated_data):
         fields = [f.name for f in TopicModel._meta.fields]
-        obj = TopicModel.objects.create(**{k : v for k, v in validated_data.items() if k in fields})
-        train_model.delay(obj.id, **{k : v for k, v in validated_data.items() if isinstance(v, (str, int, float, list, tuple))})
+        obj = TopicModel(**{k : v for k, v in validated_data.items() if k in fields})
+        obj.save(url_field=validated_data["url_field"], text_field=validated_data["text_field"], remove_stopwords=validated_data["remove_stopwords"])
         return obj
 
     def build_standard_field(self, field_name, model_field):
@@ -77,10 +76,11 @@ example_lexicon = """
 
 
 class LexiconSerializer(CdhSerializer):
-    lexical_sets = JsonEditorField(initial=example_lexicon)
+    lexical_sets = JsonEditorField(initial=example_lexicon, required=False, default=example_lexicon)
+    apply_url = AnnotationField(model_field="apply", view_name="api:lexicon-apply")
     class Meta:
         model = Lexicon
-        fields = ["name", "lexical_sets", "url", "created_by", "id"]
-        view_fields = ["lexical_sets", "id"]
+        fields = ["name", "apply_url", "lexical_sets", "url", "created_by", "id"]
+        view_fields = ["apply_url", "lexical_sets", "id"]
         edit_fields = ["name", "lexical_sets", "id"]
         create_fields = ["name", "lexical_sets", "created_by", "url", "id"]

@@ -1,0 +1,12 @@
+{
+    "topicmodel" : [
+	{
+	    "name" : "HathiTrust topic model",
+	    "query" : {"model_class" : "query", "match" : {"name" : "HathiTrust query"}, "field" : "url"}
+	},
+	{
+	    "name" : "COVID topic model",
+	    "query" : {"model_class" : "query", "match" : {"name" : "COVID query"}, "field" : "url"}
+	}
+    ]
+}

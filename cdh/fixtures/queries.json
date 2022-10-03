@@ -1,0 +1,14 @@
+{
+    "query" : [
+	{
+	    "name" : "HathiTrust query",
+	    "primarysource" : {"model_class" : "primarysource", "match" : {"name" : "HathiTrust"}, "field" : "url"},
+	    "sparql" : "PREFIX cdh: <http://cdh.jhu.edu/materials/>\nPREFIX so: <https://schema.org/>\nPREFIX xsd: <http://www.w3.org/2001/XMLSchema#>\nSELECT DISTINCT ?title (SAMPLE(?u) as ?url) (SAMPLE(?p) as ?pub_date) (SAMPLE(?l) as ?lang)\nWHERE {\n  ?text so:creator ?author .\n  ?author so:familyName ?last_name .\n  ?author so:givenName ?first_name .\n  ?text so:name ?title .\n  ?text so:contentUrl ?u .\n  ?text so:datePublished ?p .\n  ?text so:inLanguage ?l .\n  FILTER (?p > \"1700-01-01\"^^xsd:date && ?p < \"1900-01-01\"^^xsd:date)\n} GROUP BY ?author ?title"
+	},
+	{
+	    "name" : "COVID query",
+	    "primarysource" : {"model_class" : "primarysource", "match" : {"name" : "COVID Tweets"}, "field" : "url"},
+	    "sparql" : "SELECT ?url WHERE { ?s ?p ?url . }"
+	}
+    ]
+}

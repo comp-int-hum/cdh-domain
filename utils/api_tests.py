@@ -60,7 +60,7 @@ if __name__ == "__main__":
     parser.add_argument("--port", dest="port", default=8080, type=int)
     parser.add_argument("--protocol", dest="protocol", default="http")
     parser.add_argument("--primarysource_path", dest="primarysource_path", default="/home/tom/projects/hathitrust/work")
-    parser.add_argument("--image_path", dest="image_path")
+    parser.add_argument("--file_path", dest="file_path", default="/home/tom/projects/hathitrust/work")
     parser.add_argument("--username", dest="username", default="user1")
     parser.add_argument("--password", dest="password", default="user")
     parser.add_argument(
@@ -81,9 +81,11 @@ if __name__ == "__main__":
     logging.info("Anonymous model list")
     models = user.get("{}/api/".format(base_url))
     for model_name, model_url in models.items():
-        print(model_name, model_url)
+        logging.info("'%s' endpoint is '%s'", model_name, model_url)
 
+    actions = []
     for fixture_file in args.fixture_files:
+        logging.info("Processing fixtures in '%s'", fixture_file)
         with open(fixture_file, "rt") as ifd:
             for model, objs in json.loads(ifd.read()).items():
                 existing_items = user.get(models[model], follow_next=True)["results"]
@@ -94,17 +96,43 @@ if __name__ == "__main__":
                     robj = {}
                     files = {}
                     for k, v in obj.items():
-                        if isinstance(v, list):
-                            linked = [x for x in user.get(models[v[0]], follow_next=True)["results"] if x[v[1][0]] == v[1][1]]
-                            assert len(linked) == 1
-                            robj[k] = linked[0]["url"]
-                        elif isinstance(v, str) and v.startswith("@"):
-                            files[k[1:]] = open(os.path.join(args.image_path, v), "rb")
+                        if isinstance(v, dict):
+                            if "model_class" in v:
+                                # object-property lookup
+                                matches = [
+                                    x for x in user.get(models[v["model_class"]], follow_next=True)["results"] if all(
+                                        [x[a] == b for a, b in v["match"].items()]
+                                    )
+                                ]
+                                assert len(matches) == 1                            
+                                robj[k] = matches[0][v["field"]]
+                            elif "filename" in v:
+                                # file upload
+                                files[k] = (
+                                    os.path.basename(v["filename"]),
+                                    open(os.path.join(args.file_path, v["filename"]), "rb"),
+                                    v["content_type"]
+                                )
                         else:
+                            # standard key-value
                             robj[k] = v
-                    user.post(models[model], robj)
+                    user.post(models[model], robj, files=files)
                 
+    # for method, subactions in actions:
+    #     for subaction in subactions:
+    #         for obj in user.get(models[subaction["model"]], follow_next=True)["results"]:
+    #             if obj[subaction["filter"][0]] == subaction["filter"][1]:
+    #                 objA = obj
+    #         for obj in user.get(models[subaction["other_model"]], follow_next=True)["results"]:
+    #             if obj[subaction["other_filter"][0]] == subaction["other_filter"][1]:
+    #                 objB = obj
 
+    #         subaction_url = objA[subaction["url_field"]]
+    #         target_url = objB["url"]
+    #         #print(user.post("http://localhost:8080/api/lexicon/38/apply/", {subaction["target_field"] : target_url}, expected=200))
+    #         #print(user.post("http://localhost:8080/api/lexicon/38/reapply/", {subaction["target_field"] : target_url}, expected=200))
+    #         if method == "POST":                
+    #             print(user.post(subaction_url, {subaction["target_field"] : target_url}, expected=200))
     sys.exit()
     
     

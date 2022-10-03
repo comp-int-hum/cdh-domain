@@ -42,7 +42,7 @@ class AtomicViewSet(ModelViewSet):
             elif isinstance(method, property):
                 props = getattr(method.fget, "action_properties", None)
                 if props != None:
-                    extra_actions.append((slot, props))        
+                    extra_actions.append((slot, props))
         model_name = model_._meta.model_name.title()
         app_name = model_._meta.app_label
         class_name = model_._meta.verbose_name.title().replace(" ", "")
@@ -61,15 +61,14 @@ class AtomicViewSet(ModelViewSet):
             exclude = exclude_
             serializer_class = serializer_class_ if serializer_class_ else import_string("{}.serializers.{}Serializer".format(app_name, class_name))
             accordion_header_template_name = accordion_header_template_name_ if accordion_header_template_ else None
-            
-        for name, props in extra_actions:
-            def callback(self, request, pk=None):
+        for i, (name, props) in enumerate(extra_actions):
+            def callback(self, request, pk=None, name=name):
                 obj = self.get_object()
                 args = {k : v[0] if isinstance(v, list) else v for k, v in list(request.GET.items()) + list(request.POST.items())}
                 retval = getattr(obj, name)(**args)
                 return Response(retval)
-            callback.__name__ = name
-            setattr(GeneratedViewSet, name, action(**props)(callback))
+            callback.__name__ = name        
+            setattr(GeneratedViewSet, name, action(url_name=name, url_path=name, **props)(callback))
         return GeneratedViewSet
 
     def get_queryset(self):
@@ -93,7 +92,7 @@ class AtomicViewSet(ModelViewSet):
         if self.kwargs[lookup_url_kwarg] == "None":
             return None
         filter_kwargs = {self.lookup_field: self.kwargs[lookup_url_kwarg]}
-        obj = get_object_or_404(queryset, **filter_kwargs)
+        obj = get_object_or_404(queryset, **filter_kwargs)        
         return obj
 
     def initialize_request(self, request, *argv, **argd):
@@ -143,6 +142,7 @@ class AtomicViewSet(ModelViewSet):
         else:
             raise Exception("Incoherent combination of detail/action on AtomicViewSet")
         logger.info("Accepted renderer: %s", self.request.accepted_renderer)
+        context["viewset"] = self
         return context
 
     def list(self, request):
@@ -162,7 +162,7 @@ class AtomicViewSet(ModelViewSet):
             try:
                 retval = super(AtomicViewSet, self).create(request)
             except Exception as e:
-                print(e, 234)
+                logging.warn("Exception in create method of AtomicViewSet: %s", e)
                 raise e
             pk = retval.data["id"]
             if request.accepted_renderer.format == "cdh":
