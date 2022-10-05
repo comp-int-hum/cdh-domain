@@ -215,7 +215,7 @@ def save_primarysource(pk, update, *argv, **argd):
                                 (
                                     CDH[document_id],
                                     SDO.contentUrl,
-                                    URIRef("http://cdh.jhu.edu/materials/{}/{}".format(prefix, document_id))
+                                    URIRef("{}://{}:{}/materials/{}/{}".format(settings.PROTO, settings.HOSTNAME, settings.PORT, prefix, document_id))
                                 )
                             )
                 fname = os.path.join(settings.TEMP_ROOT, "primarysource_{}_data".format(ps.id))

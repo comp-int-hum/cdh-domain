@@ -9,7 +9,7 @@ from django.core.validators import MinValueValidator
 from cdh import settings
 from cdh.models import CdhModel, User, AsyncMixin, MetadataMixin
 from cdh.decorators import cdh_cache_method, cdh_action
-from primary_sources.models import Query, Annotation
+from primary_sources.models import Query, Annotation, PrimarySource
 import pickle
 import json
 import random
@@ -193,7 +193,7 @@ def train_model(topicmodel_id, url_field, text_field, remove_stopwords):
             prefix, name = url.split("/")[-2:]
             if name.endswith("jsonl.gz"):
                 resp = requests.get(
-                    "http://{}:{}/materials/{}/{}/".format(settings.HOSTNAME, settings.PORT, prefix, name),
+                    "{}://{}:{}/materials/{}/{}/".format(settings.PROTO, settings.HOSTNAME, settings.PORT, prefix, name),
                     stream=True
                     #auth=requests.auth.HTTPBasicAuth(settings.JENA_USER, settings.JENA_PASSWORD)
                 )
@@ -213,7 +213,7 @@ def train_model(topicmodel_id, url_field, text_field, remove_stopwords):
             else:
                 prefix, name = result["url"].split("/")[-2:]
                 resp = requests.get(
-                    "http://{}:{}/materials/{}/{}/".format(settings.HOSTNAME, settings.PORT, prefix, name),
+                    "{}://{}:{}/materials/{}/{}/".format(settings.PROTO, settings.HOSTNAME, settings.PORT, prefix, name),
                     #auth=requests.auth.HTTPBasicAuth(settings.JENA_USER, settings.JENA_PASSWORD)
                 )
                 text = resp.content.decode("utf-8")
@@ -428,7 +428,7 @@ def apply_lexicon_or_topicmodel(query_id, url, graph_name, lexicon_id=None, topi
         u = hit[url_field]["value"]
         prefix, name = u.split("/")[-2:]
         resp = requests.get(
-            "http://{}:{}/materials/{}/{}/".format(settings.HOSTNAME, settings.PORT, prefix, name),
+            "{}://{}:{}/materials/{}/{}/".format(settings.PROTO, settings.HOSTNAME, settings.PORT, prefix, name),
             stream=True
         )        
         if name.endswith("jsonl.gz"):

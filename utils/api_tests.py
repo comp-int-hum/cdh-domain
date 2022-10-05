@@ -1,7 +1,5 @@
 import sys
 import requests
-import coreapi
-import aiopenapi3
 import logging
 import os.path
 import json
@@ -29,7 +27,7 @@ class User(object):
     def get(self, url, data=None, expected=200, follow_next=False):
         if follow_next:
             resp = self.action("get", url, data, expected)
-            retval = {k : v for k, v in resp.items()} 
+            retval = {k : v for k, v in resp.items()}
             while resp["next"]:
                 resp = self.action("get", resp["next"], data, expected)
                 retval["results"].append(resp["results"])

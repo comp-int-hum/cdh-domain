@@ -1,7 +1,8 @@
 {
     "lexicon" : [
 	{
-	    "name" : "Sentiment lexicon"
+	    "name" : "Misinformation lexicon",
+	    "lexical_sets" : "{\"english_diseases\": [\"ebola\", \"smallpox\", \"polio\", \"rubella\", \"anthrax\", \"botulism\"], \"russian_diseases\": [\"Ковид.*\"], \"russian_truth\": [\"Правд.*\", \"Верн.*\"], \"russian_false\": [\"Пропаганд.*\", \"Лож.*\"], \"english_truth\": [\"accurate\", \"correct\", \"confirm.*\"], \"english_false\": [\"misinform.*\", \"conspirac.*\"], \"people\": [\"putin\", \"biden\", \"trump\"]}"
 	}
     ]
 }
