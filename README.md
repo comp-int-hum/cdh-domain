@@ -13,7 +13,11 @@ The necessary software (beyond what will be installed directly from the command-
 $ npm -h
 ```
 
-Note that the initial `$` sign indicates it is being run on the command-line (your "prompt" will look different, e.g. with information about your computer, username, etc).
+Note that the initial `$` sign indicates it is being run on the command-line (your "prompt" will look different, e.g. with information about your computer, username, etc).  If you are missing one of these items, you should install them using the idiomatic approach for your operating system, e.g. on many versions of Linux you might run:
+
+```
+$ apt install npm -y
+```
 
 ### Getting the framework and installing libraries
 

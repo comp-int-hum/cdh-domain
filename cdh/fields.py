@@ -1,7 +1,10 @@
 import logging
 from django.forms import Textarea, Media, Widget
 from secrets import token_hex as random_token
-from django.contrib.gis.db import models
+try:
+    from django.contrib.gis.db import models
+except:
+    from django.db import models
 from django import forms
 from django.core.exceptions import ValidationError
 from django.urls import reverse
