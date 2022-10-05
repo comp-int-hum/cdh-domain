@@ -1,6 +1,18 @@
 {
     "researchartifact" : [
 	{
+	    "title" : "Humanities Scholarship: Brainstorming for the Future",
+	    "publisher" : "Project MUSE",
+	    "author" : "Arthur Levine, Allison Levy, Tom Lippincott, Lisa Marie Rhody, and Kelley Squazzo",
+	    "year" : 2022,
+	    "month" : "April"
+	},
+	{
+	    "title" : "Trends in fentanyl content on Reddit substance use forums, 2013-2020",
+	    "journal" : "DAD Reports, short communication",
+	    "author" : "Amanda M. Bunting, Noa Krawczyk, Thomas Lippincott, Yuanqi Gu, Simran Arya, Suhas Nagappala, and Meredith C. Meacham"
+	},
+	{
 	    "type" : "misc",
 	    "author" : "Hale Sirin and Anne Eakin-Moss",
 	    "title" : "The Innovative Instructor Blog",
