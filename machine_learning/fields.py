@@ -31,6 +31,7 @@ class MachineLearningModelInteractionField(MonacoEditorField):
         model = MachineLearningModel.objects.get(id=parent_style["object_id"])
         handler = model.metadata["mar_info"]["model"]["handler"]
         logger.info("Selecting an interface for model with handler '%s'", handler)
+        print(handler)
         if handler == "object_detector":
             return ObjectDetectionField(parent_style["object_id"])
         elif handler == "image_classifier":
@@ -46,6 +47,5 @@ class MachineLearningModelInteractionField(MonacoEditorField):
     
     def __init__(self, *argv, **argd):
         retval = super(MachineLearningModelInteractionField, self).__init__(*argv, **argd)
-        self.style["rendering_url"] = "markdown"
         self.style["hide_label"] = True
         self.style["interactive"] = True

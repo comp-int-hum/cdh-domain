@@ -423,20 +423,20 @@ function cdhSetup(root, htmxSwap){
 		});
 
 	el.addEventListener("keyup", (event) => {
-	    var csrftoken = jQuery("[name=csrfmiddlewaretoken]").val();		    
-		if(language == "torchserve_text"){
+	    
+	    if(language == "torchserve_text"){
+
 		    if(event.key == "Tab" && event.shiftKey == true){
 			var content = editor.getModel().getValue();
 			var info = event.target.parentElement.parentElement.parentElement;
-			//var csrf = JSON.parse(info.getAttribute("hx-headers"));
+			var csrftoken = jQuery("[name=csrfmiddlewaretoken]").val();		    
+			console.error(csrftoken, info.getAttribute("endpoint_url"), content);
 			$.ajax(
 			    {
-				//headers: csrf,
 				headers: {
 				    Accept : "application/json",
 				    "X-CSRFToken" : csrftoken,
-				    "Content-Type" : "application/json"
-				},
+					},
 				url: info.getAttribute("endpoint_url"),
 				method: "POST",
 				data: {data: content},
