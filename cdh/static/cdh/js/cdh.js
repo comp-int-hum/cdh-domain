@@ -422,7 +422,8 @@ function cdhSetup(root, htmxSwap){
 		domReadOnly: readOnly
 		});
 
-	    el.addEventListener("keyup", (event) => {
+	el.addEventListener("keyup", (event) => {
+	    var csrftoken = jQuery("[name=csrfmiddlewaretoken]").val();		    
 		if(language == "torchserve_text"){
 		    if(event.key == "Tab" && event.shiftKey == true){
 			var content = editor.getModel().getValue();
@@ -433,10 +434,11 @@ function cdhSetup(root, htmxSwap){
 				//headers: csrf,
 				headers: {
 				    Accept : "application/json",
+				    "X-CSRFToken" : csrftoken,
 				    "Content-Type" : "application/json"
 				},
 				url: info.getAttribute("endpoint_url"),
-				method: "GET",
+				method: "POST",
 				data: {data: content},
 				success: function (data){
 				    var model = editor.getModel();

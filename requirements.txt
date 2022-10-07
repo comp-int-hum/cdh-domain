@@ -102,3 +102,4 @@ torch-model-archiver==0.6.0
 torch-workflow-archiver==0.2.4
 torchserve==0.6.0
 torchtext==0.13.0
+torchvision==0.13.1
