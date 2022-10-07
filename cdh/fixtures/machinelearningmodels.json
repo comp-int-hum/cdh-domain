@@ -1,6 +1,10 @@
 {
     "machinelearningmodel" : [
 	{
+	    "name" : "Object detector",
+	    "mar_file" : {"filename" : "maskrcnn.mar", "content_type" : "application/zip"}
+	},
+	{
 	    "name" : "Text generator",
 	    "mar_file" : {"filename" : "bloom.mar", "content_type" : "application/zip"}
 	}
