@@ -2,7 +2,6 @@ function updateImageDisplay(event) {
     var input = event.target;
     var preview = input.parentElement.getElementsByTagName("img")[0];
     var canvas = input.parentElement.getElementsByTagName("canvas")[0];
-    input.style.opacity = 0;
     var file = input.files[0];
     preview.src = URL.createObjectURL(file);
     var csrftoken = jQuery("[name=csrfmiddlewaretoken]").val();
@@ -21,9 +20,9 @@ function updateImageDisplay(event) {
 		var jdata = JSON.parse(data);
 		var width = preview.naturalWidth;
 		var height = preview.naturalHeight;
-		var ctx = canvas.getContext("2d");
-		var scaleWidth = 1000 / width;
-		var scaleHeight = 800 / height;
+		
+		var scaleWidth = 800 / width;
+		var scaleHeight = 600 / height;
 		var scale;
 		if(scaleWidth > scaleHeight){
 		    scale = scaleWidth;
@@ -31,8 +30,10 @@ function updateImageDisplay(event) {
 		else{
 		    scale = scaleHeight;
 		}
+		var fontSize = Math.round(32 / scale);
 		canvas.width = width * scale;
 		canvas.height = height * scale;
+		var ctx = canvas.getContext("2d");
 		ctx.scale(scale, scale);
 		ctx.drawImage(preview, 0, 0);
 		for(let box of jdata){
@@ -55,7 +56,7 @@ function updateImageDisplay(event) {
 		    ctx.lineWidth = 2.0;
 		    ctx.strokeRect(bounds[0], bounds[1], bounds[2] - bounds[0], bounds[3] - bounds[1]);
 		    ctx.fillStyle = "rgb(200,0,0)";
-		    ctx.font = "24px serif";
+		    ctx.font = fontSize.toString() + "px serif";
 		    ctx.fillText(name + "=" + score.toPrecision(3), bounds[0], bounds[1]);
 		}
 		

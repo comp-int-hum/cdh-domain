@@ -7,7 +7,8 @@
   >
   {% if field.label %}
     <label {% if style.hide_label %}class="sr-only"{% endif %}>{{ field.label }}</label>
-  {% endif %}
+    {% endif %}
+    <label>Select a JPG</label>
     <input type="file" class="cdh-image-interaction"></input>
     <img style="display: none;"></img>
     <canvas>
