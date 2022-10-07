@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class TopicModelSerializer(CdhSerializer):
+
     topic_word_probabilities = VegaField(
         vega_class=WordCloud,
         property_field="topic_word_probabilities",
@@ -78,6 +79,7 @@ example_lexicon = """
 class LexiconSerializer(CdhSerializer):
     lexical_sets = JsonEditorField(initial=example_lexicon, required=False, default=example_lexicon)
     apply_url = AnnotationField(model_field="apply", view_name="api:lexicon-apply")
+
     class Meta:
         model = Lexicon
         fields = ["name", "apply_url", "lexical_sets", "url", "created_by", "id"]

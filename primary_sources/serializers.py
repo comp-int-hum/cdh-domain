@@ -65,13 +65,13 @@ PREFIX cdh: <http://cdh.jhu.edu/materials/>
 PREFIX so: <https://schema.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
-SELECT DISTINCT ?title (SAMPLE(?u) as ?url) (SAMPLE(?p) as ?pub_date) (SAMPLE(?l) as ?lang)
+SELECT DISTINCT ?title (SAMPLE(?m) as ?mid) (SAMPLE(?p) as ?pub_date) (SAMPLE(?l) as ?lang)
 WHERE {
   ?text so:creator ?author .
   ?author so:familyName ?last_name .
   ?author so:givenName ?first_name .
   ?text so:name ?title .
-  ?text so:contentUrl ?u .
+  ?text cdh:materialId ?m .
   ?text so:datePublished ?p .
   ?text so:inLanguage ?l .
   FILTER (?p > "1700-01-01"^^xsd:date && ?p < "1900-01-01"^^xsd:date)
@@ -83,8 +83,8 @@ PREFIX cdh: <http://cdh.jhu.edu/materials/>
 PREFIX so: <https://schema.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
-SELECT ?url WHERE {
-  ?doc so:contentUrl ?url .
+SELECT ?mid WHERE {
+  ?doc cdh:materialId ?mid .
 }
 """
 

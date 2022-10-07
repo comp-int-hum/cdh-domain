@@ -12,7 +12,8 @@ logger = logging.getLogger()
 
 @receiver(post_delete, sender=MachineLearningModel)
 def delete_model(sender, instance, using, *argv, **argd):
-    model_file = instance.mar_file.path
+    #model_file = instance.mar_file.path
+    model_file = os.path.join(settings.MODELS_ROOT, "machinelearningmodel_{}.mar".format(instance.id))
     if os.path.exists(model_file):
         os.remove(model_file)
     else:

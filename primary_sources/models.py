@@ -201,21 +201,25 @@ def save_primarysource(pk, update, *argv, **argd):
                 if os.path.exists(fname):
                     paths["{}_file".format(graph_name)] = fname                                    
             materials_fname = os.path.join(settings.TEMP_ROOT, "primarysource_{}_materials".format(ps.id))
-
+            
             if len(paths) == 0 and os.path.exists(materials_fname):
                 data_graph = Graph()
                 data_graph.bind("cdh", CDH)                
                 with zipfile.ZipFile(materials_fname, "r") as zifd:
-                    for name in zifd.namelist():
-                        if not name.endswith(".metadata"):
-                            toks = name.split("/")
-                            prefix = toks[0]
-                            document_id = "/".join(toks[1:])
+                    for info in zifd.infolist():
+                        name = info.filename
+                        if not name.endswith(".metadata") and not name.startswith("__MACOSX") and not name.endswith(".DS_Store") and not info.is_dir():
+                            
+                            #toks = name.split("/")
+                            #prefix = toks[0]                            
+                            #document_id = "/".join(toks[1:])
                             data_graph.add(
                                 (
-                                    CDH[document_id],
-                                    SDO.contentUrl,
-                                    URIRef("{}://{}:{}/materials/{}/{}".format(settings.PROTO, settings.HOSTNAME, settings.PORT, prefix, document_id))
+                                    #CDH[document_id],
+                                    rdflib.BNode(),
+                                    CDH["materialId"],
+                                    rdflib.Literal("uploaded/{}".format(name))
+                                    #URIRef("{}://{}:{}/materials/{}/{}".format(settings.PROTO, settings.HOSTNAME, settings.PORT, prefix, document_id))
                                 )
                             )
                 fname = os.path.join(settings.TEMP_ROOT, "primarysource_{}_data".format(ps.id))
@@ -226,14 +230,18 @@ def save_primarysource(pk, update, *argv, **argd):
                 
             if os.path.exists(materials_fname):
                 psf = PairtreeStorageFactory()
-                with zipfile.ZipFile(materials_fname, "r") as zifd:
-                    for zname in zifd.namelist():
-                        prefix, fname = os.path.split(zname)
-                        name = os.path.splitext(fname)[0] if fname.endswith(".metadata") else fname
-                        stream_name = "metadata" if fname.endswith(".metadata") else "data"
-                        store = psf.get_store(store_dir=os.path.join(settings.MATERIALS_ROOT, prefix), uri_base="https://cdh.jhu.edu/materials/")
-                        obj = store.get_object(name, create_if_doesnt_exist=True)
-                        obj.add_bytestream(stream_name, zifd.read(zname))
+                for s, p, o in data_graph.triples((None, CDH["materialId"], None)):
+                    print(o)
+                # with zipfile.ZipFile(materials_fname, "r") as zifd:
+                #     for info in zifd.infolist():
+                #         fname = info.filename
+                #         if not name.endswith(".metadata") and not name.startswith("__MACOSX") and not name.endswith(".DS_Store") and not info.is_dir():
+                #             prefix = "uploaded"
+                #             name = os.path.splitext(fname)[0] if fname.endswith(".metadata") else fname
+                #             stream_name = "metadata" if fname.endswith(".metadata") else "data"
+                #             store = psf.get_store(store_dir=os.path.join(settings.MATERIALS_ROOT, prefix), uri_base="https://cdh.jhu.edu/materials/")
+                #             obj = store.get_object(name, create_if_doesnt_exist=True)
+                #             obj.add_bytestream(stream_name, zifd.read(fname))
             dbName = "{}".format(ps.id)
             requests.post(
                 "http://{}:{}/$/datasets".format(settings.JENA_HOST, settings.JENA_PORT),

@@ -64,7 +64,9 @@ class AtomicViewSet(ModelViewSet):
         for i, (name, props) in enumerate(extra_actions):
             def callback(self, request, pk=None, name=name):
                 obj = self.get_object()
-                args = {k : v[0] if isinstance(v, list) else v for k, v in list(request.GET.items()) + list(request.POST.items())}
+                args = {k : v[0] if isinstance(v, list) else v for k, v in request.data.items()}
+                print(args)
+                # {k : v[0] if isinstance(v, list) else v for k, v in list(request.GET.items()) + list(request.POST.items())}
                 retval = getattr(obj, name)(**args)
                 return Response(retval)
             callback.__name__ = name        
@@ -73,7 +75,7 @@ class AtomicViewSet(ModelViewSet):
 
     def get_queryset(self):
         perms = "{}_{}".format(
-            "delete" if self.action == "destroy" else "add" if self.action == "create" else "change" if self.action in ["update", "partial_update"] else "view" if self.action in ["retrieve", "list"] else None,
+            "delete" if self.action == "destroy" else "add" if self.action == "create" else "change" if self.action in ["update", "partial_update"] else "view" if self.action in ["retrieve", "list"] else "view",
             self.model._meta.model_name
         )
         return (get_objects_for_user(get_anonymous_user(), perms=perms, klass=self.model) | get_objects_for_user(self.request.user, perms=perms, klass=self.model)).exclude(**self.exclude)

@@ -1,3 +1,72 @@
+function updateImageDisplay(event) {
+    var input = event.target;
+    var preview = input.parentElement.getElementsByTagName("img")[0];
+    var canvas = input.parentElement.getElementsByTagName("canvas")[0];
+    input.style.opacity = 0;
+    var file = input.files[0];
+    preview.src = URL.createObjectURL(file);
+    var csrftoken = jQuery("[name=csrfmiddlewaretoken]").val();
+    var formData = new FormData();
+    formData.append("data", file, file.name);
+    $.ajax(
+	{
+	    headers: {
+		Accept : "application/json",
+		"X-CSRFToken" : csrftoken
+	    },
+	    url: input.parentElement.getAttribute("endpoint_url"),
+	    method: "POST",
+	    data: formData,
+	    success: function (data){
+		var jdata = JSON.parse(data);
+		var width = preview.naturalWidth;
+		var height = preview.naturalHeight;
+		var ctx = canvas.getContext("2d");
+		var scaleWidth = 1000 / width;
+		var scaleHeight = 800 / height;
+		var scale;
+		if(scaleWidth > scaleHeight){
+		    scale = scaleWidth;
+		}
+		else{
+		    scale = scaleHeight;
+		}
+		canvas.width = width * scale;
+		canvas.height = height * scale;
+		ctx.scale(scale, scale);
+		ctx.drawImage(preview, 0, 0);
+		for(let box of jdata){
+		    var name;
+		    var score;
+		    var bounds;
+		    for(var key in box){
+			if(box.hasOwnProperty(key)){
+			    var val = box[key];
+			    if(key == "score"){
+				score = val;
+			    }
+			    else{
+				name = key;
+				bounds = val;
+			    }
+			}
+		    }
+		    ctx.strokeStyle = "rgb(200,0,0)";
+		    ctx.lineWidth = 2.0;
+		    ctx.strokeRect(bounds[0], bounds[1], bounds[2] - bounds[0], bounds[3] - bounds[1]);
+		    ctx.fillStyle = "rgb(200,0,0)";
+		    ctx.font = "24px serif";
+		    ctx.fillText(name + "=" + score.toPrecision(3), bounds[0], bounds[1]);
+		}
+		
+	    },
+	    contentType: false,
+            processData: false,
+	    async: true
+	}
+    );
+}
+
 
 function findAll(item, query){
     var retval = Array.from(htmx.findAll(item, query));
@@ -314,6 +383,15 @@ function cdhSetup(root, htmxSwap){
 	    var tgt = document.getElementById(event.target.value);
 	    htmx.trigger(tgt, "select");
 	});
+/*	el.parentElement.addEventListener("keyup", (event) => {
+	    if(event.key == "Tab" && event.shiftKey == true){
+		console.error("dsadsa");
+	    }
+	}, true);*/
+    }
+    
+    for(let el of htmx.findAll(root, ".cdh-image-interaction")){
+	el.addEventListener('change', updateImageDisplay);	
     }
 
     if(root.parentNode != null && root.classList.contains("cdh-select")){

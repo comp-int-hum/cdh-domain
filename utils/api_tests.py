@@ -30,7 +30,8 @@ class User(object):
             retval = {k : v for k, v in resp.items()}
             while resp["next"]:
                 resp = self.action("get", resp["next"], data, expected)
-                retval["results"].append(resp["results"])
+                for res in resp["results"]:
+                    retval["results"].append(res)
             retval["count"] = len(retval["results"])
             retval["next"] = None
             return retval

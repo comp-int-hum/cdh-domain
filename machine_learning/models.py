@@ -1,3 +1,4 @@
+import logging
 from django.conf import settings
 try:
     from django.contrib.gis.db.models import CharField, FileField
@@ -8,23 +9,24 @@ from cdh.decorators import cdh_action
 import requests
 
 
+logger = logging.getLogger(__name__)
+
+
 class MachineLearningModel(AsyncMixin, CdhModel):
-    version = CharField(max_length=200, null=True)
-    mar_url = CharField(max_length=2000, null=True)
-    mar_file = FileField(null=True, upload_to="models")
+    #version = CharField(max_length=200, null=True)
+    #mar_url = CharField(max_length=2000, null=True)
+    #mar_file = FileField(null=True, upload_to="models")
     
     @property
     def info(self, *argv, **argd):
         resp = requests.get("{}/models/{}".format(settings.TORCHSERVE_MANAGEMENT_ADDRESS, self.id))
         return resp.json()
 
-    @cdh_action(detail=True, methods=["get"])
-    def apply(self, data):
+    @cdh_action(detail=True, methods=["post"])
+    def apply(self, *argv, **argd):
         response = requests.post(
             "{}/v2/models/{}/infer".format(settings.TORCHSERVE_INFERENCE_ADDRESS, self.id),
-            files={"data" : data}
+            files=argd
         ).content
         return response
     
-    class Meta:
-        unique_together = [["name", "version"]]

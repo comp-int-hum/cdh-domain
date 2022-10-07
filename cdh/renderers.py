@@ -23,7 +23,11 @@ class CdhHTMLFormRenderer(HTMLFormRenderer):
     def render_field(self, field, parent_style, *argv, **argd):
         if isinstance(field._field, ActionOrInterfaceField):
             # if GET then pull value from object, else empty
-            field = BoundField(field._field.interface_field, field._field.interface_field.get_default_value(), [])
+            inter = field._field.interface_field
+            if hasattr(inter, "get_actual_field"):
+                inter = inter.get_actual_field(parent_style)
+            #field = BoundField(field._field.interface_field, field._field.interface_field.get_default_value(), [])
+            field = BoundField(inter, inter.get_default_value(), [])
             style = self.default_style[field].copy()
             style.update(field.style)
             if 'template_pack' not in style:

@@ -1,0 +1,25 @@
+{% if not style.editable and field.write_only %}
+{% elif field.name == "name" and not style.editable %}
+{% else%}
+<div
+  class="form-group {% if field.errors %}has-error{% endif %}"
+  endpoint_url="{{style.endpoint_url}}"
+  >
+  {% if field.label %}
+    <label {% if style.hide_label %}class="sr-only"{% endif %}>{{ field.label }}</label>
+  {% endif %}
+    <input type="file" class="cdh-image-interaction"></input>
+    <img style="display: none;"></img>
+    <canvas>
+    </canvas>    
+  {% if field.errors %}
+    {% for error in field.errors %}
+      <span class="help-block">{{ error }}</span>
+    {% endfor %}
+  {% endif %}
+
+  {% if field.help_text %}
+    <span class="help-block">{{ field.help_text|safe }}</span>
+  {% endif %}
+</div>
+{% endif %}

@@ -3,12 +3,23 @@
 	{
 	    "name" : "HathiTrust",
 	    "domain_file" : {"filename" : "schema.ttl", "content_type" : "text/turtle"},
-	    "data_file" : {"filename" : "data2.ttl", "content_type" : "text/turtle"},
-	    "materials_file" : {"filename" : "materials.zip", "content_type" : "application/zip"}
+	    "data_file" : {"filename" : "data.ttl", "content_type" : "text/turtle"},
 	},
 	{
 	    "name" : "COVID Tweets",
 	    "materials_file" : {"filename" : "covid.zip", "content_type" : "application/zip"}
+	},
+	{
+	    "name" : "Edgeworth letters",
+	    "materials_file" : {"filename" : "Sede_OCR.zip", "content_type" : "application/zip"}
+	},
+	{
+	    "name" : "Cuneiform scholarship",
+	    "materials_file" : {"filename" : "Richard.zip", "content_type" : "application/zip"}
+	},
+	{
+	    "name" : "Italian Renaissance symbology",
+	    "materials_file" : {"filename" : "Ben.zip", "content_type" : "application/zip"}
 	}
     ]
 }

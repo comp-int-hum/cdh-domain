@@ -62,8 +62,7 @@ class ActionOrInterfaceField(HyperlinkedIdentityField):
         self.style["title"] = title
         self.title = title
         self.interface_field = interface_field
-        self.read_only = argd.get("read_only", False)
-        
+        self.read_only = argd.get("read_only", False)        
         return retval
 
     def to_representation(self, object, *argv, **argd):
@@ -134,9 +133,6 @@ class VegaField(Field):
     
     def to_representation(self, object, *argv, **argd):
         return self.vega_class(object).json
-    
-
-
 
     
 class MonacoEditorField(CharField):
