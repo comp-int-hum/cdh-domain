@@ -11,10 +11,8 @@
   {% else %}
     {% if field.label %}
       <label {% if style.hide_label %}class="sr-only"{% endif %}>{{ field.label }}</label>
-    {% endif %}
-  {% endif %}
-
-    
+      {% endif %}      
+  {% endif %}    
   {% if style.editable or style.interactive %}
 
     <div      
@@ -40,8 +38,9 @@
       value="{{field.value}}"/>
 
     {% if style.endpoint or style.detail_endpoint %}
-      <div id="{{style.output_id}}" class="container">
-      </div>
+    <button class="btn btn-primary cdh-editor-action" endpoint_url="{% if style.detail_endpoint %}{% url style.endpoint style.object.id %}{% else %}{% url style.endpoint %}{% endif %}">Submit</button>
+    <div id="{{style.output_id}}" class="container">
+    </div>
     {% endif %}
 
       {% else %}

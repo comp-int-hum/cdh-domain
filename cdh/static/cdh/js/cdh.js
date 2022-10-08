@@ -401,9 +401,10 @@ function cdhSetup(root, htmxSwap){
 	    htmx.trigger(tgt, "select");
 	});
     }
-
+    
     // run initialization for Monaco editor widgets
     for(let el of htmx.findAll(root, ".cdh-editor")){
+	var actEl = htmx.find(el.parentElement, ".cdh-editor-action");
 	if(el.getAttribute("processed") != "true"){
 	    require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.34.0-dev.20220625/min/vs' } });
 	    require(['vs/editor/editor.main'], function () {
@@ -422,21 +423,23 @@ function cdhSetup(root, htmxSwap){
 		domReadOnly: readOnly
 		});
 
-	el.addEventListener("keyup", (event) => {
-	    
-	    if(language == "torchserve_text"){
+		if(actEl != null){
+		    
+		actEl.addEventListener("click", (event) => {
+		    
+		    if(language == "torchserve_text"){
+			
 
-		    if(event.key == "Tab" && event.shiftKey == true){
 			var content = editor.getModel().getValue();
-			var info = event.target.parentElement.parentElement.parentElement;
+			var info = event.srcElement;
+			//console.error(info);
 			var csrftoken = jQuery("[name=csrfmiddlewaretoken]").val();		    
-			console.error(csrftoken, info.getAttribute("endpoint_url"), content);
 			$.ajax(
 			    {
 				headers: {
 				    Accept : "application/json",
 				    "X-CSRFToken" : csrftoken,
-					},
+				},
 				url: info.getAttribute("endpoint_url"),
 				method: "POST",
 				data: {data: content},
@@ -450,89 +453,168 @@ function cdhSetup(root, htmxSwap){
 			    }
 			);
 		    }
-		}
-		else if(language == "sparql"){
-		    if(event.key == "Tab" && event.shiftKey == true){
-			var content = editor.getModel().getValue();
-			var div = event.target.parentElement.parentElement.parentElement;
-			var endpoint = div.getAttribute("endpoint_url");
-			var parentId = div.getAttribute("parent_id");			
-			if(parentId == ""){
-			    var sib;
-			    var sibs = htmx.findAll(div.parentElement.parentElement, "div select[name='primarysource'] option");
-			    if(sibs.length == 1){
-				sib = sibs[0];
-			    }
-			    else{
-				for(let psib of sibs){
-				    if(psib.hasAttribute("selected")){
-					sib = psib;
+		    else if(language == "sparql"){
+			if(true){
+			    var content = editor.getModel().getValue();
+			    var div = event.target.parentElement.parentElement.parentElement;
+			    var endpoint = div.getAttribute("endpoint_url");
+			    var parentId = div.getAttribute("parent_id");			
+			    if(parentId == ""){
+				var sib;
+				var sibs = htmx.findAll(div.parentElement.parentElement, "div select[name='primarysource'] option");
+				if(sibs.length == 1){
+				    sib = sibs[0];
+				}
+				else{
+				    for(let psib of sibs){
+					if(psib.hasAttribute("selected")){
+					    sib = psib;
+					}
 				    }
 				}
+				var toks = sib.getAttribute("value").split("/");			    
+				parentId = toks[toks.length - 2];
 			    }
-			    var toks = sib.getAttribute("value").split("/");			    
-			    parentId = toks[toks.length - 2];
+			    var target = document.getElementById(div.getAttribute("output_id"));
+			    $.ajax(
+				{
+				    url: endpoint,
+				    method: "GET",
+				    data: {
+					query_text: content,
+					primary_source_pk: parentId
+				    },
+				    success: function (data){
+					target.innerHTML = data;
+				    }
+				}
+			    );
 			}
-			var target = document.getElementById(div.getAttribute("output_id"));
-			$.ajax(
-			    {
-				url: endpoint,
-				method: "GET",
-				data: {
-				    query_text: content,
-				    primary_source_pk: parentId
-				},
-				success: function (data){
-				    target.innerHTML = data;
-				}
-			    }
-			);
 		    }
-		}
-		else if(language == "markdown"){		    
-		    if(event.key == "Tab" && event.shiftKey == true){
-			
-			// var content = editor.getModel().getValue();
-			// var div = event.target.parentElement.parentElement.parentElement;
-			// var form = div.parentElement;
-			
-			// var endpoint = div.getAttribute("endpoint_url");
-			// var parentId = div.getAttribute("parent_id");
-			// var target = document.getElementById(div.getAttribute("output_id"));
-
-			var content = editor.getModel().getValue();
-			var div = event.target.parentElement.parentElement.parentElement;
-			var endpoint = div.getAttribute("endpoint_url");
-			var parentId = div.getAttribute("parent_id");
-			var target = document.getElementById(div.getAttribute("output_id"));
-
-
-			$.ajax(
-			    {
-				headers: JSON.parse(form.getAttribute("hx-headers")),
-				url: endpoint,
-				method: "GET",
-				data: {
-				    content: content,
-				},
-				success: function (data){
-				    target.innerHTML = data;
+		    else if(language == "markdown"){		    
+			if(true){
+			    var content = editor.getModel().getValue();
+			    var div = event.target.parentElement.parentElement.parentElement;
+			    var endpoint = div.getAttribute("endpoint_url");
+			    var parentId = div.getAttribute("parent_id");
+			    var target = document.getElementById(div.getAttribute("output_id"));
+			    $.ajax(
+				{
+				    headers: JSON.parse(form.getAttribute("hx-headers")),
+				    url: endpoint,
+				    method: "GET",
+				    data: {
+					content: content,
+				    },
+				    success: function (data){
+					target.innerHTML = data;
+				    }
 				}
-			    }
-			);
+			    );
+			}
 		    }
-		}
-
-
-		});
-
-	    editor.getModel().onDidChangeContent((event) => {
-		var content = editor.getModel().getValue();
-		var hid = document.getElementById(el.getAttribute("value_id") + "-hidden");
-		hid.setAttribute("value", content);
 		});
 		
-	});
+		}
+
+		
+		el.addEventListener("keyup", (event) => {
+		    
+		    if(language == "torchserve_text"){
+			
+			if(event.key == "Tab" && event.shiftKey == true){
+			    var content = editor.getModel().getValue();
+			    var info = event.target.parentElement.parentElement.parentElement;
+			    var csrftoken = jQuery("[name=csrfmiddlewaretoken]").val();		    
+			    $.ajax(
+				{
+				    headers: {
+					Accept : "application/json",
+					"X-CSRFToken" : csrftoken,
+				    },
+				    url: info.getAttribute("endpoint_url"),
+				    method: "POST",
+				    data: {data: content},
+				    success: function (data){
+					var model = editor.getModel();
+					var current = model.getValue();				
+					model.setValue(content + data);
+					var pos = model.getPositionAt(model.getValue().length);
+					editor.setPosition(pos);
+				    }
+				}
+			    );
+			}
+		    }
+		    else if(language == "sparql"){
+			if(event.key == "Tab" && event.shiftKey == true){
+			    var content = editor.getModel().getValue();
+			    var div = event.target.parentElement.parentElement.parentElement;
+			    var endpoint = div.getAttribute("endpoint_url");
+			    var parentId = div.getAttribute("parent_id");			
+			    if(parentId == ""){
+				var sib;
+				var sibs = htmx.findAll(div.parentElement.parentElement, "div select[name='primarysource'] option");
+				if(sibs.length == 1){
+				    sib = sibs[0];
+				}
+				else{
+				    for(let psib of sibs){
+					if(psib.hasAttribute("selected")){
+					    sib = psib;
+					}
+				    }
+				}
+				var toks = sib.getAttribute("value").split("/");			    
+				parentId = toks[toks.length - 2];
+			    }
+			    var target = document.getElementById(div.getAttribute("output_id"));
+			    $.ajax(
+				{
+				    url: endpoint,
+				    method: "GET",
+				    data: {
+					query_text: content,
+					primary_source_pk: parentId
+				    },
+				    success: function (data){
+					target.innerHTML = data;
+				    }
+				}
+			    );
+			}
+		    }
+		    else if(language == "markdown"){		    
+			if(event.key == "Tab" && event.shiftKey == true){
+			    var content = editor.getModel().getValue();
+			    var div = event.target.parentElement.parentElement.parentElement;
+			    var endpoint = div.getAttribute("endpoint_url");
+			    var parentId = div.getAttribute("parent_id");
+			    var target = document.getElementById(div.getAttribute("output_id"));
+			    $.ajax(
+				{
+				    headers: JSON.parse(form.getAttribute("hx-headers")),
+				    url: endpoint,
+				    method: "GET",
+				    data: {
+					content: content,
+				    },
+				    success: function (data){
+					target.innerHTML = data;
+				    }
+				}
+			    );
+			}
+		    }
+		});
+		
+		editor.getModel().onDidChangeContent((event) => {
+		    var content = editor.getModel().getValue();
+		    var hid = document.getElementById(el.getAttribute("value_id") + "-hidden");
+		    hid.setAttribute("value", content);
+		});
+		
+	    });
 	    el.setAttribute("processed", "true");
 	}
     }

@@ -1,3 +1,4 @@
+import re
 import logging
 from django.utils.module_loading import import_string
 from django.shortcuts import get_object_or_404

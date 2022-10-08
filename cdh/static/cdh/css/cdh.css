@@ -1,5 +1,12 @@
 @charset "UTF-8";
 
+@media screen and (min-width: 600px) {
+    .cdh-editor-action {
+	visibility: hidden;
+	display: none;
+    }
+}
+
 blockquote:before {
   color: #ccc;
   content: open-quote;
