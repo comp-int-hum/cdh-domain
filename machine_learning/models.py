@@ -24,7 +24,6 @@ class MachineLearningModel(AsyncMixin, CdhModel):
 
     @cdh_action(detail=True, methods=["post"])
     def apply(self, *argv, **argd):
-        print(123123)
         response = requests.post(
             "{}/v2/models/{}/infer".format(settings.TORCHSERVE_INFERENCE_ADDRESS, self.id),
             files=argd
