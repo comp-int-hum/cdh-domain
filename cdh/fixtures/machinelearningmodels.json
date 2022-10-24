@@ -2,7 +2,9 @@
     "machinelearningmodel" : [
 	{
 	    "name" : "Object detector",
-	    "mar_file" : {"filename" : "maskrcnn.mar", "content_type" : "application/zip"}
+	    "mar_file" : {"filename" : "maskrcnn.mar", "content_type" : "application/zip"},
+	    "input_signature" : {"filename" : "object_detection_input.ttl", "content_type" : "text/turtle"},
+	    "output_signature" : {"filename" : "object_detection_output.ttl", "content_type" : "text/turtle"}
 	}
     ]
 }

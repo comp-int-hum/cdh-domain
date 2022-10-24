@@ -1,10 +1,11 @@
 import logging
 
-from rest_framework.serializers import ModelSerializer, HiddenField, CurrentUserDefault, HyperlinkedModelSerializer, HyperlinkedIdentityField, ReadOnlyField, FileField, CharField, HyperlinkedRelatedField, JSONField
+from rest_framework.serializers import ModelSerializer, HiddenField, CurrentUserDefault, HyperlinkedModelSerializer, HyperlinkedIdentityField, ReadOnlyField, FileField, CharField, HyperlinkedRelatedField, JSONField, SerializerMethodField, Serializer
 from .models import PrimarySource, Query, Annotation
-from cdh.fields import VegaField, ActionOrInterfaceField, SparqlEditorField, TabularResultsField, AnnotationSourceField
+from cdh.fields import VegaField, ActionOrInterfaceField, SparqlEditorField, TabularResultsField, AnnotationSourceField, AnnotationsField
 from django.conf import settings
-from .vega import PrimarySourceDomainGraph, PrimarySourceDataGraph
+from .vega import PrimarySourceDomainGraph, PrimarySourceDataGraph, AnnotationGraph
+from topic_modeling.vega import SpatialDistribution, TemporalEvolution
 from cdh.serializers import CdhSerializer
 
 
@@ -13,13 +14,31 @@ logger = logging.getLogger(__name__)
 
 class AnnotationSerializer(CdhSerializer):
     query = HyperlinkedRelatedField(view_name="api:query-detail", queryset=Query.objects.all())
+    # data = ActionOrInterfaceField(
+    #     VegaField(vega_class=AnnotationGraph, property_field="data"),
+    #     view_name="api:annotation-data",
+    #     title=""
+    # )
+    temporal = VegaField(
+        vega_class=TemporalEvolution, #SpatialDistribution,
+        property_field="data",
+        #write_only=True,
+        title="Temporal evolution"
+    )
+    spatial = VegaField(
+        vega_class=SpatialDistribution,
+        property_field="data",
+        #write_only=True,
+        title="Spatial distribution"
+    )
     
     class Meta:
         model = Annotation
-        fields = ["name", "query", "app_label", "model_class", "object_id", "created_by", "url", "id"]
-        view_fields = ["id"]
+        fields = ["temporal", "spatial", "name", "query", "app_label", "model_class", "object_id", "created_by", "url", "id"]
+        view_fields = ["temporal", "spatial", "id"]
         edit_fields = ["name", "url", "id"]
         create_fields = ["name", "query", "app_label", "model_class", "object_id", "created_by", "url", "id"]
+        tab_view = True
         
     def save(self, *argv, **argd):
         super(AnnotationSerializer, self).save(*argv, **argd)
@@ -35,33 +54,28 @@ class PrimarySourceSerializer(CdhSerializer):
         title="Domain"
     )
     data_url = ActionOrInterfaceField(
-        VegaField(vega_class=PrimarySourceDataGraph, property_field="data"),
+        VegaField(vega_class=PrimarySourceDataGraph, property_field="data", property_field_args={"limit" : 10}),
         view_name="api:primarysource-data",
         title="Data"
     )
-    #annotations = AnnotationSerializer()
-    #ActionOrInterfaceField(
-    #    #VegaField(vega_class=PrimarySourceDomainGraph, property_field="annotations"),
-    #    view_name="api:primarysource-annotations",
-    #    title="Annotations"
-    #)
     
     class Meta:
         model = PrimarySource
-        fields = ["name", "domain_file", "domain_url", "data_url", "data_file", "materials_file", "created_by", "url", "id"]
-        view_fields = ["domain_url", "data_url"]
+        fields = ["name", "domain_file", "domain_url", "data_url", "data_file", "materials_file", "created_by", "url", "id"]        
+        view_fields = ["domain_url"] #, "data_url"]
         edit_fields = ["name", "domain_file", "data_file", "materials_file", "created_by", "url", "id"]
         create_fields = ["name", "domain_file", "data_file", "materials_file", "created_by", "url", "id"]
         tab_view = True
         
     def create(self, validated_data):
-        obj = PrimarySource.objects.create(name=validated_data["name"], created_by=validated_data["created_by"])
+        logging.info("%s", validated_data)
+        obj = PrimarySource(name=validated_data["name"], created_by=validated_data["created_by"])
         obj.save(**validated_data)
         return obj
 
 
 example_query = """
-PREFIX cdh: <http://cdh.jhu.edu/materials/>
+PREFIX cdh: <http://cdh.jhu.edu/>
 PREFIX so: <https://schema.org/>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
@@ -103,6 +117,7 @@ class QuerySerializer(CdhSerializer):
     perform_url = ActionOrInterfaceField(
         TabularResultsField(
             property_field="perform",
+            property_field_args={"limit" : 10},
             column_names_path="head.vars",
             lookup_path="head.vars",
             rows_path="results.bindings",
@@ -122,4 +137,23 @@ class QuerySerializer(CdhSerializer):
         super(QuerySerializer, self).save(*argv, **argd)
 
 
+class MaterialSerializer(Serializer):
+    
+    def __init__(self, *argv, **argd):
         
+        # for field in self.Meta.model._meta.fields:
+        #     if isinstance(field, ForeignKey):
+        #         self.fields[field.name] = HyperlinkedRelatedField(
+        #             view_name="api:{}-detail".format(field.related_model._meta.model_name),
+        #             queryset=field.related_model.objects.all()
+        #         )            
+        retval = super(Serializer, self).__init__(*argv, **argd)
+        # self.fields["url"] = HyperlinkedIdentityField(
+        #     view_name="api:{}-detail".format(self.Meta.model._meta.model_name),
+        #     lookup_field="id",
+        #     lookup_url_kwarg="pk"
+        # )
+        # self.fields["created_by"] = HiddenField(
+        #     default=CurrentUserDefault()
+        # )
+        return retval

@@ -10,7 +10,7 @@
     >  
     {% if items|length > 0 %}
       {% for item in items %}
-        {% include "cdh/accordion_item.html" with item=item index=forloop.counter uid=uid documentation_model=documentation_model %}
+        {% include "cdh/template_pack/accordion_item.html" with item=item index=forloop.counter uid=uid documentation_model=documentation_model %}
       {% endfor %}
     {% endif %}
   </div>

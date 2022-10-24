@@ -8,10 +8,42 @@ class TemporalEvolution(CdhVisualization):
 
     def __init__(self, values, prefix=None):
         self.prefix = prefix
-        self.values = values
-        #self.topics = topics
+        self.model_info = values[2]
+        self.values = [] #values #[0:10]        
+        self.buckets = list(sorted(values[1].items()))
+        #self.min_timestamp = self.buckets[0][1]["start"]
+        #self.max_timestamp = self.buckets[-1][1]["end"]
+        for bucket, info in values[1].items():
+            total = sum(info["weights"].values())
+            for topic, count in info["weights"].items():
+                self.values.append(
+                    {
+                        "bucket" : bucket,
+                        "topic" : topic,
+                        "count" : count,
+                        "percent" : count / total
+                    }
+                )
+        #print(self.buckets, self.min_timestamp, self.max_timestamp)
         super(TemporalEvolution, self).__init__()
 
+    @property
+    def background(self):
+        return "black"
+
+    @property
+    def signals(self):
+        return [
+            {
+                "name": "width",
+                "value": 800
+            },
+            {
+                "name": "height",
+                "value": 350
+            }
+        ]
+        
     @property
     def data(self):
         return [
@@ -21,34 +53,67 @@ class TemporalEvolution(CdhVisualization):
                 "transform": [
                     {
                         "type": "stack",
-                        "field": "value",
-                        "groupby": ["time"],
+                        "field": "percent",
+                        "groupby": ["bucket"],
                         "sort": {
-                            "field": ["label"],
+                            "field": ["topic"],
                             "order": ["descending"]
                         }
-                    }
+                    },
+                    # {
+                    #     "type" : "bin",
+                    #     "maxbins" : 10,
+                    #     "field" : "timestamp",
+                    #     "interval" : False,
+                    #     "as" : ["timebin", "other"],
+                    #     "extent" : [self.min_timestamp, self.max_timestamp]
+                    # },
+                    # {
+                    #     "type": "aggregate",
+                    #     "cross" : True,
+                    #     "groupby": [
+                    #         "timebin",
+                    #         "label"
+                    #     ],
+                    #     "fields": [
+                    #         "value",
+                    #         "value"
+                    #     ],
+                    #     "ops": [
+                    #         "sum",
+                    #         "argmax"
+                    #     ],
+                    #     "as": [
+                    #         "sum",
+                    #         "argmax"
+                    #     ]
+                    # },
+                    # {
+                    #     "type": "stack",
+                    #     "field": "sum",
+                    #     "offset": "normalize",
+                    #     "groupby": ["timebin"],
+                    #     "sort": {
+                    #         "field": ["label"],
+                    #         "order": ["descending"]
+                    #     }
+                    # }
                 ]
             },
             {
-                "name": "sseries",
+                "name": "series",
                 "source": "temporal_weights",
                 "transform": [
                     {
                         "type": "aggregate",
-                        "groupby": ["time"],
-                        "fields": ["value", "value"],
+                        "groupby": ["bucket"],
+                        "fields": ["percent", "percent"],
                         "ops": ["sum", "argmax"],
                         "as": ["sum", "argmax"]
                     }
                 ]
-            }
+            }            
         ]
-
-        
-    @property
-    def background(self):
-        return {"value": "white"}
 
     @property
     def scales(self):
@@ -57,7 +122,7 @@ class TemporalEvolution(CdhVisualization):
                 "name": "xscale",
                 "type": "point",
                 "range": "width",
-                "domain": {"data": "temporal_weights", "field": "time"}
+                "domain": {"data": "temporal_weights", "field": "bucket"}
             },
             {
                 "name": "yscale",
@@ -71,126 +136,22 @@ class TemporalEvolution(CdhVisualization):
                 "name": "color",
                 "type": "ordinal",
                 "range": "category",
-                "domain": {"data": "temporal_weights", "field": "label"}
+                "domain": {"data": "temporal_weights", "field": "topic"}
             },
-            {
-               "name": "offset",
-               "type": "quantize",
-               "range": [6, 0, -6], "zero": False,
-                #"domain": [1730, 2130]
-            },
-            # # {
-            # #     "name": "alpha",
-            # #     "type": "linear", "zero": true,
-            # #     "domain": {"data": "series", "field": "sum"},
-            # #     "range": [0.4, 0.8]
-            # # },
-            {
-                "name": "font",
-                "type": "sqrt",
-                "range": [0, 20], "round": True, "zero": True,
-                "domain": {"data": "sseries", "field": "argmax.value"}
-            },
-            {
-                "name": "opacity",
-                "type": "quantile",
-                "range": [0, 0, 0, 0, 0, 0.1, 0.2, 0.4, 0.7, 1.0],
-                "domain": {"data": "sseries", "field": "argmax.value"}
-            },
-            {
-                "name": "align",
-                "type": "quantize",
-                "range": ["left", "center", "right"], "zero": False,
-                #"domain": [1730, 2130]
-            },
+            # {
+            #     "name": "font",
+            #     "type": "sqrt",
+            #     "range": [0, 20], "round": True, "zero": True,
+            #     "domain": {"data": "sseries", "field": "argmax.value"}
+            # },
+            # {
+            #     "name": "opacity",
+            #     "type": "quantile",
+            #     "range": [0, 0, 0, 0, 0, 0.1, 0.2, 0.4, 0.7, 1.0],
+            #     "domain": {"data": "sseries", "field": "argmax.value"}
+            # }
         ]
 
-    @property
-    def signals(self):
-        return [
-            {"name": "width", "value": 800},
-            {"name": "height", "value": 350},
-            {
-                "name": "tooltip",
-                "value": {},
-                "on": [
-                    {"events": "rect:mouseover", "update": "datum"},
-                    {"events": "rect:mouseout",  "update": "{}"}
-                ]
-            },
-            {
-                "name" : "topic",
-                "value" : "None",
-                "bind" : {
-                    "element" : "#element_{}_1".format(self.prefix) if self.prefix else "#topicinfo"
-                },
-                "on" : [
-                    {"events" : "area:mouseover", "update" : "datum.label"},
-                    {"events" : "area:mouseout", "update" : {"value" : ""}}
-                ],
-            },
-            {
-                "name" : "time",
-                "value" : "None",
-                "bind" : {
-                   "element" : "#element_{}_2".format(self.prefix) if self.prefix else "#timeinfo"
-                },
-                "on" : [
-                    {
-                        "events" : "area:mousemove",
-                        "update" : "utcFormat(1000*round(extent(pluck(data('temporal_weights'), 'time'))[0] + ((x() / width) * ((extent(pluck(data('temporal_weights'), 'time'))[1]) - (extent(pluck(data('temporal_weights'), 'time'))[0])))), '%m/%d/%Y')",
-                    },
-                    {"events" : "area:mouseout", "update" : {"value" : ""}}
-                ],
-            },
-        ]
-
-    @property
-    def legend(self):
-        return [
-        ]
-
-    #@property
-    #def autosize(self):
-    #    return "pad"
-    
-    @property
-    def title(self):
-        return {}
-        #     "text" : "testing",
-        #     "encode" : {
-        #         "title" : {
-        #             "interactive" : True,
-        #             "update": {
-        #                 "fontStyle": {"value": "italic"}
-        #             },
-        #             "hover": {
-        #                 "fontStyle": {"value": "normal"}
-        #             },
-        #             "enter" : {
-        #                 "fill" : {"value" : "white"}
-        #             }
-        #         }
-        #     }
-        # }
-    
-
-    @property
-    def axes(self):
-        return [
-            #{
-                #"labelColor" : "white", "orient": "bottom", "scale": "xscale", "zindex" : 19,
-                #"formatType": "time", "format" : {"signal" : "timeFormat(datum)"} #"timeUnitSpecifier()"}
-            #},
-            #{
-            #    "orient": "right", "scale": "yscale", "zindex" : 1 #"format": "%", "tickCount": 10
-                #"grid": True, "domain": False, "tickSize": 12,
-                #"encode": {
-                #    "grid": {"enter": {"stroke": {"value": "#ccc"}}},
-                #    "ticks": {"enter": {"stroke": {"value": "#ccc"}}}
-                #}
-            #}
-        ]
     
     @property
     def marks(self):
@@ -198,23 +159,24 @@ class TemporalEvolution(CdhVisualization):
             {
                 "type": "group",
                 "from": {
+                    #"data" : "series",
                     "facet": {
-                        "name": "series",
+                        "name": "facet",
                         "data": "temporal_weights",
-                        "groupby": ["label"]
+                        "groupby": ["topic"]
                     }
                 },
                 "marks": [
                     {
                         "type": "area",
-                        "from": {"data": "series"},
+                        "from": {"data": "facet"},
                         #"tooltip" : {"value" : "dsadsa"},
                         "encode": {
                             "update": {
-                                "x": {"scale": "xscale", "field": "time"},
+                                "x": {"scale": "xscale", "field": "bucket"},
                                 "y": {"scale": "yscale", "field": "y0"},
                                 "y2": {"scale": "yscale", "field": "y1"},
-                                "fill": {"scale": "color", "field": "label"},
+                                "fill": {"scale": "color", "field": "topic"},
                                 "fillOpacity": {"value": 1.0}
                             },
                             "hover": {
@@ -224,26 +186,162 @@ class TemporalEvolution(CdhVisualization):
                     }
 
                 ]
-            },
-            # {
-            #     "type": "text",
-            #     "from": {"data": "temporal_weights"},
-            #     "interactive": False,
-            #     "encode": {
-            #         "update": {
-            #             "x": {"scale": "x", "field": "time"},
-            #             #"dx": {"scale": "offset", "field": "argmax.time"},
-            #             "y": {"signal": "scale('y', 0.5 * (datum.y0 + datum.y1))"},
-            #             "fill": {"value": "#000"},
-            #             "fillOpacity": {"scale": "opacity", "field": "value"},
-            #             "fontSize": {"scale": "font", "field": "value", "offset": 5},
-            #             "text": {"field": "label"},
-            #             #"align": {"scale": "align", "field": "time"},
-            #             "baseline": {"value": "middle"}
-            #         }
-            #     }
-            # }
+            }
         ]
+
+    # @property
+    # def scales(self):
+    #     return [
+    #         {
+    #             "name": "xscale",
+    #             "type": "point",
+    #             "range": "width",
+    #             "domain": {"data": "temporal_weights", "field": "timebin"}
+    #         },
+    #         {
+    #             "name": "yscale",
+    #             "type": "linear",
+    #             "range": "height",
+    #             "nice": True,
+    #             "zero": True,
+    #             "domain": {"data": "temporal_weights", "field": "y1"}
+    #         },
+    #         {
+    #             "name": "color",
+    #             "type": "ordinal",
+    #             "range": "category",
+    #             "domain": {"data": "temporal_weights", "field": "label"}
+    #         },
+    #         # {
+    #         #    "name": "offset",
+    #         #    "type": "quantize",
+    #         #    "range": [6, 0, -6], "zero": False,
+    #         #     #"domain": [1730, 2130]
+    #         # },
+    #         # # {
+    #         # #     "name": "alpha",
+    #         # #     "type": "linear", "zero": true,
+    #         # #     "domain": {"data": "series", "field": "sum"},
+    #         # #     "range": [0.4, 0.8]
+    #         # # },
+    #         {
+    #             "name": "font",
+    #             "type": "sqrt",
+    #             "range": [0, 20], "round": True, "zero": True,
+    #             "domain": {"data": "sseries", "field": "argmax.value"}
+    #         },
+    #         {
+    #             "name": "opacity",
+    #             "type": "quantile",
+    #             "range": [0, 0, 0, 0, 0, 0.1, 0.2, 0.4, 0.7, 1.0],
+    #             "domain": {"data": "sseries", "field": "argmax.value"}
+    #         },
+    #         # {
+    #         #     "name": "align",
+    #         #     "type": "quantize",
+    #         #     "range": ["left", "center", "right"], "zero": False,
+    #         #     #"domain": [1730, 2130]
+    #         # },
+    #     ]
+
+    @property
+    def background(self):
+        return "black"
+    #    return {"value": "white"}
+
+    
+    #@property
+    #def signals(self):
+    #    return [
+            # {"name": "width", "value": 800},
+            # {"name": "height", "value": 350},
+            # {
+            #     "name": "tooltip",
+            #     "value": {},
+            #     "on": [
+            #         {"events": "rect:mouseover", "update": "datum"},
+            #         {"events": "rect:mouseout",  "update": "{}"}
+            #     ]
+            # },
+            # {
+            #     "name" : "topic",
+            #     "value" : "None",
+            #     "bind" : {
+            #         "element" : "#{}_1".format(self.prefix) if self.prefix else "#topicinfo"
+            #     },
+            #     "on" : [
+            #         {"events" : "area:mouseover", "update" : "datum.label"},
+            #         {"events" : "area:mouseout", "update" : {"value" : ""}}
+            #     ],
+            # },
+            # {
+            #     "name" : "time",
+            #     "value" : "None",
+            #     "bind" : {
+            #         "element" : "#{}_2".format(self.prefix) if self.prefix else "#timeinfo"
+            #     },
+            #     "on" : [
+            #         {
+            #             "events" : "area:mousemove",
+            #             "update" : "utcFormat(1000*round(extent(pluck(data('temporal_weights'), 'time'))[0] + ((x() / width) * ((extent(pluck(data('temporal_weights'), 'time'))[1]) - (extent(pluck(data('temporal_weights'), 'time'))[0])))), '%m/%d/%Y')",
+            #         },
+            #         {"events" : "area:mouseout", "update" : {"value" : ""}}
+            #     ],
+            # },
+    #    ]
+
+    # @property
+    # def marks(self):
+    #     return [
+    #         {
+    #             "type": "group",
+    #             "from": {
+    #                 "facet": {
+    #                     "name": "series",
+    #                     "data": "temporal_weights",
+    #                     "groupby": ["label"]
+    #                 }
+    #             },
+    #             "marks": [
+    #                 {
+    #                     "type": "area",
+    #                     "from": {"data": "series"},
+    #                     #"tooltip" : {"value" : "dsadsa"},
+    #                     "encode": {
+    #                         "update": {
+    #                             "x": {"scale": "xscale", "field": "timebin"},
+    #                             "y": {"scale": "yscale", "field": "y0"},
+    #                             "y2": {"scale": "yscale", "field": "y1"},
+    #                             "fill": {"scale": "color", "field": "label"},
+    #                             "fillOpacity": {"value": 1.0}
+    #                         },
+    #                         "hover": {
+    #                             "fillOpacity": {"value": 0.5}
+    #                         },
+    #                     },                    
+    #                 }
+
+    #             ]
+    #         },
+    #         # {
+    #         #     "type": "text",
+    #         #     "from": {"data": "temporal_weights"},
+    #         #     "interactive": False,
+    #         #     "encode": {
+    #         #         "update": {
+    #         #             "x": {"scale": "x", "field": "time"},
+    #         #             #"dx": {"scale": "offset", "field": "argmax.time"},
+    #         #             "y": {"signal": "scale('y', 0.5 * (datum.y0 + datum.y1))"},
+    #         #             "fill": {"value": "#000"},
+    #         #             "fillOpacity": {"scale": "opacity", "field": "value"},
+    #         #             "fontSize": {"scale": "font", "field": "value", "offset": 5},
+    #         #             "text": {"field": "label"},
+    #         #             #"align": {"scale": "align", "field": "time"},
+    #         #             "baseline": {"value": "middle"}
+    #         #         }
+    #         #     }
+    #         # }
+    #     ]
 
 
 

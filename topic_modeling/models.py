@@ -31,7 +31,7 @@ import rdflib
 import uuid
 
 
-CDH = Namespace("http://cdh.jhu.edu/materials/")
+CDH = Namespace("http://cdh.jhu.edu/")
 
 
 if settings.USE_CELERY:
@@ -147,7 +147,7 @@ class TopicModel(AsyncMixin, CdhModel):
         update = self.id and True
         retval = super(TopicModel, self).save()
         if not update:
-            train_model.delay(self.id, argd.get("url_field", "url"), argd.get("text_field", "text"), argd.get("remove_stopwords", True))
+            train_model.delay(self.id, argd.get("mid_field", "mid"), argd.get("text_field", "text"), argd.get("remove_stopwords", True))
         return retval
 
 
@@ -172,8 +172,8 @@ class EpochLogger(Metric):
     
 
 @shared_task
-def train_model(topicmodel_id, url_field, text_field, remove_stopwords):
-    logging.info(topicmodel_id, url_field)
+def train_model(topicmodel_id, mid_field, text_field, remove_stopwords):
+    chunk_size = 500
     time.sleep(2)
     topicmodel = TopicModel.objects.get(id=topicmodel_id)
     
@@ -184,39 +184,78 @@ def train_model(topicmodel_id, url_field, text_field, remove_stopwords):
 
     topicmodel.message = "Preparing training data"
     topicmodel.save()
-    #collection = topicmodel.collection
     random.seed(topicmodel.random_seed)
     try:
-        results = []
+        result_items = []
         for hit in topicmodel.query.perform()["results"]["bindings"]:
-            url = hit[url_field]["value"]
-            prefix, name = url.split("/")[-2:]
+            mid = hit[mid_field]["value"]
+            toks = mid.split("/") #[-2:]
+            prefix = toks[0]
+            name = "/".join(toks[1:])
             if name.endswith("jsonl.gz"):
                 resp = requests.get(
                     "{}://{}:{}/materials/{}/{}/".format(settings.PROTO, settings.HOSTNAME, settings.PORT, prefix, name),
                     stream=True
-                    #auth=requests.auth.HTTPBasicAuth(settings.JENA_USER, settings.JENA_PASSWORD)
                 )
                 with gzip.open(resp.raw) as ifd:
                     for line in ifd:
                         j = json.loads(line)
-                        results.append({"text" : j[text_field]})
+                        result_items.append({"text" : j[text_field]})
             else:
-                results.append({"url" : url})
+                result_items.append({"mid" : mid})
 
-        random.shuffle(results)
-        logger.info("Loading %d documents and will randomly select a subset of %d", len(results), topicmodel.maximum_documents)
-        docs = []
-        for result in results[:topicmodel.maximum_documents]: #range(len(results)):
-            if "text" in result:
-                text = result["text"]
+        
+        # if len(partial_results) > 0:
+        #     results += requests.post(
+        #         "{}://{}:{}/api/material/batch/".format(settings.PROTO, settings.HOSTNAME, settings.PORT),
+        #         data={"mids" : partial_results},
+        #     ).json()
+            
+        random.shuffle(result_items)
+        logger.info("Loading %d documents and will randomly select a subset of %d", len(result_items), topicmodel.maximum_documents)
+        result_items = result_items[:topicmodel.maximum_documents] #range(len(results)):
+        to_fetch = []
+        results = []
+        for res in result_items:
+            if "mid" in res:
+                to_fetch.append(res["mid"])
+                if len(to_fetch) > chunk_size:
+                    results += requests.post(
+                        "{}://{}:{}/api/material/batch/".format(settings.PROTO, settings.HOSTNAME, settings.PORT),
+                        data={"mids" : to_fetch},
+                    ).json()
+                    to_fetch = []
             else:
-                prefix, name = result["url"].split("/")[-2:]
-                resp = requests.get(
-                    "{}://{}:{}/materials/{}/{}/".format(settings.PROTO, settings.HOSTNAME, settings.PORT, prefix, name),
+                print(res)
+                results.append({"content" : res["text"]})
+        if len(to_fetch) > 0:
+            results += requests.post(
+                "{}://{}:{}/api/material/batch/".format(settings.PROTO, settings.HOSTNAME, settings.PORT),
+                data={"mids" : to_fetch},
+            ).json()                
+        #results = results if "mid" not in results[0] else requests.post(
+        #    "{}://{}:{}/api/material/batch/".format(settings.PROTO, settings.HOSTNAME, settings.PORT),
+        #    data={"mids" : [r["mid"] for r in results]}
+        #).json()
+            
+        docs = []
+        for result in results:
+            #if "text" in result:
+            #    text = result["text"]
+            #else:
+            if True:
+                text = result["content"]
+                #mid = result["mid"] #mid_field]["value"]
+                #toks = mid.split("/") #[-2:]
+                #prefix = toks[0]
+                #name = "/".join(toks[1:])
+
+                #prefix, name = result["mid"].split("/")[-2:]
+                #resp = requests.get(
+                #    "{}://{}:{}/materials/{}/{}/".format(settings.PROTO, settings.HOSTNAME, settings.PORT, prefix, name),
                     #auth=requests.auth.HTTPBasicAuth(settings.JENA_USER, settings.JENA_PASSWORD)
-                )
-                text = resp.content.decode("utf-8")
+                #)
+                #text = resp.content.decode("utf-8")
             text = text.lower() if topicmodel.lowercase else text
             toks = [re.sub(topicmodel.token_pattern_in, topicmodel.token_pattern_out, t) for t in re.split(topicmodel.split_pattern, text) if (not remove_stopwords) or (t.lower() not in en.stop_words.STOP_WORDS)]
             num_subdocs = round(0.5 + len(toks) / topicmodel.max_context_size)
@@ -287,7 +326,9 @@ def lexicon_label(lexicon, text):
 
 
 @shared_task
-def apply_lexicon_or_topicmodel(query_id, url, graph_name, lexicon_id=None, topicmodel_id=None, url_field="url", text_field="text"):
+def apply_lexicon_or_topicmodel(query_id, url, graph_name, lexicon_id=None, topicmodel_id=None, mid_field="mid", text_field="text"):
+    chunk_size = 1000
+    upload_size = 50000
     query = Query.objects.get(id=query_id)
     primarysource = query.primarysource
     while primarysource.state == primarysource.PROCESSING:
@@ -309,7 +350,7 @@ def apply_lexicon_or_topicmodel(query_id, url, graph_name, lexicon_id=None, topi
             annotation_graph.add(
                 (
                     mod_node,
-                    SDO.option,
+                    CDH["hasTopic"],
                     topic_uris[k]
                 )
             )
@@ -318,14 +359,14 @@ def apply_lexicon_or_topicmodel(query_id, url, graph_name, lexicon_id=None, topi
                 annotation_graph.add(
                     (
                         topic_uris[k],
-                        SDO.hasPart,
+                        CDH["hasLexicalEntry"],
                         lex_node
                     )
                 )
                 annotation_graph.add(
                     (
                         lex_node,
-                        SDO.name,
+                        CDH["hasLexicalForm"],
                         Literal(w)
                     )
                 )                
@@ -345,12 +386,10 @@ def apply_lexicon_or_topicmodel(query_id, url, graph_name, lexicon_id=None, topi
         ]
         for i in range(1, topicmodel.topic_count + 1):
             topic_uris[i] = BNode()
-            #for k, v in labeler.items():
-            #topic_uris[k] = BNode()
             annotation_graph.add(
                 (
                     mod_node,
-                    SDO.option,
+                    CDH["hasTopic"],
                     topic_uris[i]
                 )
             )
@@ -359,21 +398,21 @@ def apply_lexicon_or_topicmodel(query_id, url, graph_name, lexicon_id=None, topi
                 annotation_graph.add(
                     (
                         topic_uris[i],
-                        SDO.hasPart,
+                        CDH["hasLexicalEntry"],
                         lex_node
                     )
                 )
                 annotation_graph.add(
                     (
                         lex_node,
-                        SDO.name,
+                        CDH["hasLexicalForm"],
                         Literal(w["word"])
                     )
                 )
                 annotation_graph.add(
                     (
                         lex_node,
-                        SDO.value,
+                        CDH["hasProbability"],
                         Literal(w["probability"])
                     )
                 )
@@ -408,104 +447,158 @@ def apply_lexicon_or_topicmodel(query_id, url, graph_name, lexicon_id=None, topi
             Literal(labeler_type)
         )
     )
-    for k, v in topic_uris.items():
-        annotation_graph.add(
-            (
-                mod_node,
-                SDO.option,
-                v
-            )
-        )
-        annotation_graph.add(
-            (
-                v,
-                SDO.description,
-                Literal(k)
-            )
-        )
-        
-    for hit in query.perform()["results"]["bindings"]:
-        u = hit[url_field]["value"]
-        prefix, name = u.split("/")[-2:]
-        resp = requests.get(
-            "{}://{}:{}/materials/{}/{}/".format(settings.PROTO, settings.HOSTNAME, settings.PORT, prefix, name),
-            stream=True
-        )        
-        if name.endswith("jsonl.gz"):
-            with gzip.open(resp.raw) as ifd:
-                for i, line in enumerate(ifd):
-                    if i > 5000:
-                        break
-                    j = json.loads(line)
-                    text = j[text_field]
-                    topic_counts = topicmodel_label(topicmodel, labeler, text) if topicmodel_id else lexicon_label(labeler, text)
-                    sub_uri = BNode()
-                    annotation_graph.add(
-                        (
-                            ann_node,
-                            SDO.hasPart,
-                            sub_uri
-                        )
-                    )
-                    annotation_graph.add(
-                        (
-                            sub_uri,
-                            SDO.identifier,
-                            Literal(i)
-                        )
-                    )
-                    for k, v in topic_counts.items():
-                        topic_label_node = BNode()
-                        annotation_graph.add(
-                            (
-                                sub_uri,
-                                SDO.hasPart,
-                                topic_label_node
-                            )
-                        )
-                        annotation_graph.add(
-                            (
-                                topic_label_node,
-                                RDF.type,
-                                SDO.PropertyValue
-                            )
-                        )
-                        annotation_graph.add(
-                            (
-                                topic_label_node,
-                                SDO.propertyID,
-                                topic_uris[k]
-                            )
-                        )
-                        annotation_graph.add(
-                            (
-                                topic_label_node,
-                                SDO.value,
-                                Literal(v)
-                            )
-                        )
-        else:
-            text = resp.raw.read()
+    # for k, v in topic_uris.items():
+    #     annotation_graph.add(
+    #         (
+    #             mod_node,
+    #             SDO.option,
+    #             v
+    #         )
+    #     )
+    #     annotation_graph.add(
+    #         (
+    #             v,
+    #             SDO.propertyID,
+    #             Literal(k)
+    #         )
+    #     )
+         
+    hits = query.perform(limit=chunk_size)["results"]["bindings"]
+    offset = 0
+    
+    while len(hits) > 0:
+        for item in requests.post(
+                "{}://{}:{}/api/material/batch/".format(settings.PROTO, settings.HOSTNAME, settings.PORT),
+                data={"mids" : [h[mid_field]["value"] for h in hits]}
+        ).json():
+            mid = item["mid"]
+            text = item["content"]
             topic_counts = topicmodel_label(topicmodel, labeler, text) if topicmodel_id else lexicon_label(labeler, text)
+            # fix this to annotate smaller chunks
             sub_uri = BNode()
             annotation_graph.add(
                 (
                     ann_node,
-                    SDO.hasPart,
+                    CDH["hasDocumentLabeling"],
                     sub_uri
                 )
             )
-            topic_uris = {}
+            annotation_graph.add(
+                (
+                    sub_uri,
+                    CDH["labelsDocument"],
+                    Literal(mid)
+                )
+            )
             for k, v in topic_counts.items():
-                pass
+                topic_label_node = BNode()
+                annotation_graph.add(
+                    (
+                        sub_uri,
+                        CDH["hasAssignment"],
+                        topic_label_node
+                    )
+                )
+                annotation_graph.add(
+                    (
+                        topic_label_node,
+                        RDF.type,
+                        CDH["Assignment"]
+                    )
+                )
+                annotation_graph.add(
+                    (
+                        topic_label_node,
+                        CDH["assignsLabel"],
+                        topic_uris[k]
+                    )
+                )
+                annotation_graph.add(
+                    (
+                        topic_label_node,
+                        CDH["hasCount"],
+                        Literal(v)
+                    )
+                )
+        offset += len(hits)
+        hits = query.perform(limit=chunk_size, offset=offset)["results"]["bindings"]
+        if len(annotation_graph) > upload_size:
+            logger.info("Uploading subgraph")
+            resp = requests.post(
+                url,
+                params={"graph" : graph_name},
+                headers={"default" : "", "Content-Type" : "text/turtle"},
+                data=annotation_graph.serialize(format="turtle").encode("utf-8"),
+                auth=requests.auth.HTTPBasicAuth(settings.JENA_USER, settings.JENA_PASSWORD)                    
+            )
+            annotation_graph = Graph()
+            annotation_graph.bind("cdh", CDH)           
+        logger.info("Processed document #%d", offset)
+
+    if len(annotation_graph) > 0:
+        resp = requests.post(
+            url,
+            params={"graph" : graph_name},
+            headers={"default" : "", "Content-Type" : "text/turtle"},
+            data=annotation_graph.serialize(format="turtle").encode("utf-8"),
+            auth=requests.auth.HTTPBasicAuth(settings.JENA_USER, settings.JENA_PASSWORD)                    
+        )
 
 
-            results.append({"url" : u})
 
-    resp = requests.put(
-        url,
-        params={"graph" : graph_name},
-        headers={"default" : "", "Content-Type" : "text/turtle"},
-        data=annotation_graph.serialize(format="turtle").encode("utf-8"),
-        auth=requests.auth.HTTPBasicAuth(settings.JENA_USER, settings.JENA_PASSWORD)                    
-    )
+        # if name.endswith("jsonl.gz"):
+        #     with gzip.open(resp.raw) as ifd:
+        #         for i, line in enumerate(ifd):
+        #             if i > 5000:
+        #                 break
+        #             j = json.loads(line)
+        #             text = j[text_field]
+        #             topic_counts = topicmodel_label(topicmodel, labeler, text) if topicmodel_id else lexicon_label(labeler, text)
+        #             sub_uri = BNode()
+        #             annotation_graph.add(
+        #                 (
+        #                     ann_node,
+        #                     SDO.hasPart,
+        #                     sub_uri
+        #                 )
+        #             )
+        #             annotation_graph.add(
+        #                 (
+        #                     sub_uri,
+        #                     SDO.identifier,
+        #                     Literal(i)
+        #                 )
+        #             )
+        #             for k, v in topic_counts.items():
+        #                 topic_label_node = BNode()
+        #                 annotation_graph.add(
+        #                     (
+        #                         sub_uri,
+        #                         CDH["hasAssignment"],
+        #                         #SDO.hasPart,
+        #                         topic_label_node
+        #                     )
+        #                 )
+        #                 annotation_graph.add(
+        #                     (
+        #                         topic_label_node,
+        #                         RDF.type,
+        #                         SDO.PropertyValue
+        #                     )
+        #                 )
+        #                 annotation_graph.add(
+        #                     (
+        #                         topic_label_node,
+        #                         SDO.propertyID,
+        #                         topic_uris[k]
+        #                     )
+        #                 )
+        #                 annotation_graph.add(
+        #                     (
+        #                         topic_label_node,
+        #                         SDO.value,
+        #                         Literal(v)
+        #                     )
+        #                 )
+        # else:
+    

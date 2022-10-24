@@ -1,9 +1,99 @@
 from cdh.vega import CdhVisualization
-from rdflib import Graph
+from rdflib import Graph, URIRef, Literal, BNode
 from rdflib.namespace import SH, RDF, RDFS
 import rdflib
 import json
+from datetime import datetime
 import os.path
+from topic_modeling.vega import TemporalEvolution, SpatialDistribution
+
+# for the moment, topic model annotation
+class AnnotationGraph(object):
+    def __init__(self, inputs, prefix=None): # entities, relationships, properties):
+        model_type = "topicmodel"
+        #inputs = [i for i in inputs if i["location"]]
+        #topics = list(set([i["label"] for i in inputs]))
+        self.figure = SpatialDistribution(
+           inputs[0],
+           prefix=prefix
+        )
+
+        #self.figure = TemporalEvolution(
+        #    inputs[1],
+        #    inputs[2],
+        #    prefix=prefix
+        #)
+        #     {
+        #         "coordinates" : [
+        #             {
+        #                 "content" : "test",
+        #                 "shape" : i["location"],
+        #                 "properties" : {
+        #                     "topic" : ,
+        #                     "weight" : i["value"]
+        #                 }
+        #             } for i in inputs
+        #         ],
+        #         "topic_names" : topics,
+        #     },
+        #     prefix=prefix
+        # )
+    @property
+    def json(self):
+        retval = self.figure.json
+        with open("vega.json", "wt") as ofd:
+            ofd.write(json.dumps(retval, indent=4))
+        return retval
+        #print(len(inputs["results"]["bindings"]))
+        #print(inputs)
+        # model_type, annotations, query_output = inputs
+        # #with open("test.json", "wt") as ofd:
+        # #    ofd.write(json.dumps(query_output, indent=4))
+        # #with open("test2.json", "wt") as ofd:
+        # #    ofd.write(json.dumps(annotations, indent=4))
+        # topics = {}
+        # graph = Graph()
+        # #print(annotations["head"])
+        # #print(query_output["head"])
+        # #print(annotations)
+        # for row in annotations["results"]["bindings"]:
+        #     s = row["s"]
+        #     p = row["p"]
+        #     o = row["o"]
+        #     graph.add(
+        #         (
+                    
+        #     #print(s, p, o)
+        #     if p.get("value") == "https://schema.org/value":
+        #         # bword pred prob
+        #         pass
+        #     elif p.get("value") == "http://www.w3.org/1999/02/22-rdf-syntax-ns#type":
+        #         # annotation pred action
+        #         pass
+        #     elif p.get("value") == "https://schema.org/name":
+        #         # bword pred string
+        #         pass
+        #     elif p.get("value") == "https://schema.org/hasPart":
+        #         # btopic pred bword
+        #         pass
+        #     elif p.get("value") == "https://schema.org/description":
+        #         # btopic pred number
+        #         pass
+        #     elif p.get("value") == "https://schema.org/instrument":
+        #         # bannotation pred bmodel
+        #         pass
+        #     elif p.get("value") == "https://schema.org/option":
+        #         # bmodel pred btopic
+        #         pass
+        #     elif p.get("value") == "https://schema.org/identifier":
+        #         # bmodel pred pk
+        #         pass
+        #     elif p.get("value") == "https://schema.org/disambiguatingDescription":
+        #         # bmodel pred modelType
+        #         pass                                                
+        #     else:
+        #         print(s, p, o)
+        # print(122222, model_type, len(annotations["results"]["bindings"]), len(query_output["results"]["bindings"]))
 
 
 class PrimarySourceDomainGraph(CdhVisualization):

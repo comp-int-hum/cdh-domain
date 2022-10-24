@@ -1,11 +1,10 @@
 {% load sekizai_tags static %}
 {% load guardian_tags %}
 {% load cdh %}
-
+{% if request %}
 {% cdh_get_documentation_object view_name item as doc_info %}
 {% get_obj_perms request.user for doc_info.object as "doc_perms" %}
-
-
+{% endif %}
 <!doctype html>
 <html lang="en" >
   <head>

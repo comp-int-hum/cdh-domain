@@ -32,18 +32,18 @@ class TopicModelSerializer(CdhSerializer):
         view_name="api:topicmodel-topics",
         title="Most-probable words by topic"
     )
-    url_field = CharField(initial="url", write_only=True, default="url", required=False)
+    mid_field = CharField(initial="mid", write_only=True, default="mid", required=False)
     text_field = CharField(initial="text", write_only=True, default="text", required=False)
     remove_stopwords = BooleanField(initial=True, write_only=True, default=True, required=False)
     apply_url = AnnotationField(model_field="apply", view_name="api:topicmodel-apply")
     
     class Meta:
         model = TopicModel
-        fields = ["apply_url", "name", "query", "url", "created_by", "id", "topic_count", "lowercase", "maximum_documents", "max_context_size", "maximum_vocabulary", "minimum_occurrence", "maximum_proportion", "url_field", "text_field", "topic_word_probabilities", "topics_url", "remove_stopwords"]
+        fields = ["apply_url", "name", "query", "url", "created_by", "id", "topic_count", "lowercase", "maximum_documents", "max_context_size", "maximum_vocabulary", "minimum_occurrence", "maximum_proportion", "mid_field", "text_field", "topic_word_probabilities", "topics_url", "remove_stopwords"]
         view_fields = ["apply_url", "topic_word_probabilities", "topics_url", "id"]
         #view_fields = ["apply_url", "topics_url", "id"]
         edit_fields = ["name", "id"]
-        create_fields = ["name", "query", "created_by", "topic_count", "lowercase", "maximum_documents", "max_context_size", "url_field", "text_field", "remove_stopwords", "maximum_vocabulary", "minimum_occurrence", "maximum_proportion", "url", "id"]
+        create_fields = ["name", "query", "created_by", "topic_count", "lowercase", "maximum_documents", "max_context_size", "mid_field", "text_field", "remove_stopwords", "maximum_vocabulary", "minimum_occurrence", "maximum_proportion", "url", "id"]
         tab_view = True
         
     def update(self, instance, validated_data):
@@ -52,7 +52,7 @@ class TopicModelSerializer(CdhSerializer):
     def create(self, validated_data):
         fields = [f.name for f in TopicModel._meta.fields]
         obj = TopicModel(**{k : v for k, v in validated_data.items() if k in fields})
-        obj.save(url_field=validated_data["url_field"], text_field=validated_data["text_field"], remove_stopwords=validated_data["remove_stopwords"])
+        obj.save(mid_field=validated_data["mid_field"], text_field=validated_data["text_field"], remove_stopwords=validated_data["remove_stopwords"])
         return obj
 
     def build_standard_field(self, field_name, model_field):

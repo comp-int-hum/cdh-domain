@@ -7,6 +7,7 @@
 {% get_obj_perms request.user for documentation_model as "doc_perms" %}
 {% cdh_get_documentation_object request.path_info item as doc_info %}
 
+{% comment %}
 <div
   class="accordion-item cdh-accordion-item {% if item.is_object %}{{item.object_class}}{% endif %}"
   id="accordionitem-{{uid}}_{{index}}"
@@ -97,3 +98,4 @@
     </div>
   </div>
 </div>
+{% endcomment %}

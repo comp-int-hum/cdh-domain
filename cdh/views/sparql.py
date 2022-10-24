@@ -25,7 +25,7 @@ class SparqlView(View):
             logger.error(e)
             return HttpResponse("Invalid SPARQL query")
         resp = requests.get(
-            "http://{}:{}/{}/query".format(settings.JENA_HOST, settings.JENA_PORT, primary_source_id),
+            "http://{}:{}/primarysource_{}/query".format(settings.JENA_HOST, settings.JENA_PORT, primary_source_id),
             params={"query" : query_text},
             auth=requests.auth.HTTPBasicAuth(settings.JENA_USER, settings.JENA_PASSWORD)
         )

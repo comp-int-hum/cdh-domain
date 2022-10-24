@@ -23,9 +23,15 @@ class CdhRouter(DefaultRouter):
             initkwargs={'suffix': 'Detail'}
         ),
         DynamicRoute(
-            url=r'^{prefix}/{lookup}/{url_path}/$',
+            url=r'^{prefix}/{url_path}/{lookup}/$',
             name='{basename}-{url_name}',
             detail=True,
+            initkwargs={}
+        ),
+        DynamicRoute(
+            url=r'^{prefix}/{url_path}/$',
+            name='{basename}-{url_name}',
+            detail=False,
             initkwargs={}
         )
     ]

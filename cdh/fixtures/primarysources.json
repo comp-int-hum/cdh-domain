@@ -1,25 +1,27 @@
 {
     "primarysource" : [
 	{
-	    "name" : "HathiTrust",
-	    "domain_file" : {"filename" : "schema.ttl", "content_type" : "text/turtle"},
-	    "data_file" : {"filename" : "data.ttl", "content_type" : "text/turtle"},
+	    "name" : "COVID Tweets",
+	    "materials_file" : {"filename" : "covid_materials.zip", "content_type" : "application/zip"},
+	    "domain_file" : {"filename" : "covid_domain.ttl", "content_type" : "text/turtle"},
+	    "data_file" : {"filename" : "covid_data.ttl", "content_type" : "text/turtle"}
 	},
 	{
-	    "name" : "COVID Tweets",
-	    "materials_file" : {"filename" : "covid.zip", "content_type" : "application/zip"}
+	    "name" : "HathiTrust",
+	    "domain_file" : {"filename" : "hathitrust_domain.ttl", "content_type" : "text/turtle"},
+	    "data_file" : {"filename" : "hathitrust_data.ttl", "content_type" : "text/turtle"}
 	},
 	{
 	    "name" : "Edgeworth letters",
-	    "materials_file" : {"filename" : "Sede_OCR.zip", "content_type" : "application/zip"}
+	    "materials_file" : {"filename" : "Letters.zip", "content_type" : "application/zip"}
 	},
 	{
 	    "name" : "Cuneiform scholarship",
-	    "materials_file" : {"filename" : "Richard.zip", "content_type" : "application/zip"}
+	    "materials_file" : {"filename" : "Cuneiform.zip", "content_type" : "application/zip"}
 	},
 	{
-	    "name" : "Italian Renaissance symbology",
-	    "materials_file" : {"filename" : "Ben.zip", "content_type" : "application/zip"}
+	    "name" : "Durer",
+	    "materials_file" : {"filename" : "Durer.zip", "content_type" : "application/zip"}
 	}
     ]
 }

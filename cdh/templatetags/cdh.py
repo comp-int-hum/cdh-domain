@@ -42,8 +42,9 @@ def cdh_render_form(context, serializer, template_pack=None, mode="view"):
         for i, field in enumerate(serializer.fields):
             serializer.fields[field].style["index"] = i
             if mode in ["edit", "create"]:
-                serializer.fields[field].style["editable"] = True                
-        return renderer.render(serializer.data, None, {'style': style, "mode" : mode, "tab_view" : tab_view})
+                serializer.fields[field].style["editable"] = True
+                #print(context)
+        return renderer.render(serializer.data, None, {'style': style, "mode" : mode, "tab_view" : tab_view, "request" : context.get("request")})
     except Exception as e:
         logger.info("Exception: %s", e)
         raise e
@@ -52,6 +53,9 @@ def cdh_render_form(context, serializer, template_pack=None, mode="view"):
 
 @register.simple_tag(takes_context=True)
 def cdh_get_documentation_object(context, view_name, item):
+    #print(item, type(item), view_name)
+    #if "request" not in context:
+    #    return None
     if isinstance(item, (str, dict)):
         content_type = None
         object_id = None
@@ -83,9 +87,8 @@ def cdh_get_documentation_object(context, view_name, item):
             "name" : "_".join([str(x) for x in [view_name, content_type_id, object_id] if x]),
         }
         ret_ser = DocumentationSerializer(data=data, context=context)
-        can_edit = Documentation.get_add_perm() in get_perms(context["request"].user, Documentation)
+        can_edit = False if "request" not in context else Documentation.get_add_perm() in get_perms(context["request"].user, Documentation)
         ret_ser.is_valid()
-    #print(ret_obj.id if ret_obj else None, 777777)
     retval = {
         "object" : ret_obj if ret_obj else Documentation(
             name="_".join([str(x) for x in [view_name, content_type_id, object_id] if x]),
@@ -96,5 +99,6 @@ def cdh_get_documentation_object(context, view_name, item):
         "can_edit" : can_edit,
         "serializer" : ret_ser
     }
+    #print(123)    
     return retval
 

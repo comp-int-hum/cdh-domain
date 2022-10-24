@@ -2,7 +2,7 @@ import re
 import json
 import os.path
 import logging
-from cdh import settings
+from django.conf import settings
 from django.http import HttpResponse, HttpResponseRedirect
 from django.views import View
 from django.shortcuts import render, get_object_or_404
@@ -13,13 +13,13 @@ class MaterialView(View):
     
     def dispatch(self, request, *argv, prefix=None, name=None, **argd):
         self.prefix = prefix
-        self.name = name
+        self.suffix = name
         return super(MaterialView, self).dispatch(request, *argv, **argd)
         
     def get(self, request, *argv, **argd):
         psf = PairtreeStorageFactory()
         store = psf.get_store(store_dir=os.path.join(settings.MATERIALS_ROOT, self.prefix), uri_base="{}://{}:{}/materials/".format(settings.PROTO, settings.HOSTNAME, settings.PORT))
-        obj = store.get_object(self.name, create_if_doesnt_exist=False)
+        obj = store.get_object(self.suffix, create_if_doesnt_exist=False)
         fnames = obj.list_parts()
         metadata = {}
         files = {}

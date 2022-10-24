@@ -25,9 +25,9 @@ logger = logging.getLogger(__name__)
 class AtomicViewSet(ModelViewSet):
     content_negotiation_class = CdhContentNegotiation
     renderer_classes = [BrowsableAPIRenderer, JSONRenderer, CdhTemplateHTMLRenderer]
-    detail_template_name = "cdh/atomic.html"
-    list_template_name = "cdh/accordion.html"
-    slideshow_template_name = "cdh/slideshow.html"
+    detail_template_name = "cdh/template_pack/atomic.html"
+    list_template_name = "cdh/template_pack/accordion.html"
+    slideshow_template_name = "cdh/template_pack/slideshow.html"
     model = None
     exclude = {}
     
@@ -146,6 +146,7 @@ class AtomicViewSet(ModelViewSet):
             raise Exception("Incoherent combination of detail/action on AtomicViewSet")
         logger.info("Accepted renderer: %s", self.request.accepted_renderer)
         context["viewset"] = self
+        context["request"] = self.request
         return context
 
     def list(self, request):

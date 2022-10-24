@@ -4,10 +4,10 @@ from cdh.vega import CdhVisualization
 class SpatialDistribution(CdhVisualization):
 
     def __init__(self, values, prefix=None):
-        self.values = values["coordinates"]
-        self.topic_names = values["topic_names"]
+        self.values = values[0]
+        self.model_info = values[2]
+        self.topic_names = list(set([v["topic"] for v in self.values]))
         self.prefix = prefix
-        self.topics = list(sorted(set([int(x["properties"]["topic"]) for x in self.values])))
         super(SpatialDistribution, self).__init__()
 
     @property
@@ -44,10 +44,10 @@ class SpatialDistribution(CdhVisualization):
                 "name": "topic",
                 "bind" : {
                     "input" : "select",
-                    "options" : self.topics,
-                    "labels" : [self.topic_names[x] for x in self.topics],
+                    "options" : list(range(len(self.topic_names))),
+                    "labels" : self.topic_names, #[self.topic_names[x] for x in self.topics],
                 },
-                "init" : self.topics[0]
+                "init" : 0 #self.topic_names[0]
             },
             # {
             #     "name" : "words",
@@ -91,10 +91,24 @@ class SpatialDistribution(CdhVisualization):
                 "name": "topics",
                 "values": self.values,
                 "transform" : [
-                    {
-                        "type" : "filter",
-                        "expr" : "topic == 0 || datum.properties.topic == topic"
-                    },
+                {"type":"formula",
+                "expr" : "datum.location[0]",
+                "as" : "lon"
+                },
+                 {"type":"formula",
+                  "expr" : "datum.location[1]",
+                  "as" : "lat"
+                },
+                                {
+                    "type" : "geopoint",
+                    "projection" : "focus",
+                    "fields" : ["lon", "lat"],
+    "as" : ["x", "y"]
+                }
+                    #{
+                    #    "type" : "filter",
+                    #    "expr" : "topic == 0 || datum.properties.topic == topic"
+                    #},
                 ]
             },
             {
@@ -165,27 +179,41 @@ class SpatialDistribution(CdhVisualization):
                    { "type": "geoshape", "projection": "focus" }
                 ]
             },
-            {
-                "type": "shape",
-                "from": {"data": "topics"},
-                "encode": {
-                    "update": {
-                        "strokeWidth": {"value" : 0},
-                        "opacity": {"value": 0.25},
-                        "fill": {"value": "red"},
-                        "zindex": {"value": 1},
-                        "tooltip" : {"signal" : "datum.content"},
-                    },
-                },
-                "transform": [
-                    {
-                        "type": "geoshape",
-                        "projection": "focus",
-                        "pointRadius" : {"expr": "scale('size', datum.properties.weight)"},
-                    }
-                ]
-            },
+            # {
+            #     "type": "shape",
+            #     "from": {"data": "topics"},
+            #     "encode": {
+            #         "update": {
+            #             "strokeWidth": {"value" : 0},
+            #             "opacity": {"value": 0.25},
+            #             "fill": {"value": "red"},
+            #             "zindex": {"value": 1},
+            #             "tooltip" : {"signal" : "datum.content"},
+            #         },
+            #     },
+            #     "transform": [
+            #         {
+            #             "type": "geoshape",
+            #             "projection": "focus",
+            #             "field" : "location",
+            #             "pointRadius" : 10, #{"expr": "scale('size', datum.weight)"},
+            #         }
+            #     ]
+            # },
+        {
 
+            "type": "symbol",
+            "from": {"data":"topics"},
+            "encode": {
+                "enter": {
+                    "x" : {"field":"x"},
+                    "y" : {"field":"y"},
+                    "fill" : {"value" : "red"},
+                    "tooltip" : {"value": "dsa"},
+                    "size" : {"value" : 2}
+                }
+            }
+        }
         ]
     
     @property

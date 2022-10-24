@@ -41,7 +41,12 @@ class ViewEditField(Field):
         return self.edit.to_internal_value(*argv, **argd)
 
 
+class UploadableTextField(CharField):
+    pass
+
+
 class AnnotationField(HyperlinkedIdentityField):
+
     def __init__(self, *argv, **argd):
         self.model_field = argd.pop("model_field", None)
         return super(AnnotationField, self).__init__(*argv, **argd)
@@ -51,7 +56,9 @@ class AnnotationField(HyperlinkedIdentityField):
 
     def to_internal_value(self, *argv, **argd):
         return {}
-    
+
+
+
 
 class ActionOrInterfaceField(HyperlinkedIdentityField):
     
@@ -66,7 +73,7 @@ class ActionOrInterfaceField(HyperlinkedIdentityField):
         return retval
 
     def to_representation(self, object, *argv, **argd):
-        self.interface_field.style["object"] = object        
+        self.interface_field.style["object"] = object
         if self.nested_parent_field:
             self.interface_field.style["parent_id"] = getattr(object, self.nested_parent_field).id
         return super(ActionOrInterfaceField, self).to_representation(object, *argv, **argd)
@@ -76,6 +83,7 @@ class TabularResultsField(Field):
 
     def __init__(self, property_field, *argv, **argd):
         self.value_format = argd.pop("value_format", "{0}")
+        self.property_field_args = argd.pop("property_field_args", {})
         for param in ["row_names_path", "column_names_path", "row_label_path", "column_label_path", "lookup_path", "rows_path"]:
             val = argd.pop(param, None)
             setattr(self, param, JSONPath(val) if val else None)
@@ -92,7 +100,7 @@ class TabularResultsField(Field):
         return retval
 
     def get_default_value(self):
-        j = getattr(self.style["object"], self.style["property_field"])()
+        j = getattr(self.style["object"], self.style["property_field"])(**self.property_field_args)
         retval = {}
         for param in ["row_names_path", "column_names_path", "row_label_path", "column_label_path", "lookup_path", "rows_path"]:
             val = getattr(self, param, None)
@@ -110,10 +118,32 @@ class TabularResultsField(Field):
         return retval
     
     
+class AnnotationsField(Field):
+    
+    def __init__(self, *argv, **argd):
+        title = argd.pop("title", "Annotations")
+        retval = super(AnnotationsField, self).__init__(*argv, **argd)
+        self.style["title"] = title
+        self.field_name = "annotations_{}".format(random_token(6))
+        self.style["base_template"] = "accordion.html"
+        self.style["template_pack"] = "cdh/template_pack"
+        return retval
+
+    def get_default_value(self):
+        return self.style["object"].annotations()
+    
+    def to_representation(self, object, *argv, **argd):
+        return object.annotations()
+
+    def to_internal_value(self, *argv, **argd):
+        return {}
+
+
 class VegaField(Field):
 
     def __init__(self, vega_class, *argv, **argd):
         property_field = argd.pop("property_field", None)
+        self.property_field_args = argd.pop("property_field_args", {})
         self.title = argd.pop("title", "")
         retval = super(VegaField, self).__init__(*argv, **argd)
         self.vega_class = vega_class
@@ -128,11 +158,22 @@ class VegaField(Field):
         self.field_name = "vega_{}".format(random_token(6))
         return retval
 
+    def get_attribute(self, object, **argd):
+        return getattr(object, self.style["property_field"])(**self.property_field_args)
+
     def get_default_value(self):
-        return self.vega_class(getattr(self.style["object"], self.style["property_field"])()).json
+        return self.vega_class(
+            getattr(self.style["object"], self.style["property_field"])(**self.property_field_args),
+            self.style["div_id"]
+        ).json
     
     def to_representation(self, object, *argv, **argd):
-        return self.vega_class(object).json
+        return self.vega_class(
+            object,
+            #getattr(object, self.style["property_field"])(**self.property_field_args),
+            self.style["div_id"]
+            #object
+        ).json
 
     
 class MonacoEditorField(CharField):

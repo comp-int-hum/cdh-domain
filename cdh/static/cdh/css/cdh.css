@@ -1,6 +1,6 @@
 @charset "UTF-8";
 
-@media screen and (min-width: 600px) {
+@media screen and (hover: hover) {
     .cdh-editor-action {
 	visibility: hidden;
 	display: none;

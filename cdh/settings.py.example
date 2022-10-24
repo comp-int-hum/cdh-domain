@@ -198,6 +198,7 @@ if USE_JENA:
     JENA_PORT = 3030
     JENA_USER = "admin"
     JENA_PASSWORD = "CHANGE_ME"
+    JENA_PROTO = "http"
 
 MIDDLEWARE = [
     'debug_toolbar.middleware.DebugToolbarMiddleware',    

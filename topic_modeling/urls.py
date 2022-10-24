@@ -12,15 +12,11 @@ urlpatterns = [
     path(
         '',
         TemplateView.as_view(
-            template_name="cdh/accordion.html",
+            template_name="cdh/template_pack/accordion.html",
             extra_context={
                 "items" : [
                     TopicModel,
                     Lexicon,
-                    # {
-                    #     "title" : "Labeled text",
-                    #     "name" : "api:topicmodel-list"
-                    # }
                 ],
                 "uid" : "1",
             }

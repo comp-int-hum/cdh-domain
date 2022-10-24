@@ -26,6 +26,7 @@ from .models import Slide, ResearchArtifact, CdhModel, Documentation, Event, Cal
 from .viewsets import AtomicViewSet
 from .routers import CdhRouter
 from .serializers import ResearchArtifactSerializer
+from primary_sources.viewsets import MaterialViewSet
 
 
 logger = logging.getLogger(__name__)
@@ -60,6 +61,7 @@ router.register("user", AtomicViewSet.for_model(User, exclude_={"username" : "An
 router.register("documentation", AtomicViewSet.for_model(Documentation), basename="documentation")
 router.register("rule", AtomicViewSet.for_model(Rule), basename="rule")
 router.register("calendar", AtomicViewSet.for_model(Calendar), basename="calendar")
+router.register("material", MaterialViewSet, basename="material")
 
 
 app_name = "cdh"

@@ -186,7 +186,6 @@ class CalendarSerializer(CdhSerializer):
 #        return self.to_internal_value(data)
         
     def is_valid(self, raise_exception=False):
-        print(1234321)
         assert hasattr(self, 'initial_data'), (
             'Cannot call `.is_valid()` as no `data=` keyword argument was '
             'passed when instantiating the serializer instance.'
