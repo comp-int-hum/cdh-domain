@@ -1,10 +1,24 @@
 {
-    "machinelearningmodel" : [
+    "machinelearningmodel" : [	
 	{
-	    "name" : "Object detector",
-	    "mar_file" : {"filename" : "maskrcnn.mar", "content_type" : "application/zip"},
-	    "input_signature" : {"filename" : "object_detection_input.ttl", "content_type" : "text/turtle"},
-	    "output_signature" : {"filename" : "object_detection_output.ttl", "content_type" : "text/turtle"}
+	    "name" : "Text generation",
+	    "mar_file" : {"filename" : "bloom560m.mar", "content_type" : "application/zip"},
+	    "signature_file" : {"filename" : "text_generation_signature.ttl", "content_type" : "text/turtle"}
+	},
+	{
+	    "name" : "Object detection",
+	    "mar_file" : {"filename" : "resnet50.mar", "content_type" : "application/zip"},
+	    "signature_file" : {"filename" : "object_detection_signature.ttl", "content_type" : "text/turtle"}
+	},
+	{
+	    "name" : "Printed OCR",
+	    "mar_file" : {"filename" : "trocr_printed.mar", "content_type" : "application/zip"},
+	    "signature_file" : {"filename" : "ocr_signature.ttl", "content_type" : "text/turtle"}
+	},
+	{
+	    "name" : "Handwritten OCR",
+	    "mar_file" : {"filename" : "trocr_handwritten.mar", "content_type" : "application/zip"},
+	    "signature_file" : {"filename" : "ocr_signature.ttl", "content_type" : "text/turtle"}
 	}
     ]
 }

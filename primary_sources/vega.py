@@ -137,8 +137,8 @@ class PrimarySourceDomainGraph(CdhVisualization):
     @property
     def signals(self):
         return [
-            {"name": "width", "value": 800},
-            {"name": "height", "value": 350},
+            #{"name": "width", "value": 800},
+            #{"name": "height", "value": 350},
             { "name": "cx", "update": "width / 2" },
             { "name": "cy", "update": "height / 2" },
             { "name": "nodeRadius", "update": "zoom * 20"},
@@ -511,8 +511,8 @@ class PrimarySourceDataGraph(CdhVisualization):
     @property
     def signals(self):
         return [
-            {"name": "width", "value": 800},
-            {"name": "height", "value": 350},
+            #{"name": "width", "value": 800},
+            #{"name": "height", "value": 350},
             { "name": "cx", "update": "width / 2" },
             { "name": "cy", "update": "height / 2" },
             { "name": "nodeRadius", "update": "zoom * 20"},

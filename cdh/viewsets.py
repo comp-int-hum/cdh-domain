@@ -156,7 +156,6 @@ class AtomicViewSet(ModelViewSet):
             return Response(context)
         else:
             return super(AtomicViewSet, self).list(request)
-
         
     # this should return response for HTML too
     def create(self, request):

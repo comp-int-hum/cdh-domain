@@ -206,120 +206,124 @@ class Annotation(AsyncMixin, CdhModel):
     @cdh_action(detail=True, methods=["get"])
     @cdh_cache_method
     def data(self):
-        if self.model_class == "topicmodel" or self.model_class == "lexicon":
-            vals = self.query.primarysource.sparql(
-                """
-                PREFIX cdh: <http://cdh.jhu.edu/>
-                PREFIX so: <https://schema.org/>
-                PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-                SELECT ?topic_name ?lex ?name ?prob WHERE {{
-                  GRAPH <{jena_id}> {{
-                    ?mod so:option ?topic .
-                    ?topic so:hasPart ?lex .
-                    ?topic so:name ?topic_name .
-                    ?lex so:name ?name .
-                    OPTIONAL {{ ?lex so:value ?prob . }}
-                  }}
-                }}
-                """.format(
-                    jena_id=self.jena_id,
-                    host=settings.JENA_HOST,
-                    port=settings.JENA_PORT,
-                    psid=self.query.primarysource.id,
-                    aid=self.id
-                )
-            )
-            model_info = [
-                {
-                    "topic_name" : x["topic_name"]["value"],
-                    "token" : x["name"]["value"],
-                    "probability" : x["prob"]["value"] if "prob" in x else None
-                } for x in vals["results"]["bindings"]
-            ]
-            vals = self.query.primarysource.sparql(
-                """
-                PREFIX cdh: <http://cdh.jhu.edu/>
-                PREFIX so: <https://schema.org/>
-                PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-                SELECT ?mid ?date ?loc ?label ?count WHERE {{
-                  GRAPH <{jena_id}> {{
-                    ?annotation cdh:labelsDocument ?mid .
-                    ?annotation cdh:hasAssignment ?assignment .
-                    ?assignment cdh:assignsLabel ?label .
-                    ?assignment cdh:hasCount ?count .
-                  }}
-                  GRAPH <urn:x-arq:DefaultGraph> {{
-                    ?pdoc cdh:materialId ?mid .
-                    OPTIONAL {{ ?pdoc so:location ?loc . }}
-                    OPTIONAL {{ ?pdoc so:datePublished ?date . }}
-                  }}
-                }}
-                """.format(
-                    jena_id=self.jena_id,
-                    host=settings.JENA_HOST,
-                    port=settings.JENA_PORT,
-                    psid=self.query.primarysource.id,
-                    aid=self.id
-                )
-            )
-            tinputs = sorted(
-                [
-                    {
-                        "weight" : int(i["count"]["value"]),
-                        "timestamp" : datetime.fromisoformat(i["date"]["value"]).timestamp() if "date" in i else None,
-                        "location" : json.loads(i["loc"]["value"]) if "loc" in i else None,
-                        "topic" : i["label"]["value"]
-                    } for i in vals["results"]["bindings"]
-                ],
-                key=lambda x : x["timestamp"]
-            )
-            min_t, max_t = [tinputs[0]["timestamp"], tinputs[-1]["timestamp"]]
-            bucket_count = 200
-            window_size = (max_t - min_t) / bucket_count
-            counts = {}            
-            buckets = [{}] * bucket_count
-            for item in tinputs:
-                if item["timestamp"]:
-                    bucket = min(int((item["timestamp"] - min_t) / window_size), len(buckets) - 1)
-                    buckets[bucket][item["topic"]] = buckets[bucket].get(item["topic"], 0.0) + item["weight"]
-                    counts[bucket] = counts.get(bucket, 0) + 1
-            total = sum(counts.values())            
-            combine = []
-            combined_total = 0
-            while combined_total < 0.9 * total:
-                v, k = sorted([(v, k) for k, v in counts.items()])[-1]
-                combined_total += v
-                combine.append(k)
-                counts.pop(k)
-            min_b = min(combine)
-            max_b = max(combine)
-            min_t = min_t + min_b * window_size
-            max_t = min_t + (max_b - min_b + 1) * window_size
-
-            bucket_count = 10
-            window_size = (max_t - min_t) / bucket_count
-            counts = {}            
-            buckets = {} #[{}] * bucket_count            
-            for i in range(len(tinputs)):
-                item = tinputs[i]
-                if item["location"]:
-                    j = item["location"]["coordinates"][0]
-                    lon = sum([x[0] for x in j]) / len(j)
-                    lat = sum([x[1] for x in j]) / len(j)
-                    tinputs[i]["location"] = [lon, lat]
-                if item["timestamp"] and item["timestamp"] >= min_t and item["timestamp"] <= max_t:
-                    bucket = min(int((item["timestamp"] - min_t) / window_size), bucket_count - 1)
-                    buckets[bucket] = buckets.get(
-                        bucket,
-                        {
-                            "start" : min_t + bucket * window_size,
-                            "end" : min_t + (bucket + 1) * window_size,
-                            "weights" : {}
-                        }
+        try:
+            if self.model_class == "topicmodel" or self.model_class == "lexicon":
+                vals = self.query.primarysource.sparql(
+                    """
+                    PREFIX cdh: <http://cdh.jhu.edu/>
+                    PREFIX so: <https://schema.org/>
+                    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+                    SELECT ?topic_name ?lex ?name ?prob WHERE {{
+                      GRAPH <{jena_id}> {{
+                        ?mod so:option ?topic .                        
+                        ?topic so:hasPart ?lex .
+                        ?topic so:name ?topic_name .
+                        ?lex so:name ?name .
+                        OPTIONAL {{ ?lex so:value ?prob . }}
+                      }}
+                    }}
+                    """.format(
+                        jena_id=self.jena_id,
+                        host=settings.JENA_HOST,
+                        port=settings.JENA_PORT,
+                        psid=self.query.primarysource.id,
+                        aid=self.id
                     )
-                    buckets[bucket]["weights"][item["topic"]] = buckets[bucket]["weights"].get(item["topic"], 0.0) + item["weight"]
-                    counts[bucket] = counts.get(bucket, 0) + 1
-            return ([i for i in tinputs if i.get("location", False)], buckets, model_info)
+                )
+                model_info = [
+                    {
+                        "topic_name" : x["topic_name"]["value"],
+                        "token" : x["name"]["value"],
+                        "probability" : x["prob"]["value"] if "prob" in x else None
+                    } for x in vals["results"]["bindings"]
+                ]
+                vals = self.query.primarysource.sparql(
+                    """
+                    PREFIX cdh: <http://cdh.jhu.edu/>
+                    PREFIX so: <https://schema.org/>
+                    PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+                    SELECT ?mid ?date ?loc ?label ?count WHERE {{
+                      GRAPH <{jena_id}> {{
+                        ?annotation cdh:labelsDocument ?mid .
+                        ?annotation cdh:hasAssignment ?assignment .
+                        ?assignment cdh:assignsLabel ?ll .
+                        ?assignment cdh:hasName ?label .
+                        ?assignment cdh:hasCount ?count .
+                      }}
+                      GRAPH <urn:x-arq:DefaultGraph> {{
+                        ?pdoc cdh:materialId ?mid .
+                        OPTIONAL {{ ?pdoc so:location ?loc . }}
+                        OPTIONAL {{ ?pdoc so:datePublished ?date . }}
+                      }}
+                    }}
+                    """.format(
+                        jena_id=self.jena_id,
+                        host=settings.JENA_HOST,
+                        port=settings.JENA_PORT,
+                        psid=self.query.primarysource.id,
+                        aid=self.id
+                    )
+                )
+                tinputs = sorted(
+                    [
+                        {
+                            "weight" : int(i["count"]["value"]),
+                            "timestamp" : datetime.fromisoformat(i["date"]["value"]).timestamp() if "date" in i else None,
+                            "location" : json.loads(i["loc"]["value"]) if "loc" in i else None,
+                            "topic" : i["label"]["value"]
+                        } for i in vals["results"]["bindings"]
+                    ],
+                    key=lambda x : x["timestamp"]
+                )
+                min_t, max_t = [tinputs[0]["timestamp"], tinputs[-1]["timestamp"]]
+                bucket_count = 200
+                window_size = (max_t - min_t) / bucket_count
+                counts = {}            
+                buckets = [{}] * bucket_count
+                for item in tinputs:
+                    if item["timestamp"]:
+                        bucket = min(int((item["timestamp"] - min_t) / window_size), len(buckets) - 1)
+                        buckets[bucket][item["topic"]] = buckets[bucket].get(item["topic"], 0.0) + item["weight"]
+                        counts[bucket] = counts.get(bucket, 0) + 1
+                total = sum(counts.values())            
+                combine = []
+                combined_total = 0
+                while combined_total < 0.9 * total:
+                    v, k = sorted([(v, k) for k, v in counts.items()])[-1]
+                    combined_total += v
+                    combine.append(k)
+                    counts.pop(k)
+                min_b = min(combine)
+                max_b = max(combine)
+                min_t = min_t + min_b * window_size
+                max_t = min_t + (max_b - min_b + 1) * window_size
+
+                bucket_count = 10
+                window_size = (max_t - min_t) / bucket_count
+                counts = {}            
+                buckets = {} #[{}] * bucket_count            
+                for i in range(len(tinputs)):
+                    item = tinputs[i]
+                    if item["location"]:
+                        j = item["location"]["coordinates"][0]
+                        lon = sum([x[0] for x in j]) / len(j)
+                        lat = sum([x[1] for x in j]) / len(j)
+                        tinputs[i]["location"] = [lon, lat]
+                    if item["timestamp"] and item["timestamp"] >= min_t and item["timestamp"] <= max_t:
+                        bucket = min(int((item["timestamp"] - min_t) / window_size), bucket_count - 1)
+                        buckets[bucket] = buckets.get(
+                            bucket,
+                            {
+                                "start" : min_t + bucket * window_size,
+                                "end" : min_t + (bucket + 1) * window_size,
+                                "weights" : {}
+                            }
+                        )
+                        buckets[bucket]["weights"][item["topic"]] = buckets[bucket]["weights"].get(item["topic"], 0.0) + item["weight"]
+                        counts[bucket] = counts.get(bucket, 0) + 1
+                return ([i for i in tinputs if i.get("location", False)], buckets, model_info)
+        except:
+            return ([], {}, {})
         #annotations = self.query.primarysource.annotation(self.id)
         #query_output = self.query.perform()
         raise Exception(self.model_class)

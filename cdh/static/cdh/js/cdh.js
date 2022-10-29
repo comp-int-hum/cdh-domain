@@ -1,5 +1,6 @@
 function updateImageDisplay(event) {
     var input = event.target;
+    var detector_type = input.parentElement.getAttribute("detector_type");
     var preview = input.parentElement.getElementsByTagName("img")[0];
     var canvas = input.parentElement.getElementsByTagName("canvas")[0];
     var file = input.files[0];
@@ -17,49 +18,103 @@ function updateImageDisplay(event) {
 	    method: "POST",
 	    data: formData,
 	    success: function (data){
+		console.error(data);
 		var jdata = JSON.parse(data);
-		var width = preview.naturalWidth;
-		var height = preview.naturalHeight;
-		
-		var scaleWidth = 800 / width;
-		var scaleHeight = 600 / height;
-		var scale;
-		if(scaleWidth > scaleHeight){
-		    scale = scaleWidth;
-		}
-		else{
-		    scale = scaleHeight;
-		}
-		var fontSize = Math.round(32 / scale);
-		canvas.width = width * scale;
-		canvas.height = height * scale;
-		var ctx = canvas.getContext("2d");
-		ctx.scale(scale, scale);
-		ctx.drawImage(preview, 0, 0);
-		for(let box of jdata){
-		    var name;
-		    var score;
-		    var bounds;
-		    for(var key in box){
-			if(box.hasOwnProperty(key)){
-			    var val = box[key];
-			    if(key == "score"){
-				score = val;
-			    }
-			    else{
-				name = key;
-				bounds = val;
+
+		if(detector_type == "object"){
+		    var width = preview.naturalWidth;
+		    var height = preview.naturalHeight;		
+		    var scaleWidth = 800 / width;
+		    var scaleHeight = 600 / height;
+		    var scale;
+		    if(scaleWidth > scaleHeight){
+			scale = scaleWidth;
+		    }
+		    else{
+			scale = scaleHeight;
+		    }
+		    var fontSize = Math.round(32 / scale);
+		    canvas.width = width * scale;
+		    canvas.height = height * scale;
+		    var ctx = canvas.getContext("2d");
+		    ctx.scale(scale, scale);
+		    ctx.drawImage(preview, 0, 0);
+		    for(let box of jdata){
+			var name;
+			var score;
+			var bounds;
+			for(var key in box){
+			    if(box.hasOwnProperty(key)){
+				var val = box[key];
+				if(key == "score"){
+				    score = val;
+				}
+				else if(key == "label"){
+				    name = val;
+				}
+				else if(key == "bounding_box"){
+				    bounds = val;
+				}
 			    }
 			}
+			if(score > 0.8){
+			    ctx.strokeStyle = "rgb(200,0,0)";
+			    ctx.lineWidth = 2.0;
+			    ctx.strokeRect(bounds[0], bounds[1], bounds[2] - bounds[0], bounds[3] - bounds[1]);
+			    ctx.fillStyle = "rgb(200,0,0)";
+			    ctx.font = fontSize.toString() + "px serif";
+			    ctx.fillText(name + "=" + score.toPrecision(3), bounds[0], bounds[1]);
+			}
 		    }
-		    ctx.strokeStyle = "rgb(200,0,0)";
-		    ctx.lineWidth = 2.0;
-		    ctx.strokeRect(bounds[0], bounds[1], bounds[2] - bounds[0], bounds[3] - bounds[1]);
-		    ctx.fillStyle = "rgb(200,0,0)";
-		    ctx.font = fontSize.toString() + "px serif";
-		    ctx.fillText(name + "=" + score.toPrecision(3), bounds[0], bounds[1]);
 		}
-		
+		else if(detector_type == "text"){
+		    var width = preview.naturalWidth;
+		    var height = preview.naturalHeight;		
+		    var scaleWidth = 80 / width;
+		    var scaleHeight = 60 / height;
+		    var scale;
+		    if(scaleWidth > scaleHeight){
+			scale = scaleWidth;
+		    }
+		    else{
+			scale = scaleHeight;
+		    }
+		    var fontSize = Math.round(32 / scale);
+		    canvas.width = width * scale;
+		    canvas.height = height * scale;
+		    var ctx = canvas.getContext("2d");
+		    ctx.scale(scale, scale);
+		    ctx.drawImage(preview, 0, 0);
+		    //for(let box of jdata){
+			var name;
+			var score;
+			var bounds;
+			for(var key in jdata){
+			    if(jdata.hasOwnProperty(key)){
+				var val = jdata[key];
+				if(key == "probability"){
+				    score = val;
+				}
+				else if(key == "text"){
+				    name = val;
+				}
+				else if(key == "bounding_box"){
+				    bounds = val;
+				}
+			    }
+			}
+			if(score > 0.8){
+			    ctx.strokeStyle = "rgb(200,0,0)";
+			    ctx.lineWidth = 2.0;
+			    ctx.strokeRect(bounds[0], bounds[1], bounds[2] - bounds[0], bounds[3] - bounds[1]);
+			    ctx.fillStyle = "rgb(200,0,0)";
+			    ctx.font = fontSize.toString() + "px serif";
+			    ctx.fillText(name, bounds[0], bounds[1] + (bounds[3] - bounds[1]));
+			}
+		    //}
+
+
+		}
 	    },
 	    contentType: false,
             processData: false,

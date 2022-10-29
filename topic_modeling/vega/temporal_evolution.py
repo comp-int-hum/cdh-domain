@@ -8,12 +8,14 @@ class TemporalEvolution(CdhVisualization):
 
     def __init__(self, values, prefix=None):
         self.prefix = prefix
+        print(self.prefix)
         self.model_info = values[2]
+        #print(values[1][0])
         self.values = [] #values #[0:10]        
-        self.buckets = list(sorted(values[1].items()))
+        #elf.buckets = list(sorted(values[1].items()))
         #self.min_timestamp = self.buckets[0][1]["start"]
         #self.max_timestamp = self.buckets[-1][1]["end"]
-        for bucket, info in values[1].items():
+        for bucket, info in sorted(values[1].items(), key=lambda x : x[0]):
             total = sum(info["weights"].values())
             for topic, count in info["weights"].items():
                 self.values.append(
@@ -24,6 +26,7 @@ class TemporalEvolution(CdhVisualization):
                         "percent" : count / total
                     }
                 )
+        #print([x["topic"] for x in self.values if x["bucket"] == 0])
         #print(self.buckets, self.min_timestamp, self.max_timestamp)
         super(TemporalEvolution, self).__init__()
 
@@ -41,7 +44,42 @@ class TemporalEvolution(CdhVisualization):
             {
                 "name": "height",
                 "value": 350
-            }
+            },
+            # {
+            #     "name": "tooltip",
+            #     "value": {},
+            #     "on": [
+            #         {"events": "rect:mouseover", "update": "datum"},
+            #         {"events": "rect:mouseout",  "update": "{}"}
+            #     ]
+            # },
+            {
+                "name" : "topic",
+                "value" : "",
+                "bind" : {
+                    "input" : "textarea",
+                    "element" : "#{}_1".format(self.prefix) if self.prefix else "#topicinfo"
+                },
+                "on" : [
+                   {"events" : "area:mouseover", "update" : "datum.topic"},
+                   {"events" : "area:mouseout", "update" : {"value" : ""}}
+                ],
+            },
+            # {
+            #     "name" : "time",
+            #     "value" : "None",
+            #     "bind" : {
+            #         "element" : "#{}_2".format(self.prefix) if self.prefix else "#timeinfo"
+            #     },
+            #     "on" : [
+            #         {
+            #             "events" : "area:mousemove",
+            #             #"update" : "utcFormat(1000*round(extent(pluck(data('temporal_weights'), 'time'))[0] + ((x() / width) * ((extent(pluck(data('temporal_weights'), 'time'))[1]) - (extent(pluck(data('temporal_weights'), 'time'))[0])))), '%m/%d/%Y')",
+            #         },
+            #         {"events" : "area:mouseout", "update" : {"value" : ""}}
+            #     ],
+            # }
+            
         ]
         
     @property
@@ -138,18 +176,18 @@ class TemporalEvolution(CdhVisualization):
                 "range": "category",
                 "domain": {"data": "temporal_weights", "field": "topic"}
             },
-            # {
-            #     "name": "font",
-            #     "type": "sqrt",
-            #     "range": [0, 20], "round": True, "zero": True,
-            #     "domain": {"data": "sseries", "field": "argmax.value"}
-            # },
-            # {
-            #     "name": "opacity",
-            #     "type": "quantile",
-            #     "range": [0, 0, 0, 0, 0, 0.1, 0.2, 0.4, 0.7, 1.0],
-            #     "domain": {"data": "sseries", "field": "argmax.value"}
-            # }
+            {
+                "name": "font",
+                "type": "sqrt",
+                "range": [0, 20], "round": True, "zero": True,
+                "domain": {"data": "series", "field": "argmax.value"}
+            },
+            {
+                "name": "opacity",
+                "type": "quantile",
+                "range": [0, 0, 0, 0, 0, 0.1, 0.2, 0.4, 0.7, 1.0],
+                "domain": {"data": "series", "field": "argmax.value"}
+            }
         ]
 
     
@@ -187,6 +225,26 @@ class TemporalEvolution(CdhVisualization):
 
                 ]
             }
+            # ,
+            # {
+            #     "type": "text",
+            #     "from": {"data": "temporal_weights"},
+            #     "interactive": False,
+            #     "encode": {
+            #         "update": {
+            #             "x": {"scale": "x", "field": "bucket"},
+            #             #"dx": {"scale": "offset", "field": "argmax.time"},
+            #             "y": {"signal": "scale('y', 0.5 * (datum.y0 + datum.y1))"},
+            #             "fill": {"value": "#000"},
+            #             #"fillOpacity": {"scale": "opacity", "field": "value"},
+            #             "fontSize": {"scale": "font", "field": "value", "offset": 5},
+            #             "text": {"field": "topic"},
+            #             #"align": {"scale": "align", "field": "time"},
+            #             "baseline": {"value": "middle"}
+            #         }
+            #     }
+            # }
+            
         ]
 
     # @property
@@ -253,41 +311,6 @@ class TemporalEvolution(CdhVisualization):
     #@property
     #def signals(self):
     #    return [
-            # {"name": "width", "value": 800},
-            # {"name": "height", "value": 350},
-            # {
-            #     "name": "tooltip",
-            #     "value": {},
-            #     "on": [
-            #         {"events": "rect:mouseover", "update": "datum"},
-            #         {"events": "rect:mouseout",  "update": "{}"}
-            #     ]
-            # },
-            # {
-            #     "name" : "topic",
-            #     "value" : "None",
-            #     "bind" : {
-            #         "element" : "#{}_1".format(self.prefix) if self.prefix else "#topicinfo"
-            #     },
-            #     "on" : [
-            #         {"events" : "area:mouseover", "update" : "datum.label"},
-            #         {"events" : "area:mouseout", "update" : {"value" : ""}}
-            #     ],
-            # },
-            # {
-            #     "name" : "time",
-            #     "value" : "None",
-            #     "bind" : {
-            #         "element" : "#{}_2".format(self.prefix) if self.prefix else "#timeinfo"
-            #     },
-            #     "on" : [
-            #         {
-            #             "events" : "area:mousemove",
-            #             "update" : "utcFormat(1000*round(extent(pluck(data('temporal_weights'), 'time'))[0] + ((x() / width) * ((extent(pluck(data('temporal_weights'), 'time'))[1]) - (extent(pluck(data('temporal_weights'), 'time'))[0])))), '%m/%d/%Y')",
-            #         },
-            #         {"events" : "area:mouseout", "update" : {"value" : ""}}
-            #     ],
-            # },
     #    ]
 
     # @property

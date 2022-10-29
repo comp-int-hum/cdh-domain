@@ -13,8 +13,9 @@ logger = logging.getLogger(__name__)
 class ObjectDetectionField(Field):
     
     def __init__(self, object_id, *argv, **argd):
-        self.field_name = "tabular_{}".format(random_token(6))
+        self.field_name = "tabular_{}".format(random_token(6))        
         self.style = {}
+        self.style["detector_type"] = argd.pop("detector_type", "object")
         self.style["base_template"] = "image.html"
         self.style["template_pack"] = "cdh/template_pack"
         self.style["interactive"] = True
@@ -31,9 +32,8 @@ class MachineLearningModelInteractionField(MonacoEditorField):
         model = MachineLearningModel.objects.get(id=parent_style["object_id"])
         handler = model.metadata["mar_info"]["model"]["handler"]
         logger.info("Selecting an interface for model with handler '%s'", handler)
-        print(handler)
-        if handler == "object_detector":
-            return ObjectDetectionField(parent_style["object_id"])
+        if "object" in handler or "ocr" in handler:
+            return ObjectDetectionField(parent_style["object_id"], detector_type="text" if "ocr" in handler else "object")
         elif handler == "image_classifier":
             pass
         elif handler == "text_classifier":

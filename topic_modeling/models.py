@@ -354,6 +354,13 @@ def apply_lexicon_or_topicmodel(query_id, url, graph_name, lexicon_id=None, topi
                     topic_uris[k]
                 )
             )
+            annotation_graph.add(
+                (
+                    topic_uris[k],
+                    CDH["hasName"],
+                    Literal(str(k))
+                )
+            )
             for w in v:
                 lex_node = BNode()
                 annotation_graph.add(
@@ -393,6 +400,13 @@ def apply_lexicon_or_topicmodel(query_id, url, graph_name, lexicon_id=None, topi
                     topic_uris[i]
                 )
             )
+            annotation_graph.add(
+                (
+                    topic_uris[i],
+                    CDH["hasName"],
+                    Literal(str(i))
+                )
+            )            
             for w in topics[i - 1]:
                 lex_node = BNode()
                 annotation_graph.add(
@@ -513,6 +527,13 @@ def apply_lexicon_or_topicmodel(query_id, url, graph_name, lexicon_id=None, topi
                         topic_uris[k]
                     )
                 )
+                annotation_graph.add(
+                    (
+                        topic_label_node,
+                        CDH["hasName"],
+                        Literal(str(k))
+                    )
+                )                
                 annotation_graph.add(
                     (
                         topic_label_node,

@@ -74,7 +74,7 @@
     >
     {% if doc_info.object.id and doc_info.object.get_view_perm in doc_perms %}
     <div
-      class="container {% if request.user.is_authenticated %}w-75{% else %}w-100{% endif %} cdh-view"
+      class="container {% if request.user.is_authenticated %}w-100{% else %}w-100{% endif %} cdh-view"
       >
       {{doc_info.object.render|safe}}  
     </div>

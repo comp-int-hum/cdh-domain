@@ -24,8 +24,8 @@ logger = logging.getLogger(__name__)
 
 class MachineLearningModelSerializer(CdhSerializer):
     mar_file = FileField(required=False)
-    input_signature = FileField(required=False) #UploadableTextField(required=False)
-    output_signature = FileField(required=False) #UploadableTextField(required=False)
+    signature_file = FileField(required=False) #UploadableTextField(required=False)
+    #output_signature = FileField(required=False) #UploadableTextField(required=False)
     apply_url = ActionOrInterfaceField(
         MachineLearningModelInteractionField(
             detail_endpoint=True,
@@ -38,10 +38,10 @@ class MachineLearningModelSerializer(CdhSerializer):
 
     class Meta:
         model = MachineLearningModel
-        fields = ["name", "input_signature", "output_signature", "mar_file", "url", "created_by", "id", "apply_url"]
+        fields = ["name", "signature_file", "mar_file", "url", "created_by", "id", "apply_url"]
         view_fields = ["name", "apply_url", "id"]
         edit_fields = ["name", "url", "created_by", "id"]
-        create_fields = ["name", "input_signature", "output_signature", "mar_file", "url", "created_by", "id"]
+        create_fields = ["name", "signature_file", "mar_file", "url", "created_by", "id"]
 
     def create(self, validated_data):
         fields = [f.name for f in MachineLearningModel._meta.fields]
@@ -50,8 +50,7 @@ class MachineLearningModelSerializer(CdhSerializer):
         #if mar_file:
 
         obj.save(
-            input_signature=validated_data["input_signature"],
-            output_signature=validated_data["output_signature"],
+            signature_file=validated_data["signature_file"],
             mar_file=validated_data["mar_file"]
         )
         #url_field=validated_data["url_field"], text_field=validated_data["text_field"], remove_stopwords=validated_data["remove_stopwords"])

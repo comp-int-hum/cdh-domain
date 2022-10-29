@@ -22,12 +22,16 @@ class AnnotationSerializer(CdhSerializer):
     temporal = VegaField(
         vega_class=TemporalEvolution, #SpatialDistribution,
         property_field="data",
+        #allow_null=True,
+        #read_only=True,
         #write_only=True,
         title="Temporal evolution"
     )
     spatial = VegaField(
         vega_class=SpatialDistribution,
         property_field="data",
+        #allow_null=True,
+        #read_only=True,
         #write_only=True,
         title="Spatial distribution"
     )

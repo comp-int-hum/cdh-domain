@@ -7,6 +7,8 @@ class SpatialDistribution(CdhVisualization):
         self.values = values[0]
         self.model_info = values[2]
         self.topic_names = list(set([v["topic"] for v in self.values]))
+        for i in range(len(self.values)):
+            self.values[i]["topic_num"] = self.topic_names.index(self.values[i]["topic"])
         self.prefix = prefix
         super(SpatialDistribution, self).__init__()
 
@@ -21,13 +23,13 @@ class SpatialDistribution(CdhVisualization):
 
     @property
     def autosize(self):
-        return "none"
+        return "pad"
 
     @property
     def signals(self):
         return [
-            {"name": "width", "value": 800},
-            {"name": "height", "value": 350},
+            #{"name": "width", "value": 800},
+            #{"name": "height", "value": 350},
             { "name": "scale", "value": 150},
             { "name": "rotate0", "value": 0},
             { "name": "rotate1", "value": 0},
@@ -44,25 +46,26 @@ class SpatialDistribution(CdhVisualization):
                 "name": "topic",
                 "bind" : {
                     "input" : "select",
+                    "element" : "#{}_2".format(self.prefix) if self.prefix else "#topicinfo",
                     "options" : list(range(len(self.topic_names))),
                     "labels" : self.topic_names, #[self.topic_names[x] for x in self.topics],
                 },
                 "init" : 0 #self.topic_names[0]
             },
-            # {
-            #     "name" : "words",
-            #     "bind" : {
-            #         "input" : "textarea",
-            #         "element" : "{}_topicinfo".format(self.prefix)
-            #     },
-            #     "value" : self.topic_names[self.topics[0]],
-            #     "on": [
-            #         {
-            #             "events" : {"signal" : "topic"},
-            #             "update" : ""
-            #         },
-            #     ]
-            # }
+            {
+                "name" : "words",
+                "bind" : {
+                    "input" : "textarea",
+                    "element" : "#{}_1".format(self.prefix) if self.prefix else "#topicinfo"
+                },
+                "value" : self.topic_names[0],
+                "on": [
+                    {
+                        "events" : {"signal" : "topic"},
+                        "update" : "topic"
+                    },
+                ]
+            }
             #{"name": "tx", "update": "width / 2"},
             #{"name": "ty", "update": "height / 2"},
             #{"name": "scale", "value": 150, "on" : [{"events" : {"type" : "wheel", "consume" : True}, "update" : "clamp(scale * pow(1.0005, -event.deltaY * pow(16, event.deltaMode)), 150, 3000)"}]},
@@ -91,24 +94,26 @@ class SpatialDistribution(CdhVisualization):
                 "name": "topics",
                 "values": self.values,
                 "transform" : [
-                {"type":"formula",
-                "expr" : "datum.location[0]",
-                "as" : "lon"
-                },
-                 {"type":"formula",
-                  "expr" : "datum.location[1]",
-                  "as" : "lat"
-                },
-                                {
-                    "type" : "geopoint",
-                    "projection" : "focus",
-                    "fields" : ["lon", "lat"],
-    "as" : ["x", "y"]
-                }
-                    #{
-                    #    "type" : "filter",
-                    #    "expr" : "topic == 0 || datum.properties.topic == topic"
-                    #},
+                    {
+                        "type":"formula",
+                        "expr" : "datum.location[0]",
+                        "as" : "lon"
+                    },
+                    {
+                        "type":"formula",
+                        "expr" : "datum.location[1]",
+                        "as" : "lat"
+                    },
+                    {
+                        "type" : "geopoint",
+                        "projection" : "focus",
+                        "fields" : ["lon", "lat"],
+                        "as" : ["x", "y"]
+                    },
+                    {
+                       "type" : "filter",
+                       "expr" : "topic == 0 || datum.topic_num == topic"
+                    },
                 ]
             },
             {

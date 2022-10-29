@@ -58,11 +58,12 @@ if __name__ == "__main__":
     parser.add_argument("--host", dest="host", default="localhost")
     parser.add_argument("--port", dest="port", default=8080, type=int)
     parser.add_argument("--protocol", dest="protocol", default="http")
-    parser.add_argument("--primarysource_path", dest="primarysource_path", default="/home/tom/projects/hathitrust/work")
-    parser.add_argument("--file_path", dest="file_path", default="/home/tom/projects/hathitrust/work")
+    parser.add_argument("--file_paths", dest="file_paths", nargs="*", default=[],
+                        help="Paths that will be checked (in order) for files referenced in the fixtures")
     parser.add_argument("--username", dest="username", default="user1")
     parser.add_argument("--password", dest="password", default="user")
     parser.add_argument("--auth", dest="auth")
+    parser.add_argument("--skip_objects", dest="skip_objects", nargs="*", default=[], help="Names of objects in the fixture files to skip")
     parser.add_argument(
         "--delete",
         dest="delete",
@@ -70,10 +71,16 @@ if __name__ == "__main__":
         action="store_true",
         help="Delete all existing objects of a model before creating new ones (except for the authenticated user, if users are to be created)"
     )
-    parser.add_argument(dest="fixture_files", nargs="*")
+    parser.add_argument(
+        "--replace",
+        dest="replace",
+        default=False,
+        action="store_true",
+        help="If an object of the given name already exists, replace it (default behavior is to leave it as-is)"
+    )
+    parser.add_argument(dest="fixture_files", nargs="*", help="One or more JSON files (see the cdh/fixtures/ directory for examples)")
     args = parser.parse_args()
 
-    #openapi_url = "{}://{}:{}/openapi/".format(args.protocol, args.host, args.port)
     base_url = "{}://{}:{}".format(args.protocol, args.host, args.port)
     headers = {"Accept" : "application/json"}
 
@@ -104,9 +111,16 @@ if __name__ == "__main__":
                 if args.delete:
                     for e in existing_items:
                         user.delete(e["url"])
+                existing_items = {o["name"] : o for o in user.get(models[model], follow_next=True)["results"]}
                 for obj in objs:
+                    if obj["name"] in args.skip_objects:
+                        continue
                     robj = {}
                     files = {}
+                    if not args.delete and args.replace and obj["name"] in existing_items:
+                        user.delete(existing_items[obj["name"]]["url"])
+                    elif not args.delete and obj["name"] in existing_items:
+                        continue
                     for k, v in obj.items():
                         if isinstance(v, dict):
                             if "model_class" in v:
@@ -120,112 +134,18 @@ if __name__ == "__main__":
                                 robj[k] = matches[0][v["field"]]
                             elif "filename" in v:
                                 # file upload
-                                files[k] = (
-                                    os.path.basename(v["filename"]),
-                                    open(os.path.join(args.file_path, v["filename"]), "rb"),
-                                    v["content_type"]
-                                )
+                                for possible_path in reversed(args.file_paths):
+                                    possible_fname = os.path.join(possible_path, v["filename"])
+                                    if os.path.exists(possible_fname):
+                                        files[k] = (
+                                            v["filename"],
+                                            open(possible_fname, "rb"),
+                                            v["content_type"]
+                                        )
+                                if k not in files:
+                                    raise Exception("Could not find file '{}' in any of the directories {}".format(v["filename"], args.file_paths))
                         else:
                             # standard key-value
                             robj[k] = v
                     user.post(models[model], robj, files=files)
                 
-    # for method, subactions in actions:
-    #     for subaction in subactions:
-    #         for obj in user.get(models[subaction["model"]], follow_next=True)["results"]:
-    #             if obj[subaction["filter"][0]] == subaction["filter"][1]:
-    #                 objA = obj
-    #         for obj in user.get(models[subaction["other_model"]], follow_next=True)["results"]:
-    #             if obj[subaction["other_filter"][0]] == subaction["other_filter"][1]:
-    #                 objB = obj
-
-    #         subaction_url = objA[subaction["url_field"]]
-    #         target_url = objB["url"]
-    #         #print(user.post("http://localhost:8080/api/lexicon/38/apply/", {subaction["target_field"] : target_url}, expected=200))
-    #         #print(user.post("http://localhost:8080/api/lexicon/38/reapply/", {subaction["target_field"] : target_url}, expected=200))
-    #         if method == "POST":                
-    #             print(user.post(subaction_url, {subaction["target_field"] : target_url}, expected=200))
-    sys.exit()
-    
-    
-    fixtures = json.loads(ifd.read())
-
-    for model, objs in fixtures.items():
-        if model == "user":
-            continue
-        fields = set()
-        to_add = {}
-        existing = {}
-        for obj in objs:
-            key = tuple(sorted([(k, v) for k, v in obj.items() if v != None and k not in ["url", "password"] and not k.startswith("@")]))
-            for k, _ in key:
-                fields.add(k)
-            to_add[key] = obj
-        for obj in first.get(models[model])["results"]:
-            key = tuple(sorted([(k, v) for k, v in obj.items() if k in fields and v != None]))
-            existing[key] = obj
-        for key, obj in to_add.items():
-            if key not in existing:
-                files = {k[1:] : open(os.path.join(args.image_path, v), "rb") for k, v in obj.items() if k.startswith("@")}
-                non_files = {k : v for k, v in obj.items() if not k.startswith("@")}
-                first.post(models[model], non_files, files=files)
-
-    sys.exit()
-
-    
-    for ps in first.get(models["primarysource"])["results"]:
-        logger.info("%s", ps)
-        logger.info("%s", first.get(ps["schema_url"], expected=200))
-
-    for ml in first.get(models["machinelearningmodel"])["results"]:
-        logger.info("%s", ml)
-        logger.info("%s", first.get(ml["apply_url"], {"data" : "How many years will it be before "}, expected=200))
-    
-    for user in first.get(models["user"])["results"]:
-        if user["first_name"] == "Bojack":
-            first.delete(user["url"])
-
-    first.post(models["user"], {"first_name" : "Bojack", "last_name" : "Fakenamington", "homepage" : "http://www.horsin-around.edu", "title" : "Horse", "photo" : "", "description" : "Happy.", "password" : "herb", "email" : "sugarman@google.com", "username" : "bojack"})
-    
-    for item in first.get(models["primarysource"])["results"]:
-        logger.info("%s", item)
-        
-    item = first.post(models["query"], {"name" : "test", "sparql" : "test", "primary_source" : item["url"]})
-    logger.info("%s", oitem)
-
-    for item in first.get(models["lexicon"])["results"]:
-        logger.info("%s", item)        
-        first.delete(item["url"])        
-
-    if args.primarysource_path:
-        with open(os.path.join(args.primarysource_path, "schema.ttl"), "rb") as schema_fd, open(os.path.join(args.primarysource_path, "data.ttl"), "rb") as data_fd, open(os.path.join(args.primarysource_path, "annotations.ttl"), "rb") as annotations_fd, open(os.path.join(args.primarysource_path, "materials.zip"), "rb") as materials_fd:
-            files = [
-                ("schema_file", (os.path.join(args.primarysource_path, "schema.ttl"), schema_fd, "text/turtle")),
-                ("data_file", (os.path.join(args.primarysource_path, "data.ttl"), data_fd, "text/turtle")),
-                ("annotations_file", (os.path.join(args.primarysource_path, "annotations.ttl"), annotations_fd, "text/turtle")),
-                ("materials_file", (os.path.join(args.primarysource_path, "materials.zip"), materials_fd, "application/zip")),
-            ]
-            item = first.post(
-                models["primarysource"],
-                data={"name" : "test"},
-                files=files
-            )
-        
-    logging.info("First user creation")
-    item = first.post(models["lexicon"], data={"name" : "test"})
-
-    logging.info("First user retrieval")
-    item = first.get(item["url"])
-
-    item["name"] = "new_name"
-    logging.info("First user modification")
-    first_update = first.put(item["url"], data=item)
-
-    logging.info("Second user retrieval")
-    second_view = second.get(item["url"])
-
-    item["name"] = "dsada"
-
-    logging.info("Second user modification")
-    second_update = second.put(item["url"], data=item, expected=404)
-
