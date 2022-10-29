@@ -13,7 +13,10 @@
     <input type="file" class="cdh-image-interaction"></input>
     <img style="display: none;"></img>
     <canvas>
-    </canvas>    
+    </canvas>
+    {% comment %}
+    <input class="cdh-image-annotation-threshold" type="range" id="threshold_{{ uid }}" name="threshold" min="0" max="100" value="100"></input>
+    {% endcomment %}
   {% if field.errors %}
     {% for error in field.errors %}
       <span class="help-block">{{ error }}</span>

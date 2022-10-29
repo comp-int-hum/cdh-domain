@@ -22,10 +22,11 @@ register = template.Library()
 
 
 @register.simple_tag(takes_context=True)
-def cdh_render_form(context, serializer, template_pack=None, mode="view"):
+def cdh_render_form(context, serializer, template_pack=None, mode="view", uid=None):
     try:
         style = {'template_pack': template_pack} if template_pack else {}
         #args = {}
+        
         #for name in ["uid"]:
         #    if name in context:
         #        args[name] = context[name]
@@ -38,17 +39,14 @@ def cdh_render_form(context, serializer, template_pack=None, mode="view"):
         keep = getattr(serializer.Meta, "{}_fields".format(mode), None) if hasattr(serializer, "Meta") else None
         if keep:
             serializer.fields = {field_name : field for field_name, field in serializer.fields.items() if field_name in keep}
-        #uid = context["view"].uid
         for i, field in enumerate(serializer.fields):
             serializer.fields[field].style["index"] = i
             if mode in ["edit", "create"]:
                 serializer.fields[field].style["editable"] = True
-                #print(context)
-        return renderer.render(serializer.data, None, {'style': style, "mode" : mode, "tab_view" : tab_view, "request" : context.get("request")})
+        return renderer.render(serializer.data, None, {'uid' : uid, 'style': style, "mode" : mode, "tab_view" : tab_view, "request" : context.get("request")})
     except Exception as e:
         logger.info("Exception: %s", e)
         raise e
-        return ""
 
 
 @register.simple_tag(takes_context=True)

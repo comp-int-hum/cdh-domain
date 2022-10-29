@@ -18,9 +18,7 @@ function updateImageDisplay(event) {
 	    method: "POST",
 	    data: formData,
 	    success: function (data){
-		console.error(data);
 		var jdata = JSON.parse(data);
-
 		if(detector_type == "object"){
 		    var width = preview.naturalWidth;
 		    var height = preview.naturalHeight;		
@@ -85,7 +83,6 @@ function updateImageDisplay(event) {
 		    var ctx = canvas.getContext("2d");
 		    ctx.scale(scale, scale);
 		    ctx.drawImage(preview, 0, 0);
-		    //for(let box of jdata){
 			var name;
 			var score;
 			var bounds;
@@ -111,8 +108,6 @@ function updateImageDisplay(event) {
 			    ctx.font = fontSize.toString() + "px serif";
 			    ctx.fillText(name, bounds[0], bounds[1] + (bounds[3] - bounds[1]));
 			}
-		    //}
-
 
 		}
 	    },

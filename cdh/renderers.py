@@ -18,6 +18,7 @@ class CdhHTMLFormRenderer(HTMLFormRenderer):
         for style_field_name in ["mode", "tab_view", "uid", "index"]:
             if style_field_name in renderer_context:
                 renderer_context["style"][style_field_name] = renderer_context[style_field_name]
+        self.uid = renderer_context["uid"]
         self.request = renderer_context.get("request", None)
         return super(CdhHTMLFormRenderer, self).render(data, accepted_media_type=accepted_media_type, renderer_context=renderer_context)
     
@@ -31,7 +32,7 @@ class CdhHTMLFormRenderer(HTMLFormRenderer):
                 inter = inter.get_actual_field(parent_style)
             #field = BoundField(field._field.interface_field, field._field.interface_field.get_default_value(), [])
             field = BoundField(inter, inter.get_default_value(), [])
-
+            #print(field)
             # style = self.default_style[field].copy()
             # style.update(field.style)
             # if 'template_pack' not in style:
@@ -68,4 +69,6 @@ class CdhTemplateHTMLRenderer(TemplateHTMLRenderer):
                 context[k] = v
             #else:
             #    logger.info("Not replacing %s with %s for context item %s", context.get(k), v, k)
+            #print(list(context.keys()))
+            
         return context
