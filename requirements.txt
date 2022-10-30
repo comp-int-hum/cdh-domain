@@ -103,3 +103,4 @@ torch-workflow-archiver
 torchserve
 torchtext
 torchvision
+timm

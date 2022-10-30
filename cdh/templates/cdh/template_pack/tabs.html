@@ -3,14 +3,14 @@
   >
   <ul class="nav nav-tabs cdh-nav-tabs" id="tabcontrols-{{uid}}" role="tablist">
     {% for tab in tabs %}
-    {% if not tab.read_only %}
+    {% if not tab.read_only or tab.visual_only %}
     {% include "cdh/template_pack/tab_control.html" with index=forloop.counter title=tab.title uid=uid %}
     {% endif %}
     {% endfor %}
   </ul>
   <div class="tab-content" id="tabcontents-{{uid}}">    
     {% for tab in tabs %}
-    {% if not tab.read_only %}
+    {% if not tab.read_only or tab.visual_only %}
     {% include "cdh/template_pack/tab_content.html" with index=forloop.counter content=tab uid=uid %}
     {% endif %}
     {% endfor %}

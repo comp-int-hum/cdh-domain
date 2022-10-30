@@ -140,7 +140,7 @@ class AnnotationsField(Field):
 
 
 class VegaField(Field):
-
+    visual_only = True
     def __init__(self, vega_class, *argv, **argd):
         property_field = argd.pop("property_field", None)
         self.property_field_args = argd.pop("property_field_args", {})

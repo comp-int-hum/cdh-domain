@@ -4,6 +4,7 @@ from cdh.vega import CdhVisualization
 class SpatialDistribution(CdhVisualization):
 
     def __init__(self, values, prefix=None):
+        print(values)
         self.values = values[0]
         self.model_info = values[2]
         self.topic_names = list(set([v["topic"] for v in self.values]))
@@ -58,7 +59,7 @@ class SpatialDistribution(CdhVisualization):
                     "input" : "textarea",
                     "element" : "#{}_1".format(self.prefix) if self.prefix else "#topicinfo"
                 },
-                "value" : self.topic_names[0],
+                "value" : self.topic_names[0] if len(self.topic_names) > 0 else "",
                 "on": [
                     {
                         "events" : {"signal" : "topic"},
