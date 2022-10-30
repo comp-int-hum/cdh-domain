@@ -1,5 +1,6 @@
 import re
 import json
+import zipfile
 import os.path
 import logging
 from django.conf import settings
@@ -13,6 +14,9 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.schemas.openapi import AutoSchema
 from primary_sources.serializers import MaterialSerializer
+
+
+logger = logging.getLogger(__name__)
 
 
 class MaterialViewSet(GenericViewSet):
@@ -42,6 +46,7 @@ class MaterialViewSet(GenericViewSet):
             prefix = toks[0]
             suffix = "/".join(toks[1:])
             store = psf.get_store(store_dir=os.path.join(settings.MATERIALS_ROOT, prefix), uri_base="{}://{}:{}/materials/".format(settings.PROTO, settings.HOSTNAME, settings.PORT))
+            suffix = suffix.replace("+", ":").replace(".", "/")
             obj = store.get_object(suffix, create_if_doesnt_exist=False)
             fnames = obj.list_parts()
             metadata = {}
@@ -59,7 +64,15 @@ class MaterialViewSet(GenericViewSet):
                 elif fname.endswith(".zip"):
                     files["hathitrust_zip"] = fname
                 else:
-                    raise Exception("Unrecognized stream name: {}".format(fname))
+                    #logger.error(fname)
+                    for sfname in obj.list_parts(fname):
+                        #logger.error(sfname)
+                        if sfname.endswith(".mets.xml"):
+                            files["hathitrust_metadata"] = os.path.join(fname, sfname)
+                        elif sfname.endswith(".zip"):
+                            files["hathitrust_data"] = os.path.join(fname, sfname)
+
+                    #raise Exception("Unrecognized stream name: {}".format(fname))
             if "cdh_metadata" in files and "cdh_data" in files:
                 metadata = json.loads(obj.get_bytestream(files["cdh_metadata"], streamable=True).read())
                 with obj.get_bytestream(files["cdh_data"], streamable=True) as ifd:
@@ -68,7 +81,7 @@ class MaterialViewSet(GenericViewSet):
                 metadata = {
                     "content_type" : "text/plain"
                 }
-                zf = o.get_bytestream(os.path.join(part, files["hathitrust_data"]), streamable=True)
+                zf = obj.get_bytestream(files["hathitrust_data"], streamable=True)
                 document_pages = []
                 with zipfile.ZipFile(zf, "r") as zifd:
                     for page in zifd.namelist():
@@ -79,8 +92,10 @@ class MaterialViewSet(GenericViewSet):
                     content = ifd.read()
                 metadata = {}
             else:
-                o.get_bytestream(os.path.join(part, files["hathitrust_data"]), streamable=True)
+                #logger.error(str(files))
+                obj.get_bytestream(files["hathitrust_data"], streamable=True)
                 raise Exception()
+            #logger.error("FFF: %s", mid)
             retvals.append(
                 {
                     "content" : content,

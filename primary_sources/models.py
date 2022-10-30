@@ -353,7 +353,7 @@ def save_annotation(ann_id, *argv, **argd):
         obj.apply(
             ann.query.id,
             "http://{}:{}/primarysource_{}/data".format(settings.JENA_HOST, settings.JENA_PORT, ann.query.primarysource.id),
-            str(ann_id)
+            ann.jena_id
         )
         ann.state = ann.COMPLETE
     except Exception as e:
@@ -429,7 +429,7 @@ def save_primarysource(pk, update, *argv, **argd):
                 if os.path.exists(fname):
                     with open(fname + ".meta", "rt") as ifd:
                         content_type = ifd.read()
-                    params = {} if graph_name == "data" else {"graph" : graph_name}
+                    params = {} if graph_name == "data" else {"graph" : "http://{}:{}/primarysource_{}/data/{}".format(settings.JENA_HOST, settings.JENA_PORT, ps.id, graph_name)}
                     with open(fname, "rb") as ifd:
                         resp = requests.put(
                             "http://{}:{}/{}/data".format(settings.JENA_HOST, settings.JENA_PORT, dbName),
