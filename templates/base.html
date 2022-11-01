@@ -206,18 +206,6 @@
 		</a>
 	      </li>
 	      {% endif %}
-	      {% comment %}
-	      {% if is_admin %}
-	      <li>
-		<hr class="dropdown-divider">
-	      <li>
-	      <li>
-		<a class="dropdown-item {% if top_level == 'manage' %}active{% endif %}" href="/manage">
-		  Manage
-		</a>
-	      </li>
-	      {% endif %}
-	      {% endcomment %}
 	    </ul>
 	  </li>
 
@@ -262,9 +250,30 @@
 	    </ul>
 	    {% endif %}	    
 	    <div id="top_level_content" class="container">
+	      {% if object.state == "PR" %}
+	      <div>
+		<p class="cdh-processing">
+		  {{object.message}}
+		</p>
+		<button task_id="{{object.task_id}}" class="btn btn-primary">
+		  Cancel
+		</button>
+	      </div>
+	      {% elif object.state == "ER" %}
+	      <div>
+		<p class="cdh-error">
+		  {{object.message}}
+		</p>
+		<button class="btn btn-primary">
+		  Remove
+		</button>		
+	      </div>
+	      {% else %}
 	      {% block content %}{% endblock %}
 	      {% block body %}{% endblock %}
+	      {% endif %}
 	    </div>
+	    <footer><a href="mailto:sympa@lists.johnshopkins.edu?subject=sub%20cdh-announce">Subscribe to mailing list</a></footer>
 	  </div>
 	</div>
       </div>
